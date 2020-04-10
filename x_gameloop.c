@@ -1,63 +1,90 @@
 #include <stdio.h>
 #include <time.h>
 
-void draw(double delta_s)
+#define false 0
+#define true 1
+typedef int bool; // or #define bool int
+
+// Gametimer class
+struct gametimer
 {
-	printf("draw %fs - ", delta_s);
+	double seconds_s;
+	double counter_s;
+	double wait_s;
+};
+struct gametimer gametimer_new(double wait_s)
+{
+	struct gametimer gt = {0, 0, wait_s};
+	return gt;
+}
+bool gametimer_update(struct gametimer *gt, double delta_s)
+{
+	gt->counter_s += delta_s;
+	if (gt->counter_s >= gt->wait_s) {
+		gt->counter_s = 0.0;
+		return true;
+	}
+	return false;
 }
 
-void update(double delta_s)
+void draw(double delta_s)
 {
-	printf("\nupdate %fs\n", delta_s);
+	//printf("draw %fs - ", delta_s);
+}
+
+void update(double delta_s, struct gametimer *gttest)
+{
+	printf("update %fs\n", delta_s);
+	if (gametimer_update(gttest, delta_s)) {
+		printf("GAMETIMER HIT %fs\n", gttest->wait_s);
+	}
+}
+
+// Gets the difference in seconds between two timespecs (ts1 - ts2)
+double timediff_s(struct timespec *ts1, struct timespec *ts2)
+{
+	double diff_s = ts2->tv_sec - ts1->tv_sec;
+	double diff_ns = ts2->tv_nsec - ts1->tv_nsec;
+	if (ts1->tv_nsec > ts2->tv_nsec) { // clock underflow
+		diff_s--;
+		diff_ns += 1000000000;
+	}
+	return (double)diff_s + (double)diff_ns / (double)1000000000;
 }
 
 int main(void)
 {
-	struct timespec new_time, actual_time;
-	clock_gettime(CLOCK_REALTIME, &actual_time);
+	struct timespec new_time, current_time;
 	double timer = 0;
 	double dt = .0166666667; // 60fps in seconds
 
+	// gametimer tests
+	struct gametimer gt = gametimer_new(1.5);
+
+	// get starting time of game
+	clock_gettime(CLOCK_REALTIME, &current_time);
 	while (1) {
+		// time since last loop
 		clock_gettime(CLOCK_REALTIME, &new_time);
-		double frame_s = new_time.tv_sec - actual_time.tv_sec;
-		double frame_ns = new_time.tv_nsec - actual_time.tv_nsec;
-		if (actual_time.tv_nsec > new_time.tv_nsec) { // clock underflow
-			frame_s--;
-			frame_ns += 1000000000;
-		}
-		frame_s = (double)frame_s + (double)frame_ns / (double)1000000000;
+		double frame_s = timediff_s(&current_time, &new_time);
 
 		// avoid spiral of death
-		if (frame_s > .250) {
+		if (frame_s > .250)
 			frame_s = .250;
-		}
 
-		// update in dt sized chunks
+		// only update in dt sized chunks
 		timer += frame_s;
 		while (timer >= dt) {
-			// TODO
-			// sf::Time gtu = sf::seconds(dt);
-			// update(gtu);
-			update(dt);
+			update(dt, &gt);
 			timer -= dt;
 		}
 
 		// draw in every frame
-		// TODO
-		// sf::Time gtd = sf::seconds(newTime - actualTime);
-		// draw(*renderWindow, gtd);
-		double draw_s = new_time.tv_sec - actual_time.tv_sec;
-		double draw_ns = new_time.tv_nsec - actual_time.tv_nsec;
-		if (actual_time.tv_nsec > new_time.tv_nsec) { // clock underflow
-			draw_s--;
-			draw_ns += 1000000000;
-		}
-		draw_s = (double)frame_s + (double)frame_ns / (double)1000000000;
-
+		double draw_s = timediff_s(&current_time, &new_time);
 		draw(draw_s);
 
-		actual_time = new_time;
+		// update current loop time to the new time
+		current_time = new_time;
 	}
 
 	return 0;
