@@ -1,11 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <ncurses.h>
 
 #define SCOLOR_NORMAL 1
 #define TCOLOR_NORMAL 2
 #define TCOLOR_OMINOUS 3
+
+void msleep(int milliseconds)
+{
+	usleep(milliseconds * 1000);
+}
 
 enum game_state
 {
@@ -69,18 +75,56 @@ void g_intro()
 {
 	curs_set(0); // hide cursor
 	enum intro_state state = INTRO_1;
+	struct reel {
+		int row;
+		char *string;
+		int colorpair;
+		bool bold;
+	};
+	struct reel reels[2] = {
+		{3, "It was an age of light.", TCOLOR_NORMAL, 1},
+		{3, "It was an age of light.", TCOLOR_NORMAL, 1}
+	};
 
-	center(3, "It was an age of light.", TCOLOR_NORMAL, 0);
-	refresh(); getch();
-	center(4, "It was an age of hope.", TCOLOR_NORMAL, false);
-	refresh(); getch();
-	center(6, "And then he came...", TCOLOR_OMINOUS, true);
-	refresh(); getch();
+	center(3, "It was an age of light.", TCOLOR_NORMAL, 1);
+	refresh();
+	sleep(2);
+
 	clear();
-	center(6, "And then he came...", TCOLOR_OMINOUS, true);
-	refresh(); getch();
-	center(6, "And then he came...", TCOLOR_OMINOUS, false);
-	refresh(); getch();
+	center(3, "It was an age of light.", TCOLOR_NORMAL, 1);
+	center(4, "It was an age of hope.", TCOLOR_NORMAL, 1);
+	refresh();
+	sleep(2);
+
+	clear();
+	center(3, "It was an age of light.", TCOLOR_NORMAL, 1);
+	center(4, "It was an age of hope.", TCOLOR_NORMAL, 1);
+	center(6, "And then he came...", TCOLOR_OMINOUS, 1);
+	refresh();
+	sleep(2);
+
+	clear();
+	center(3, "It was an age of light.", TCOLOR_NORMAL, 0);
+	center(4, "It was an age of hope.", TCOLOR_NORMAL, 1);
+	center(6, "And then he came...", TCOLOR_OMINOUS, 1);
+	refresh();
+	msleep(500);
+
+	clear();
+	center(4, "It was an age of hope.", TCOLOR_NORMAL, 0);
+	center(6, "And then he came...", TCOLOR_OMINOUS, 1);
+	refresh();
+	msleep(500);
+
+	clear();
+	center(6, "And then he came...", TCOLOR_OMINOUS, 1);
+	refresh();
+	msleep(500);
+
+	clear();
+	center(6, "And then he came...", TCOLOR_OMINOUS, 0);
+	refresh();
+	msleep(500);
 
 	curs_set(1);
 }
