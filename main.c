@@ -4,6 +4,7 @@
 
 #include "gametime.h"
 #include "draw.h"
+#include "dmg_world.h"
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -37,7 +38,7 @@ enum game_state
 	GS_START,
 	GS_INTRO,
 	GS_TITLE,
-	GS_MAIN,
+	GS_NEWGAME,
 	GS_EXIT
 };
 enum game_state state = GS_START;
@@ -128,15 +129,16 @@ void g_intro()
 defer:
 	clear();
 	nodelay(stdscr, false);
+	state = GS_TITLE; // to to title screen
 }
 
 
 bool g_title_done = false;
+int g_title_prompt_row = 18;
 void g_title_onquit(char *label)
 {
-	int prompt_row = 18;
-	clear_row(prompt_row);
-	center(prompt_row, "Are you sure? [y/n]", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	clear_row(g_title_prompt_row);
+	center(g_title_prompt_row, "Are you sure? [y/n]", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 	refresh();
 
 	bool listen = true;
@@ -147,8 +149,11 @@ void g_title_onquit(char *label)
 			g_title_done = true;
 			listen = false;
 			break;
+		case ERR:
+			break;
+		default:
 		case KEY_N:
-			clear_row(prompt_row);
+			clear_row(g_title_prompt_row);
 			refresh();
 			listen = false;
 			break;
@@ -159,6 +164,17 @@ void g_title_onintro(char *label)
 {
 	state = GS_INTRO;
 	g_title_done = true;
+}
+void g_title_onnewgame(char *label)
+{
+	state = GS_NEWGAME;
+	g_title_done = true;
+}
+void g_title_onundefined(char *label)
+{
+	clear_row(g_title_prompt_row);
+	center(g_title_prompt_row, "Unimplemented", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	refresh();
 }
 void g_title()
 {
@@ -185,14 +201,14 @@ void g_title()
 	};
 	struct choice choices[] = {
 		{"Intro", g_title_onintro},
-		{"New Game", g_title_onquit},
-		{"Load Game", g_title_onquit},
-		{"Options", g_title_onquit},
+		{"New Game", g_title_onnewgame},
+		{"Load Game", g_title_onundefined},
+		{"Options", g_title_onundefined},
 		{"Quit", g_title_onquit},
 	};
         int n_choices = ARRAY_SIZE(choices);
 
-	WINDOW *title_menu_win = new_center_win(12, 13, 5, -3); // max choice length + cursor offset by cursor
+	WINDOW *title_menu_win = new_center_win(12, 13, 5, 0); // max choice length + cursor offset by cursor
 	ITEM **title_items;
 	MENU *title_menu;
 	keypad(title_menu_win, TRUE);
@@ -206,20 +222,19 @@ void g_title()
 	title_items[n_choices] = (ITEM *)NULL; // last item must be null terminated
 	title_menu = new_menu((ITEM **)title_items);
 	set_menu_win(title_menu, title_menu_win);
-	set_menu_mark(title_menu, " ~ ");
+	set_menu_mark(title_menu, "~ ");
 	post_menu(title_menu);
 
 	wrefresh(title_menu_win);
 
 	// loop and listen
-	int key;
 	while (!g_title_done) {
 		switch (wgetch(title_menu_win)) {
 		case KEY_DOWN:
-			menu_driver(title_menu, REQ_DOWN_ITEM);
+			menu_driver(title_menu, REQ_NEXT_ITEM);
 			break;
 		case KEY_UP:
-			menu_driver(title_menu, REQ_UP_ITEM);
+			menu_driver(title_menu, REQ_PREV_ITEM);
 			break;
 		// Enter
 		case KEY_RETURN:
@@ -246,6 +261,66 @@ void g_title()
 	clear();
 }
 
+int map[] = {
+	1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
+	1, 2, 2, 1, 1, 0, 1, 1, 1, 1, 1, 1,
+	1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+};
+int map_rows = 12;
+int map_cols = 12;
+void g_build_world()
+{
+	// World is large indexed map to start
+	setup_world();
+}
+void g_draw_world()
+{
+	for (int r=0; r < map_rows; r++) {
+		for (int c=0; c < map_cols; c++) {
+			int index = r * map_cols + c;
+			int tiletype = map[index];
+			int mobtype = 0;
+
+			int colorpair = get_color_pair(tiletype, mobtype);
+
+			char tch = get_tile_char(tiletype);
+			char mch = get_mob_char(mobtype);
+
+			move(r, c);
+			attrset(COLOR_PAIR(colorpair));
+			addch(tch);
+		}
+	}
+}
+void g_newgame()
+{
+
+	// build world
+	g_build_world();
+	// build player
+	//g_build_player();
+	// build monsters
+	//g_build_monsters();
+
+	// update game
+
+
+	// draw game
+	clear();
+	g_draw_world();
+	refresh();
+	getch();
+}
+
 int main(void)
 {
 	if (!g_setup()) {
@@ -259,10 +334,12 @@ int main(void)
 			break;
 		case GS_INTRO:
 			g_intro();
-			state = GS_TITLE;
 			break;
 		case GS_TITLE:
 			g_title();
+			break;
+		case GS_NEWGAME:
+			g_newgame();
 			break;
 		}
 	}

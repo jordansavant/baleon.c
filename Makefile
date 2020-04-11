@@ -3,15 +3,15 @@ CC=gcc
 CFLAGS=-I.
 BUILD = main.c gametime.c draw.c
 LIBS = -lncurses -lmenu
-DEPS = gametime.h draw.h
+DEPS = gametime.h draw.h dmg_world.h
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-build: $(BUILD) $(DEPS)
+make: $(BUILD) $(DEPS)
 	gcc $(BUILD) $(LIBS) $(CFLAGS)
 
-build-run: $(BUILD) $(DEPS)
+run: $(BUILD) $(DEPS)
 	gcc $(BUILD) $(LIBS) $(CFLAGS) -o main.out && ./main.out
 
 valgrind: $(BUILD) $(DEPS)
