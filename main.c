@@ -2,8 +2,8 @@
 #include <ncurses.h>
 #include <menu.h>
 
-#include "gametime.h"
-#include "draw.h"
+#include "dmg_gametime.h"
+#include "dmg_draw.h"
 #include "dmg_world.h"
 
 #ifndef ARRAY_SIZE

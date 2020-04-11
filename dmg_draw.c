@@ -1,5 +1,5 @@
 #include <string.h>
-#include "draw.h"
+#include "dmg_draw.h"
 
 // Print text on center of std screen
 void center(int row, char *title, int colorpair, int colorpair_reset, bool bold)

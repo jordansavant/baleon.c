@@ -1,4 +1,4 @@
-#include "gametime.h"
+#include "dmg_gametime.h"
 
 // Gets the difference in seconds between two timespecs (ts1 - ts2)
 double timediff_s(struct timespec *ts1, struct timespec *ts2)
