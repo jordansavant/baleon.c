@@ -112,7 +112,14 @@ defer:
 
 void g_title_onquit(char *label)
 {
+	clear_row(32);
 	center(32, "QUIT SELECTED", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	refresh();
+}
+void g_title_onintro(char *label)
+{
+	clear_row(32);
+	center(32, "GO TO INTRO", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 	refresh();
 }
 void g_title()
@@ -137,12 +144,16 @@ void g_title()
 
 	// TITLE MENU
 	// create menu items
-	char *choices[] = {
-		"Intro",
-		"New Game",
-		"Load Game",
-		"Options",
-		"Quit",
+	struct choice {
+		char *label;
+		void (*func)(char *);
+	};
+	struct choice choices[] = {
+		{"Intro", g_title_onintro},
+		{"New Game", g_title_onquit},
+		{"Load Game", g_title_onquit},
+		{"Options", g_title_onquit},
+		{"Quit", g_title_onquit},
 	};
         int n_choices = ARRAY_SIZE(choices);
 
@@ -154,9 +165,9 @@ void g_title()
 	// allocate items
         title_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
         for(int i = 0; i < n_choices; i++) {
-		title_items[i] = new_item(choices[i], "");
+		title_items[i] = new_item(choices[i].label, "");
 		/* Set the user pointer */
-		set_item_userptr(title_items[i], g_title_onquit);
+		set_item_userptr(title_items[i], choices[i].func);
 	}
 	title_items[n_choices] = (ITEM *)NULL; // last item must be null terminated
 	title_menu = new_menu((ITEM **)title_items);
