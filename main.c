@@ -74,6 +74,7 @@ bool g_setup()
 void g_teardown()
 {
 	// teardown ncurses
+	keypad(stdscr,FALSE);
 	curs_set(1);
 	echo();
 	endwin();
@@ -200,7 +201,6 @@ void g_title()
         title_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
         for(int i = 0; i < n_choices; i++) {
 		title_items[i] = new_item(choices[i].label, "");
-		/* Set the user pointer */
 		set_item_userptr(title_items[i], choices[i].func);
 	}
 	title_items[n_choices] = (ITEM *)NULL; // last item must be null terminated
