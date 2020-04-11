@@ -5,6 +5,13 @@
 // Print text on center of std screen
 void center(int row, char *title, int colorpair, int colorpair_reset, bool bold)
 {
+	center_in_win(stdscr, row, title, colorpair, colorpair_reset, bold);
+}
+void center_in_win(WINDOW *win, int row, char *title, int colorpair, int colorpair_reset, bool bold)
+{
+	if (win == NULL)
+		win = stdscr;
+
 	if (bold)
 		attrset(COLOR_PAIR(colorpair) | A_BOLD);
 	else

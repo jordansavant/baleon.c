@@ -2,7 +2,7 @@
 CC=gcc
 CFLAGS=-I.
 BUILD = main.c gametime.c draw.c
-LIBS = -lncurses
+LIBS = -lncurses -lmenu
 DEPS = gametime.h draw.h
 
 %.o: %.c $(DEPS)
