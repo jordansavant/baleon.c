@@ -1,12 +1,8 @@
 #include <ncurses.h>
-
-#define SCOLOR_NORMAL 1
-#define TCOLOR_NORMAL 2
-#define TCOLOR_OMINOUS 3
-#define TCOLOR_BLACK 4
+#include <string.h>
 
 // Print text on center of std screen
-void center(int row, char *title, int colorpair, bool bold)
+void center(int row, char *title, int colorpair, int colorpair_reset, bool bold)
 {
 	if (bold)
 		attrset(COLOR_PAIR(colorpair) | A_BOLD);
@@ -18,7 +14,7 @@ void center(int row, char *title, int colorpair, bool bold)
 	indent = width - len;		/* subtract it from screen width */
 	indent /= 2;			/* divide result into two */
 	mvaddstr(row, indent, title);
-	attrset(COLOR_PAIR(SCOLOR_NORMAL));
+	attrset(COLOR_PAIR(colorpair_reset));
 }
 
 void clear_row(int row)
