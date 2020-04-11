@@ -9,10 +9,12 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
-#define SCOLOR_NORMAL 1
-#define TCOLOR_NORMAL 2
-#define TCOLOR_OMINOUS 3
-#define TCOLOR_BLACK 4
+#define SCOLOR_NORMAL	1
+#define TCOLOR_NORMAL	2
+#define TCOLOR_OMINOUS	3
+#define TCOLOR_BLACK	4
+#define TCOLOR_SKY	5
+#define TCOLOR_DAWN	6
 
 // GAME CODE
 enum game_state
@@ -41,6 +43,8 @@ bool g_setup()
 	init_pair(TCOLOR_NORMAL, COLOR_WHITE, COLOR_BLACK);
 	init_pair(TCOLOR_OMINOUS, COLOR_RED, COLOR_BLACK);
 	init_pair(TCOLOR_BLACK, COLOR_BLACK, COLOR_BLACK);
+	init_pair(TCOLOR_SKY, COLOR_CYAN, COLOR_BLACK);
+	init_pair(TCOLOR_DAWN, COLOR_YELLOW, COLOR_BLACK);
 
 	// set primary color
 	bkgd(COLOR_PAIR(SCOLOR_NORMAL));
@@ -106,14 +110,16 @@ defer:
 void g_title()
 {
 	curs_set(0); // hide cursor
-	center( 1, " ______   _______  _        _______  _______  _       ",    TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	center( 2, "(  ___ \\ (  ___  )( \\      (  ____ \\(  ___  )( (    /|", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	center( 3, "| (   ) )| (   ) || (      | (    \\/| (   ) ||  \\  ( |",  TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	center( 4, "| (__/ / | (___) || |      | (__    | |   | ||   \\ | |",   TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	center( 5, "|  __ (  |  ___  || |      |  __)   | |   | || (\\ \\) |",  TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	center( 6, "| (  \\ \\ | (   ) || |      | (      | |   | || | \\   |", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	center( 7, "| )___) )| )   ( || (____/\\| (____/\\| (___) || )  \\  |", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	center( 8, "|/ \\___/ |/     \\|(_______/(_______/(_______)|/    )_)",  TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	center( 2, "   +:+:    :+:   :+: :+:   :+:        :+:      : :+:    :+: :+:+:   :+:+ ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	center( 3, "    +:+    +:+  +:+   +:+  +:+        +:+        +:+    +:+ :+:+:+  +:+  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	center( 4, "    +#++:++#+  +#++:++#++: +#+        +#++:+#    +#+    +:+ +#+ +:+ +#+  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	center( 5, "    +#+    +#+ +#+     +#+ +#+     +# +#+     +# +#+    +#+ +#+  +#+#+#  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	center( 6, "    #+#    #+# #+#     #+# ########## ##########  +#+  +#+  #+#   #+#+#  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	center( 7, "    ###+  +###  ##     ##                           ###     ###    ####  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	center( 8, "   ##########                                               ##       ##  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	center( 9, "  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #         #  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	center(10, "    ~~ RISING AGAINST THE DARK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 
 	refresh();
 	getch();
