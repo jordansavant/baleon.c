@@ -67,8 +67,13 @@ bool g_setup()
 	init_pair(TCOLOR_SKY, COLOR_CYAN, COLOR_BLACK);
 	init_pair(TCOLOR_DAWN, COLOR_YELLOW, COLOR_BLACK);
 
+	// setup world colors
+	wld_setup();
+
 	// set primary color
 	bkgd(COLOR_PAIR(SCOLOR_NORMAL));
+
+
 	return true;
 }
 
@@ -280,7 +285,7 @@ int map_cols = 12;
 void g_build_world()
 {
 	// World is large indexed map to start
-	setup_world();
+	//
 }
 void g_draw_world()
 {
@@ -290,16 +295,21 @@ void g_draw_world()
 			int tiletype = map[index];
 			int mobtype = 0;
 
-			int colorpair = get_color_pair(tiletype, mobtype);
+			struct wld_tiletype *tt = wld_get_tiletype(tiletype);
+			int colorpair = wld_cpair(tiletype, mobtype);
+			char tch = tt->sprite;
+			char mch = wld_mob_char(mobtype);
+			char cha = mch;
+			if (mch == ' ')
+				cha = tch; // render tile sprite if no mob sprite
 
-			char tch = get_tile_char(tiletype);
-			char mch = get_mob_char(mobtype);
-
-			int colorpair_tile_bg_only = get_color_pair_tile_bg(tiletype);
-
+			// render
 			move(r, c*2);
 			attrset(COLOR_PAIR(colorpair));
-			addch(tch);
+			addch(cha);
+
+			// extra padding
+			int colorpair_tile_bg_only = wld_cpair_bg(tiletype);
 			move(r, c*2+1);
 			attrset(COLOR_PAIR(colorpair_tile_bg_only));
 			addch(' ');
