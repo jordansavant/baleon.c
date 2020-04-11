@@ -1,4 +1,3 @@
-#include <ncurses.h>
 #include <string.h>
 #include "draw.h"
 
@@ -29,4 +28,13 @@ void clear_row(int row)
 {
 	move(row, 0);
 	clrtoeol();
+}
+
+// get a center a window in std
+WINDOW* new_center_win(int row, int width, int height, int offset_x)
+{
+	int y, x, indent;
+	getmaxyx(stdscr, y, x);
+	indent = (x - width) / 2 + offset_x;
+	return newwin(height, width, row, indent);
 }

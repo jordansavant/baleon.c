@@ -112,7 +112,8 @@ defer:
 
 void g_title_onquit(char *label)
 {
-	center(12, "QUIT SELECTED", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	center(32, "QUIT SELECTED", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	refresh();
 }
 void g_title()
 {
@@ -134,14 +135,7 @@ void g_title()
 	getch();
 
 
-	// title menu
-	ITEM **my_items;
-	MENU *my_menu;
-	WINDOW *my_menu_win;
-
-	my_menu_win = newwin(10, 40, 4, 4);
-	keypad(my_menu_win, TRUE);
-
+	// TITLE MENU
 	// create menu items
 	char *choices[] = {
 		"Intro",
@@ -152,53 +146,56 @@ void g_title()
 	};
         int n_choices = ARRAY_SIZE(choices);
 
-	// allocate
-        my_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
+	WINDOW *title_menu_win = new_center_win(12, 13, 5, -3); // max choice length + cursor offset by cursor
+	ITEM **title_items;
+	MENU *title_menu;
+	keypad(title_menu_win, TRUE);
+
+	// allocate items
+        title_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
         for(int i = 0; i < n_choices; i++) {
-		my_items[i] = new_item(choices[i], "");
+		title_items[i] = new_item(choices[i], "");
 		/* Set the user pointer */
-		set_item_userptr(my_items[i], g_title_onquit);
+		set_item_userptr(title_items[i], g_title_onquit);
 	}
-	my_items[n_choices] = (ITEM *)NULL; // last item must be null terminated
+	title_items[n_choices] = (ITEM *)NULL; // last item must be null terminated
+	title_menu = new_menu((ITEM **)title_items);
+	set_menu_win(title_menu, title_menu_win);
+	set_menu_mark(title_menu, " ~ ");
+	post_menu(title_menu);
 
-	my_menu = new_menu((ITEM **)my_items);
-	set_menu_win(my_menu, my_menu_win);
-	set_menu_mark(my_menu, " ~ ");
+	wrefresh(title_menu_win);
 
-	post_menu(my_menu);
-	wrefresh(my_menu_win);
-	//refresh();
-
-	// loop
+	// loop and listen
 	int key;
-	ITEM *cur;
-	while ((key = wgetch(my_menu_win)) != KEY_F(1)) {
+	while ((key = wgetch(title_menu_win)) != KEY_F(1)) {
 		switch (key) {
 		case KEY_DOWN:
-			menu_driver(my_menu, REQ_DOWN_ITEM);
+			menu_driver(title_menu, REQ_DOWN_ITEM);
 			break;
 		case KEY_UP:
-			menu_driver(my_menu, REQ_UP_ITEM);
+			menu_driver(title_menu, REQ_UP_ITEM);
 			break;
 		// Enter
 		case 10:
 			{
-				void (*p)(char *); // wtf is this? this is the initalization of the function pointer
-				cur = current_item(my_menu);
-				p = item_userptr(cur);
-				p((char *)item_name(cur));
-				pos_menu_cursor(my_menu);
-				break;
+				void (*func)(char *); // wtf is this? this is the initalization of the function pointer
+				ITEM *cur_item = current_item(title_menu);
+
+				func = item_userptr(cur_item);
+				func((char *)item_name(cur_item));
+				pos_menu_cursor(title_menu);
 			}
+			break;
 		}
-		wrefresh(my_menu_win);
+		wrefresh(title_menu_win);
 	}
 	// free
-	unpost_menu(my_menu);
+	unpost_menu(title_menu);
 	for(int i = 0; i < n_choices; i++)
-		free_item(my_items[i]);
-	free_menu(my_menu);
-	delwin(my_menu_win);
+		free_item(title_items[i]);
+	free_menu(title_menu);
+	delwin(title_menu_win);
 
 	echo();
 	curs_set(1);
