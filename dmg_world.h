@@ -61,11 +61,18 @@ int get_tile_bgcolor(int type)
 }
 int get_tile_fgcolor(int type)
 {
+	switch (type) {
+	case TILE_GRASS:
+	case TILE_TREE:
+		return 0;
+	}
 	return 0; // default black
 }
 char get_tile_char(int type)
 {
 	switch (type) {
+	case TILE_GRASS:
+		return 'w';
 	case TILE_TREE:
 		return 'T';
 	}
@@ -89,4 +96,10 @@ int get_color_pair(int tiletype, int mobtype)
 	}
 	int mob_fg = get_mob_color(mobtype);
 	return color_base + (mob_fg * fg_size + tile_bg);
+}
+
+int get_color_pair_tile_bg(int tiletype)
+{
+	int tile_bg = get_tile_bgcolor(tiletype);
+	return color_base + tile_bg; // no addition of foreground so it is black
 }
