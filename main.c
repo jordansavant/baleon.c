@@ -16,6 +16,10 @@
 #define TCOLOR_SKY	5
 #define TCOLOR_DAWN	6
 
+#define KEY_RETURN	10
+#define KEY_Y		121
+#define KEY_N		110
+
 // GAME CODE
 enum game_state
 {
@@ -25,6 +29,7 @@ enum game_state
 	GS_MAIN,
 	GS_EXIT
 };
+enum game_state state = GS_START;
 
 bool g_setup()
 {
@@ -38,6 +43,7 @@ bool g_setup()
 		return false;
 	}
 
+	noecho();
 	keypad(stdscr,TRUE); // turn on F key listening
 
 	// colors
@@ -56,6 +62,7 @@ bool g_setup()
 void g_teardown()
 {
 	// teardown ncurses
+	echo();
 	endwin();
 }
 
@@ -105,27 +112,44 @@ void g_intro()
 		}
 	}
 defer:
+	clear();
 	nodelay(stdscr, false);
 	curs_set(1);
 }
 
 
+bool g_title_done = false;
 void g_title_onquit(char *label)
 {
-	clear_row(32);
-	center(32, "QUIT SELECTED", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	int prompt_row = 18;
+	clear_row(prompt_row);
+	center(prompt_row, "Are you sure? [y/n]", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 	refresh();
+
+	bool listen = true;
+	while (listen) {
+		switch (getch()) {
+		case KEY_Y:
+			state = GS_EXIT;
+			g_title_done = true;
+			listen = false;
+			break;
+		case KEY_N:
+			clear_row(prompt_row);
+			refresh();
+			listen = false;
+			break;
+		}
+	}
 }
 void g_title_onintro(char *label)
 {
-	clear_row(32);
-	center(32, "GO TO INTRO", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	refresh();
+	state = GS_INTRO;
+	g_title_done = true;
 }
 void g_title()
 {
 	curs_set(0); // hide cursor
-	noecho();
 
 	center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_SKY, TCOLOR_NORMAL, 0);
 	center( 2, "   +:+:    :+:   :+: :+:   :+:        :+:      : :+:    :+: :+:+:   :+:+ ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
@@ -141,6 +165,7 @@ void g_title()
 	refresh();
 	getch();
 
+	g_title_done = false;
 
 	// TITLE MENU
 	// create menu items
@@ -179,8 +204,8 @@ void g_title()
 
 	// loop and listen
 	int key;
-	while ((key = wgetch(title_menu_win)) != KEY_F(1)) {
-		switch (key) {
+	while (!g_title_done) {
+		switch (wgetch(title_menu_win)) {
 		case KEY_DOWN:
 			menu_driver(title_menu, REQ_DOWN_ITEM);
 			break;
@@ -188,7 +213,8 @@ void g_title()
 			menu_driver(title_menu, REQ_UP_ITEM);
 			break;
 		// Enter
-		case 10:
+		case KEY_RETURN:
+		case KEY_ENTER:
 			{
 				void (*func)(char *); // wtf is this? this is the initalization of the function pointer
 				ITEM *cur_item = current_item(title_menu);
@@ -208,7 +234,7 @@ void g_title()
 	free_menu(title_menu);
 	delwin(title_menu_win);
 
-	echo();
+	clear();
 	curs_set(1);
 }
 
@@ -218,7 +244,6 @@ int main(void)
 		return 1;
 	}
 
-	enum game_state state = GS_START;
 	while (state != GS_EXIT) {
 		switch (state) {
 		case GS_START:
@@ -230,7 +255,6 @@ int main(void)
 			break;
 		case GS_TITLE:
 			g_title();
-			state = GS_EXIT;
 			break;
 		}
 	}
