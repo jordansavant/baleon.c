@@ -20,6 +20,17 @@
 #define KEY_Y		121
 #define KEY_N		110
 
+// UTILS
+void skip_delay(double wait_s)
+{
+	struct gametimer gt = gametimer_new(wait_s);
+	nodelay(stdscr, true);
+	while (!gametimer_done(&gt))
+		if (getch() != ERR)
+			break;
+	nodelay(stdscr, false);
+}
+
 // GAME CODE
 enum game_state
 {
@@ -43,6 +54,7 @@ bool g_setup()
 		return false;
 	}
 
+	curs_set(0); // hide cursor
 	noecho();
 	keypad(stdscr,TRUE); // turn on F key listening
 
@@ -62,6 +74,7 @@ bool g_setup()
 void g_teardown()
 {
 	// teardown ncurses
+	curs_set(1);
 	echo();
 	endwin();
 }
@@ -84,12 +97,12 @@ void g_intro()
 	// roll in title but allow for escaping
 	struct gametimer gt = gametimer_new(0);
 
-	curs_set(0); // hide cursor
 	nodelay(stdscr, true); // dont pause interrupt on getch
 
 	for (int i=0; i < ARRAY_SIZE(reels); i++) {
 		center(reels[i].row, reels[i].string, reels[i].colorpair, TCOLOR_NORMAL, true);
 		refresh();
+		// wait a second before loading the menu
 		gametimer_set(reels[i].time_in, &gt);
 		while (!gametimer_done(&gt))
 			if (getch() != ERR)
@@ -114,7 +127,6 @@ void g_intro()
 defer:
 	clear();
 	nodelay(stdscr, false);
-	curs_set(1);
 }
 
 
@@ -149,7 +161,7 @@ void g_title_onintro(char *label)
 }
 void g_title()
 {
-	curs_set(0); // hide cursor
+	g_title_done = false;
 
 	center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_SKY, TCOLOR_NORMAL, 0);
 	center( 2, "   +:+:    :+:   :+: :+:   :+:        :+:      : :+:    :+: :+:+:   :+:+ ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
@@ -163,9 +175,6 @@ void g_title()
 	center(10, "    ~~ RISING AGAINST THE DARK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 
 	refresh();
-	getch();
-
-	g_title_done = false;
 
 	// TITLE MENU
 	// create menu items
@@ -235,7 +244,6 @@ void g_title()
 	delwin(title_menu_win);
 
 	clear();
-	curs_set(1);
 }
 
 int main(void)
