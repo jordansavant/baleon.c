@@ -4,31 +4,13 @@
 #include <unistd.h>
 #include <ncurses.h>
 
-#define SCOLOR_NORMAL 1
-#define TCOLOR_NORMAL 2
-#define TCOLOR_OMINOUS 3
-#define TCOLOR_BLACK 4
+#include "gametime.h"
+#include "draw.h"
 
 // TOOLS
 void msleep(int milliseconds)
 {
 	usleep(milliseconds * 1000);
-}
-
-// DRAWING
-void center(int row, char *title, int colorpair, bool bold)
-{
-	if (bold)
-		attrset(COLOR_PAIR(colorpair) | A_BOLD);
-	else
-		attrset(COLOR_PAIR(colorpair));
-	int len, indent, y, width;
-	getmaxyx(stdscr, y, width);	/* get screen width */
-	len = strlen(title);		/* get title's length */
-	indent = width - len;		/* subtract it from screen width */
-	indent /= 2;			/* divide result into two */
-	mvaddstr(row, indent, title);
-	attrset(COLOR_PAIR(SCOLOR_NORMAL));
 }
 
 // GAME CODE
@@ -70,33 +52,45 @@ void g_teardown()
 
 void g_intro()
 {
-	curs_set(0); // hide cursor
 	struct reel {
 		int row;
 		char *string;
 		int colorpair;
 		bool bold;
+		double time_in;
+		double time_out;
 	};
 	struct reel reels[3] = {
-		{3, "It was an age of light.", TCOLOR_NORMAL, 1},
-		{4, "It was an age of hope.", TCOLOR_NORMAL, 1},
-		{6, "And then he came...", TCOLOR_OMINOUS, 1}
+		{3, "It was an age of light.", TCOLOR_NORMAL, 1, 2, .25},
+		{4, "It was an age of hope.", TCOLOR_NORMAL, 1, 2.5, .25},
+		{6, "And then he came...", TCOLOR_OMINOUS, 1, 2, .25}
 	};
-	// roll in title
+
+	// roll in title but allow for escaping
+	struct gametimer gt = gametimer_new(0);
+
+	curs_set(0); // hide cursor
+	nodelay(stdscr, true); // dont pause interrupt on getch
+
 	for (int i=0; i<3; i++) {
-		struct reel r = reels[i];
-		center(r.row, r.string, r.colorpair, r.bold);
+		center(reels[i].row, reels[i].string, reels[i].colorpair, reels[i].bold);
 		refresh();
-		sleep(2);
+		gametimer_set(reels[i].time_in, &gt);
+		while (!gametimer_done(&gt))
+			if (getch() != ERR)
+				goto defer; // i went there
 	}
 	// outroll
 	for (int i=0; i<3; i++) {
-		struct reel r = reels[i];
-		move(r.row, 0);
-		clrtoeol();
+		clear_row(reels[i].row);
 		refresh();
-		msleep(500);
+		gametimer_set(reels[i].time_out, &gt);
+		while (!gametimer_done(&gt))
+			if (getch() != ERR)
+				goto defer; // i went there
 	}
+defer:
+	nodelay(stdscr, false);
 	curs_set(1);
 }
 
