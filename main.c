@@ -20,6 +20,7 @@
 #define KEY_RETURN	10
 #define KEY_Y		121
 #define KEY_N		110
+#define KEY_ESC		27
 
 // UTILS
 void skip_delay(double wait_s)
@@ -31,9 +32,24 @@ void skip_delay(double wait_s)
 			break;
 	nodelay(stdscr, false);
 }
+void escapedelay(bool on)
+{
+	if (on)
+		ESCDELAY = 1000;
+	else
+		ESCDELAY = 0;
+}
+void debug(char *msg)
+{
+	int y, x;
+	getmaxyx(stdscr, y, x);
+	center(y - 1, msg, TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	refresh();
+}
+
 
 // GAME CODE
-enum game_state
+enum GAME_STATE
 {
 	GS_START,
 	GS_INTRO,
@@ -41,7 +57,7 @@ enum game_state
 	GS_NEWGAME,
 	GS_EXIT
 };
-enum game_state state = GS_START;
+enum GAME_STATE state = GS_START;
 
 bool g_setup()
 {
@@ -57,7 +73,7 @@ bool g_setup()
 
 	curs_set(0); // hide cursor
 	noecho();
-	keypad(stdscr,TRUE); // turn on F key listening
+	keypad(stdscr, true); // turn on F key listening
 
 	// colors
 	init_pair(SCOLOR_NORMAL, COLOR_WHITE, COLOR_BLACK);
@@ -266,6 +282,17 @@ void g_title()
 	clear();
 }
 
+
+// GAME LOOP
+enum PLAY_STATE
+{
+	PS_START,
+	PS_PLAY,
+	PS_MENU,
+	PS_EXIT,
+};
+enum PLAY_STATE play_state = PS_START;
+
 int map[] = {
 	1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
 	1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
@@ -282,58 +309,115 @@ int map[] = {
 };
 int map_rows = 12;
 int map_cols = 12;
-void g_build_world()
+int map_offset_x = 0;
+int map_offset_y = 0;
+void ps_build_world()
 {
 	// World is large indexed map to start
 	//
 }
-void g_draw_world()
+void ps_play_draw()
 {
+	clear();
 	for (int r=0; r < map_rows; r++) {
 		for (int c=0; c < map_cols; c++) {
 			int index = r * map_cols + c;
 			int tiletype = map[index];
 			int mobtype = 0;
+			if (r == 2 && c == 2)
+				mobtype = MOB_BUGBEAR;
 
 			struct wld_tiletype *tt = wld_get_tiletype(tiletype);
+			struct wld_mobtype *mt = wld_get_mobtype(mobtype);
 			int colorpair = wld_cpair(tiletype, mobtype);
 			char tch = tt->sprite;
-			char mch = wld_mob_char(mobtype);
+			char mch = mt->sprite;
 			char cha = mch;
 			if (mch == ' ')
 				cha = tch; // render tile sprite if no mob sprite
 
 			// render
-			move(r, c*2);
+			move(r + map_offset_y, c*2 + map_offset_x);
 			attrset(COLOR_PAIR(colorpair));
 			addch(cha);
 
 			// extra padding
-			int colorpair_tile_bg_only = wld_cpair_bg(tiletype);
-			move(r, c*2+1);
-			attrset(COLOR_PAIR(colorpair_tile_bg_only));
+			int bg_only = wld_cpair_bg(tiletype);
+			move(r + map_offset_y, c*2+1 + map_offset_x);
+			attrset(COLOR_PAIR(bg_only));
 			addch(' ');
 		}
 	}
+	refresh();
 }
+void ps_play_input()
+{
+	nodelay(stdscr, true);
+	escapedelay(false);
+	bool listen = true;
+	while (listen) {
+		switch (getch()) {
+		case KEY_ESC:
+			play_state = PS_MENU;
+			listen = false;
+			break;
+		}
+	}
+	escapedelay(true);
+	nodelay(stdscr, false);
+}
+void ps_play_update()
+{
+	// depending on input change and trigger various updates
+}
+
+void ps_menu_draw()
+{
+	center(20, "GAME MENU", TCOLOR_NORMAL, TCOLOR_NORMAL, false);
+	refresh();
+}
+void ps_menu_input()
+{
+	nodelay(stdscr, true);
+	escapedelay(false);
+	bool listen = true;
+	while (listen) {
+		switch (getch()) {
+		case KEY_ESC:
+			play_state = PS_PLAY;
+			listen = false;
+			break;
+		}
+	}
+	escapedelay(true);
+	nodelay(stdscr, false);
+}
+
 void g_newgame()
 {
+	while (play_state != PS_EXIT) {
+		switch (play_state) {
+		case PS_START:
+			ps_build_world();
+			play_state = PS_PLAY;
+			break;
+		case PS_PLAY:
+			// draw world
+			ps_play_draw();
 
-	// build world
-	g_build_world();
-	// build player
-	//g_build_player();
-	// build monsters
-	//g_build_monsters();
+			// capture play input
+			ps_play_input();
 
-	// update game
+			// update world
+			ps_play_update();
 
-
-	// draw game
-	clear();
-	g_draw_world();
-	refresh();
-	getch();
+			break;
+		case PS_MENU:
+			ps_menu_draw();
+			ps_menu_input();
+			break;
+		}
+	}
 }
 
 int main(void)
