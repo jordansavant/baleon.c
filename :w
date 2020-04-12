@@ -316,8 +316,7 @@ int map[] = {
 };
 int map_rows = 12;
 int map_cols = 12;
-int map_rows_scale = 3;
-int map_cols_scale = 4;
+int map_cols_scale = 3;
 int map_offset_x = 0;
 int map_offset_y = 0;
 WINDOW *map_pad;
@@ -326,7 +325,7 @@ void ps_build_world()
 	clear();
 
 	// World is large indexed map to start
-	map_pad = newpad(map_rows * map_rows_scale, map_cols * map_cols_scale);
+	map_pad = newpad(map_rows, map_cols * map_cols_scale);
 }
 void ps_destroy_world()
 {
@@ -348,7 +347,7 @@ void ps_play_draw()
 			int index = r * map_cols + c;
 			int tiletype = map[index];
 			int mobtype = 0;
-			if (r == 2 && c == 2) // debug
+			if (r == 2 && c == 2)
 				mobtype = MOB_BUGBEAR;
 
 			struct wld_tiletype *tt = wld_get_tiletype(tiletype);
@@ -359,23 +358,17 @@ void ps_play_draw()
 				cha = tt->sprite; // render tile sprite if no mob sprite
 
 			// render to pad
-			wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out
+			wmove(map_pad, r, c * map_cols_scale); // pads by scaling out
 			wattrset(map_pad, COLOR_PAIR(colorpair));
 			waddch(map_pad, cha); // pad
 
 			// extra padding if we are scaling the columns to make it appear at a better ratio in the terminal
 			if (map_cols_scale > 1 || map_rows_scale > 1) {
 				int bg_only = wld_cpair_bg(tiletype);
-				for (int i=0; i < map_cols_scale; i++) {
-					wmove(map_pad, r * map_rows_scale, c * map_cols_scale + i+1);
+				for (int i=0; i<map_cols_scale; i++) {
+					wmove(map_pad, r, c * map_cols_scale + i+1);
 					wattrset(map_pad, COLOR_PAIR(bg_only));
 					waddch(map_pad, ' '); // pad
-
-					for (int j=0; j < map_rows_scale; j++) {
-						wmove(map_pad, r * map_rows_scale + j+1, c * map_cols_scale + i);
-						wattrset(map_pad, COLOR_PAIR(bg_only));
-						waddch(map_pad, ' '); // pad
-					}
 				}
 			}
 		}
@@ -384,7 +377,7 @@ void ps_play_draw()
 	// render pad
 	refresh(); // has to be called before prefresh for some reason?
 	// prefresh(pad,pminrow,pmincol,sminrow,smincol,smaxrow,smaxcol)
-	prefresh(map_pad, 0, 0, 0, 0, map_rows * map_rows_scale, map_cols * map_cols_scale);
+	prefresh(map_pad, 0, 0, 0, 0, map_rows, map_cols * map_cols_scale);
 }
 void ps_play_input()
 {
