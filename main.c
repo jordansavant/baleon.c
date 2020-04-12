@@ -21,6 +21,7 @@
 #define KEY_Y		121
 #define KEY_N		110
 #define KEY_ESC		27
+#define KEY_Q		113
 
 // UTILS
 void skip_delay(double wait_s)
@@ -57,7 +58,7 @@ enum GAME_STATE
 	GS_NEWGAME,
 	GS_EXIT
 };
-enum GAME_STATE state = GS_START;
+enum GAME_STATE game_state = GS_START;
 
 bool g_setup()
 {
@@ -104,6 +105,8 @@ void g_teardown()
 
 void g_intro()
 {
+	clear();
+
 	struct reel {
 		int row;
 		char *string;
@@ -147,10 +150,11 @@ void g_intro()
 					goto defer; // i went there
 		}
 	}
+
 defer:
 	clear();
 	nodelay(stdscr, false);
-	state = GS_TITLE; // to to title screen
+	game_state = GS_TITLE; // to to title screen
 }
 
 
@@ -166,7 +170,7 @@ void g_title_onquit(char *label)
 	while (listen) {
 		switch (getch()) {
 		case KEY_Y:
-			state = GS_EXIT;
+			game_state = GS_EXIT;
 			g_title_done = true;
 			listen = false;
 			break;
@@ -183,12 +187,12 @@ void g_title_onquit(char *label)
 }
 void g_title_onintro(char *label)
 {
-	state = GS_INTRO;
+	game_state = GS_INTRO;
 	g_title_done = true;
 }
 void g_title_onnewgame(char *label)
 {
-	state = GS_NEWGAME;
+	game_state = GS_NEWGAME;
 	g_title_done = true;
 }
 void g_title_onundefined(char *label)
@@ -199,6 +203,8 @@ void g_title_onundefined(char *label)
 }
 void g_title()
 {
+	clear();
+
 	g_title_done = false;
 
 	center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_SKY, TCOLOR_NORMAL, 0);
@@ -289,6 +295,7 @@ enum PLAY_STATE
 	PS_START,
 	PS_PLAY,
 	PS_MENU,
+	PS_END, // do not call exit directly
 	PS_EXIT,
 };
 enum PLAY_STATE play_state = PS_START;
@@ -311,14 +318,25 @@ int map_rows = 12;
 int map_cols = 12;
 int map_offset_x = 0;
 int map_offset_y = 0;
+WINDOW *map_pad;
 void ps_build_world()
 {
+	clear();
+
 	// World is large indexed map to start
-	//
+	map_pad = newpad(map_rows, map_cols);
+}
+void ps_destroy_world()
+{
+	// THIS HAS NOT BEEN TESTED I CANT FIND DOCS ON HOW TO CLEAN UP PAD MEMORY
+	delwin(map_pad);
+
+	clear();
 }
 void ps_play_draw()
 {
 	clear();
+
 	for (int r=0; r < map_rows; r++) {
 		for (int c=0; c < map_cols; c++) {
 			int index = r * map_cols + c;
@@ -330,11 +348,9 @@ void ps_play_draw()
 			struct wld_tiletype *tt = wld_get_tiletype(tiletype);
 			struct wld_mobtype *mt = wld_get_mobtype(mobtype);
 			int colorpair = wld_cpair(tiletype, mobtype);
-			char tch = tt->sprite;
-			char mch = mt->sprite;
-			char cha = mch;
-			if (mch == ' ')
-				cha = tch; // render tile sprite if no mob sprite
+			char cha = mt->sprite;
+			if (mt->sprite == ' ')
+				cha = tt->sprite; // render tile sprite if no mob sprite
 
 			// render
 			move(r + map_offset_y, c*2 + map_offset_x);
@@ -348,6 +364,7 @@ void ps_play_draw()
 			addch(' ');
 		}
 	}
+
 	refresh();
 }
 void ps_play_input()
@@ -387,6 +404,10 @@ void ps_menu_input()
 			play_state = PS_PLAY;
 			listen = false;
 			break;
+		case KEY_Q:
+			play_state = PS_END;
+			listen = false;
+			break;
 		}
 	}
 	escapedelay(true);
@@ -416,6 +437,11 @@ void g_newgame()
 			ps_menu_draw();
 			ps_menu_input();
 			break;
+		case PS_END:
+			ps_destroy_world();
+			play_state = PS_EXIT;
+			game_state = GS_TITLE;
+			break;
 		}
 	}
 }
@@ -426,10 +452,10 @@ int main(void)
 		return 1;
 	}
 
-	while (state != GS_EXIT) {
-		switch (state) {
+	while (game_state != GS_EXIT) {
+		switch (game_state) {
 		case GS_START:
-			state = GS_INTRO;
+			game_state = GS_INTRO;
 			break;
 		case GS_INTRO:
 			g_intro();

@@ -1,0 +1,38 @@
+comparing with brogue:
+
+- menu items highlight their activate letter
+- hovering over equipment opens context menu
+- mouse hover on tiles
+- mouse click to autowalk, pathfind highlight
+- mouse hover short description
+
+- tileset is dark bgs
+- map is self contained, small, explorable, not scrollable?
+- in game list of visible items and enemies with their sprite
+- small log at the top? contextable?
+
+- holes you can fall through!
+- "search" area command
+- rest command
+- explore command
+- ranged attack show bresenham path
+    - missed attacks can be picked back up
+
+Whats the allure? the loop?
+- danger of the unknown
+- fear, risk, threat
+
+- hallucination (timers)
+    - changes coloring
+    - makes things that are there appear randomly
+    - make other things appear taht are not
+- nutrition meter
+- meters stack
+    - health
+        - recovers with rest or over tiem while moving
+    - nutrition
+    - hallucination (active effects)
+    - levitation
+
+- movement allows for diagonal (numpad?awsdqezx?)
+
