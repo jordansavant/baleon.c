@@ -301,36 +301,12 @@ enum PLAY_STATE
 enum PLAY_STATE play_state = PS_START;
 
 
-#define MAP_ROWS 12
-#define MAP_COLS 12
-#define MAP_LENGTH 144
-#define GET_MAP_INDEX(x, y) y * MAP_COLS + x
-#define SET_MOB_COORDS(x, y) x, y, GET_MAP_INDEX(x, y)
-
+// MAP SETTINGS / VARS
 int map_rows_scale = 1;
 int map_cols_scale = 2;
 WINDOW *map_pad;
 struct wld_map *map1;
 
-struct wld_mob mobs[] = {
-	// x, y, index, type
-	{ SET_MOB_COORDS(7, 2), MOB_BUGBEAR },
-	{ SET_MOB_COORDS(4, 6), MOB_BUGBEAR },
-};
-int mob_map[] = {
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-};
 
 void ps_build_world()
 {
@@ -339,12 +315,6 @@ void ps_build_world()
 	// World is large indexed map to start
 	map1 = wld_newmap(1);
 	map_pad = newpad(map1->rows * map_rows_scale, map1->cols * map_cols_scale);
-
-	// setup mobs in mob map
-	for (int i=0; i < ARRAY_SIZE(mobs); i++) {
-		int index = mobs[i].map_index;
-		mob_map[index] = i;
-	}
 }
 void ps_destroy_world()
 {
@@ -373,14 +343,14 @@ void ps_play_draw()
 			int index = r * map1->cols + c;
 
 			// get mob from mob map index
-			int mob_id = mob_map[index];
+			int mob_id = map1->mob_map[index];
 			int mobtype = 0;
 			if (mob_id > -1) {
-				struct wld_mob *mob = &mobs[mob_id];
+				struct wld_mob *mob = &map1->mobs[mob_id];
 				mobtype = mob->type;
 			}
 
-			int tiletype = map1->map[index];
+			int tiletype = map1->tile_map[index];
 
 			struct wld_tiletype *tt = wld_get_tiletype(tiletype);
 			struct wld_mobtype *mt = wld_get_mobtype(mobtype);

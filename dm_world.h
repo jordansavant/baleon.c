@@ -115,9 +115,10 @@ struct wld_map {
 	int cols;
 	int length;
 	int depth;
-	int *map;
+	int *tile_map; // array of tile types
+	int *mob_map; // array of mob ids in mob listing
+	struct wld_mob *mobs;
 };
-struct wld_map *wld_maps; // all allocated world maps
 
 //int map[] = {
 //	1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
@@ -136,12 +137,38 @@ struct wld_map *wld_maps; // all allocated world maps
 
 void wld_genmap(struct wld_map *map)
 {
-	int *map_array = (int*)malloc(map->length * sizeof(int));
+	int *tile_map_array = (int*)malloc(map->length * sizeof(int));
+	int *mob_map_array = (int*)malloc(map->length * sizeof(int));
+
 	// randomly fill map with grass, water, and trees
 	for (int i=0; i < map->length; i++) {
-		map_array[i] = 1; // hard coded grass fow now;
+		tile_map_array[i] = 1; // hard coded grass fow now;
+		mob_map_array[i] = -1; // initialize to -1 for "no mob"
 	}
-	map->map = map_array;
+	map->tile_map = tile_map_array;
+	map->mob_map = mob_map_array;
+}
+int wld_calcindex(int x, int y, int cols)
+{
+	return y * cols + x;
+}
+void wld_genmobs(struct wld_map *map)
+{
+	// hardcoded to 3 mobs for now
+	int mob_count = 3;
+	map->mobs = (struct wld_mob*)malloc(mob_count * sizeof(struct wld_mob));
+
+	// setup mobs in mob map
+	for (int i=0; i < mob_count; i++) {
+		// create mob
+		struct wld_mob *mob = &map->mobs[i];
+		mob->map_x = 2 + i; // hardcoded positions
+		mob->map_y = 2 + i;
+		mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
+		mob->type = MOB_BUGBEAR;
+		// set mob's id into the mob map
+		map->mob_map[mob->map_index] = i;
+	}
 }
 struct wld_map* wld_newmap(int depth)
 {
@@ -150,15 +177,23 @@ struct wld_map* wld_newmap(int depth)
 	map->cols = 12;
 	map->length = 12 * 12;
 	map->depth = depth;
-	map->map = NULL;
+	map->tile_map = NULL;
+	map->mob_map = NULL;
+	map->mobs = NULL;
 
+	// populate tiles
 	wld_genmap(map);
+
+	// build an populate map with mobs
+	wld_genmobs(map);
 
 	return map;
 }
 
 void wld_delmap(struct wld_map *map)
 {
-	free(map->map);
+	free(map->mobs);
+	free(map->mob_map);
+	free(map->tile_map);
 	free(map);
 }
