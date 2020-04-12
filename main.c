@@ -316,10 +316,8 @@ int map[] = {
 };
 int map_rows = 12;
 int map_cols = 12;
-int map_rows_scale = 3;
-int map_cols_scale = 4;
-int map_offset_x = 0;
-int map_offset_y = 0;
+int map_rows_scale = 1;
+int map_cols_scale = 2;
 WINDOW *map_pad;
 void ps_build_world()
 {
@@ -381,10 +379,14 @@ void ps_play_draw()
 		}
 	}
 
+	// lets calculate where to offset the pad
+	int top, left;
+	calc_center_topleft(stdscr, map_rows * map_rows_scale, map_cols * map_cols_scale, top, left);
+
 	// render pad
 	refresh(); // has to be called before prefresh for some reason?
 	// prefresh(pad,pminrow,pmincol,sminrow,smincol,smaxrow,smaxcol)
-	prefresh(map_pad, 0, 0, 0, 0, map_rows * map_rows_scale, map_cols * map_cols_scale);
+	prefresh(map_pad, 0, 0, top, left, top + map_rows * map_rows_scale, left + map_cols * map_cols_scale);
 }
 void ps_play_input()
 {

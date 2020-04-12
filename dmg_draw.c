@@ -16,7 +16,7 @@ void center_in_win(WINDOW *win, int row, char *title, int colorpair, int colorpa
 	else
 		attrset(COLOR_PAIR(colorpair));
 	int len, indent, y, width;
-	getmaxyx(stdscr, y, width);	/* get screen width */
+	getmaxyx(win, y, width);	/* get screen width */
 	len = strlen(title);		/* get title's length */
 	indent = width - len;		/* subtract it from screen width */
 	indent /= 2;			/* divide result into two */
@@ -37,4 +37,17 @@ WINDOW* new_center_win(int row, int width, int height, int offset_x)
 	getmaxyx(stdscr, y, x);
 	indent = (x - width) / 2 + offset_x;
 	return newwin(height, width, row, indent);
+}
+
+int calc_center_top(WINDOW *win, int rows)
+{
+	int y, x;
+	getmaxyx(win, y, x);
+	return y/2 - rows/2;
+}
+int calc_center_left(WINDOW *win, int cols)
+{
+	int y, x;
+	getmaxyx(win, y, x);
+	return x/2 - cols/2;
 }
