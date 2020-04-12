@@ -1,12 +1,12 @@
 #include <string.h>
-#include "dmg_draw.h"
+#include "dm_draw.h"
 
 // Print text on center of std screen
-void center(int row, char *title, int colorpair, int colorpair_reset, bool bold)
+void dm_center(int row, char *title, int colorpair, int colorpair_reset, bool bold)
 {
-	center_in_win(stdscr, row, title, colorpair, colorpair_reset, bold);
+	dm_center_in_win(stdscr, row, title, colorpair, colorpair_reset, bold);
 }
-void center_in_win(WINDOW *win, int row, char *title, int colorpair, int colorpair_reset, bool bold)
+void dm_center_in_win(WINDOW *win, int row, char *title, int colorpair, int colorpair_reset, bool bold)
 {
 	if (win == NULL)
 		win = stdscr;
@@ -24,14 +24,14 @@ void center_in_win(WINDOW *win, int row, char *title, int colorpair, int colorpa
 	attrset(COLOR_PAIR(colorpair_reset));
 }
 
-void clear_row(int row)
+void dm_clear_row(int row)
 {
 	move(row, 0);
 	clrtoeol();
 }
 
 // get a center a window in std
-WINDOW* new_center_win(int row, int width, int height, int offset_x)
+WINDOW* dm_new_center_win(int row, int width, int height, int offset_x)
 {
 	int y, x, indent;
 	getmaxyx(stdscr, y, x);
@@ -39,13 +39,13 @@ WINDOW* new_center_win(int row, int width, int height, int offset_x)
 	return newwin(height, width, row, indent);
 }
 
-int calc_center_top(WINDOW *win, int rows)
+int dm_calc_center_top(WINDOW *win, int rows)
 {
 	int y, x;
 	getmaxyx(win, y, x);
 	return y/2 - rows/2;
 }
-int calc_center_left(WINDOW *win, int cols)
+int dm_calc_center_left(WINDOW *win, int cols)
 {
 	int y, x;
 	getmaxyx(win, y, x);

@@ -3,7 +3,7 @@
 #include <menu.h>
 
 #include "dmg_gametime.h"
-#include "dmg_draw.h"
+#include "dm_draw.h"
 #include "dmg_world.h"
 
 #ifndef ARRAY_SIZE
@@ -44,7 +44,7 @@ void debug(char *msg)
 {
 	int y, x;
 	getmaxyx(stdscr, y, x);
-	center(y - 1, msg, TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	dm_center(y - 1, msg, TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 	refresh();
 }
 
@@ -126,7 +126,7 @@ void g_intro()
 	nodelay(stdscr, true); // dont pause interrupt on getch
 
 	for (int i=0; i < ARRAY_SIZE(reels); i++) {
-		center(reels[i].row, reels[i].string, reels[i].colorpair, TCOLOR_NORMAL, true);
+		dm_center(reels[i].row, reels[i].string, reels[i].colorpair, TCOLOR_NORMAL, true);
 		refresh();
 		// wait a second before loading the menu
 		gametimer_set(reels[i].time_in, &gt);
@@ -140,9 +140,9 @@ void g_intro()
 			// first pass darken the text
 			// second pass clear it
 			if (j == 0)
-				center(reels[i].row, reels[i].string, reels[i].colorpair, TCOLOR_NORMAL, false);
+				dm_center(reels[i].row, reels[i].string, reels[i].colorpair, TCOLOR_NORMAL, false);
 			else
-				clear_row(reels[i].row);
+				dm_clear_row(reels[i].row);
 			refresh();
 			gametimer_set(reels[i].time_out, &gt);
 			while (!gametimer_done(&gt))
@@ -162,8 +162,8 @@ bool g_title_done = false;
 int g_title_prompt_row = 18;
 void g_title_onquit(char *label)
 {
-	clear_row(g_title_prompt_row);
-	center(g_title_prompt_row, "Are you sure? [y/n]", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	dm_clear_row(g_title_prompt_row);
+	dm_center(g_title_prompt_row, "Are you sure? [y/n]", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 	refresh();
 
 	bool listen = true;
@@ -178,7 +178,7 @@ void g_title_onquit(char *label)
 			break;
 		default:
 		case KEY_N:
-			clear_row(g_title_prompt_row);
+			dm_clear_row(g_title_prompt_row);
 			refresh();
 			listen = false;
 			break;
@@ -197,8 +197,8 @@ void g_title_onnewgame(char *label)
 }
 void g_title_onundefined(char *label)
 {
-	clear_row(g_title_prompt_row);
-	center(g_title_prompt_row, "Unimplemented", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	dm_clear_row(g_title_prompt_row);
+	dm_center(g_title_prompt_row, "Unimplemented", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 	refresh();
 }
 void g_title()
@@ -207,16 +207,16 @@ void g_title()
 
 	g_title_done = false;
 
-	center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	center( 2, "   +:+:    :+:   :+: :+:   :+:        :+:      : :+:    :+: :+:+:   :+:+ ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	center( 3, "    +:+    +:+  +:+   +:+  +:+        +:+        +:+    +:+ :+:+:+  +:+  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	center( 4, "    +#++:++#+  +#++:++#++: +#+        +#++:+#    +#+    +:+ +#+ +:+ +#+  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	center( 5, "    +#+    +#+ +#+     +#+ +#+     +# +#+     +# +#+    +#+ +#+  +#+#+#  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	center( 6, "    #+#    #+# #+#     #+# ########## ##########  +#+  +#+  #+#   #+#+#  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	center( 7, "    ###+  +###  ##     ##                           ###     ###    ####  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	center( 8, "   ##########                                               ##       ##  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	center( 9, "  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #         #  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	center(10, "    ~~ RISING AGAINST THE DARK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	dm_center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	dm_center( 2, "   +:+:    :+:   :+: :+:   :+:        :+:      : :+:    :+: :+:+:   :+:+ ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	dm_center( 3, "    +:+    +:+  +:+   +:+  +:+        +:+        +:+    +:+ :+:+:+  +:+  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	dm_center( 4, "    +#++:++#+  +#++:++#++: +#+        +#++:+#    +#+    +:+ +#+ +:+ +#+  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	dm_center( 5, "    +#+    +#+ +#+     +#+ +#+     +# +#+     +# +#+    +#+ +#+  +#+#+#  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	dm_center( 6, "    #+#    #+# #+#     #+# ########## ##########  +#+  +#+  #+#   #+#+#  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	dm_center( 7, "    ###+  +###  ##     ##                           ###     ###    ####  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	dm_center( 8, "   ##########                                               ##       ##  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	dm_center( 9, "  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #         #  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
+	dm_center(10, "    ~~ RISING AGAINST THE DARK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 
 	refresh();
 
@@ -235,7 +235,7 @@ void g_title()
 	};
         int n_choices = ARRAY_SIZE(choices);
 
-	WINDOW *title_menu_win = new_center_win(12, 13, 5, 0); // max choice length + cursor offset by cursor
+	WINDOW *title_menu_win = dm_new_center_win(12, 13, 5, 0); // max choice length + cursor offset by cursor
 	ITEM **title_items;
 	MENU *title_menu;
 	keypad(title_menu_win, TRUE);
@@ -427,7 +427,7 @@ void ps_play_draw()
 
 	// lets calculate where to offset the pad
 	int top, left;
-	CALC_CENTER_TOPLEFT(stdscr, map_rows * map_rows_scale, map_cols * map_cols_scale, top, left);
+	DM_CALC_CENTER_TOPLEFT(stdscr, map_rows * map_rows_scale, map_cols * map_cols_scale, top, left);
 
 	// render pad
 	refresh(); // has to be called before prefresh for some reason?
@@ -457,7 +457,7 @@ void ps_play_update()
 
 void ps_menu_draw()
 {
-	center(20, "GAME MENU", TCOLOR_NORMAL, TCOLOR_NORMAL, false);
+	dm_center(20, "GAME MENU", TCOLOR_NORMAL, TCOLOR_NORMAL, false);
 	refresh();
 }
 void ps_menu_input()
