@@ -337,27 +337,27 @@ void ps_play_draw()
 
 	for (int r=0; r < map1->rows; r++) {
 		for (int c=0; c < map1->cols; c++) {
-			// load map into pad, then we can center pad on screen
-			// allows to reposition it easily and also to hold map bigger than screen
-
 			int index = r * map1->cols + c;
+
+			// get tile from tile map
+			int tiletype = map1->tile_map[index];
 
 			// get mob from mob map index
 			int mob_id = map1->mob_map[index];
 			int mobtype = 0;
 			if (mob_id > -1) {
-				struct wld_mob *mob = &map1->mobs[mob_id];
-				mobtype = mob->type;
+				mobtype = map1->mobs[mob_id].type;
 			}
 
-			int tiletype = map1->tile_map[index];
-
+			// get type structs for rendering
 			struct wld_tiletype *tt = wld_get_tiletype(tiletype);
 			struct wld_mobtype *mt = wld_get_mobtype(mobtype);
 			int colorpair = wld_cpair(tiletype, mobtype);
+
+			// default symbol to mob, if no mob symbol then tile symbol if there is one
 			char cha = mt->sprite;
 			if (mt->sprite == ' ')
-				cha = tt->sprite; // render tile sprite if no mob sprite
+				cha = tt->sprite;
 
 			// render to pad
 			wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out

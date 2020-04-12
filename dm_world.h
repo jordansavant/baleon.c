@@ -35,7 +35,8 @@ struct wld_tiletype* wld_get_tiletype(int id)
 enum WLD_MOBTYPE
 {
 	MOB_VOID = 0,
-	MOB_BUGBEAR = 1,
+	MOB_PLAYER = 1,
+	MOB_BUGBEAR = 2,
 };
 struct wld_mobtype
 {
@@ -46,6 +47,7 @@ struct wld_mobtype
 // needs to correspond to mobtype enum
 struct wld_mobtype wld_mobtypes[] = {
 	{ MOB_VOID,	' ', 0 },
+	{ MOB_PLAYER,	'@', 7 },
 	{ MOB_BUGBEAR,	'b', 2 },
 };
 struct wld_mobtype* wld_get_mobtype(int id)
@@ -67,6 +69,7 @@ int bg_colors[] = {
 	COLOR_BLUE,   // 4 water
 	COLOR_CYAN,   // 5
 	COLOR_YELLOW, // 6
+	COLOR_MAGENTA, // 7
 };
 int fg_colors[] = {
 	COLOR_BLACK,  // 0
@@ -76,6 +79,7 @@ int fg_colors[] = {
 	COLOR_BLUE,   // 4
 	COLOR_CYAN,   // 5
 	COLOR_YELLOW, // 6
+	COLOR_MAGENTA, // 7
 };
 
 int color_base = 100;
@@ -118,6 +122,7 @@ struct wld_map {
 	int *tile_map; // array of tile types
 	int *mob_map; // array of mob ids in mob listing
 	struct wld_mob *mobs;
+	struct wld_mob *player;
 };
 
 //int map[] = {
@@ -162,10 +167,23 @@ void wld_genmobs(struct wld_map *map)
 	for (int i=0; i < mob_count; i++) {
 		// create mob
 		struct wld_mob *mob = &map->mobs[i];
-		mob->map_x = 2 + i; // hardcoded positions
-		mob->map_y = 2 + i;
-		mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
-		mob->type = MOB_BUGBEAR;
+		// first mob is player
+		if (i == 0) {
+			// hardcoded to center of map until we get a heuristic for map entrance
+			// TBD xogeni!
+			mob->map_x = map->cols / 2;
+			mob->map_y = map->rows / 2;
+			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
+			mob->type = MOB_PLAYER;
+			map->player = mob; // assign to map specifically
+		}else {
+			// TODO this can conflict with the player if we are not careful
+			// hardcoded diagonal positions
+			mob->map_x = 2 + i;
+			mob->map_y = 2 + i;
+			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
+			mob->type = MOB_BUGBEAR;
+		}
 		// set mob's id into the mob map
 		map->mob_map[mob->map_index] = i;
 	}
@@ -180,6 +198,7 @@ struct wld_map* wld_newmap(int depth)
 	map->tile_map = NULL;
 	map->mob_map = NULL;
 	map->mobs = NULL;
+	map->player = NULL;
 
 	// populate tiles
 	wld_genmap(map);
