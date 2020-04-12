@@ -107,3 +107,58 @@ int wld_cpair_bg(int tiletype)
 	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
 	return color_base + tt->bg_color; // no addition of foreground so it is black
 }
+
+// WORLD MAP
+
+struct wld_map {
+	int rows;
+	int cols;
+	int length;
+	int depth;
+	int *map;
+};
+struct wld_map *wld_maps; // all allocated world maps
+
+//int map[] = {
+//	1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
+//	1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
+//	1, 2, 2, 1, 1, 0, 1, 1, 1, 1, 1, 1,
+//	1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
+//	1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 1, 1,
+//	1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1,
+//	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1,
+//	1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 2, 1,
+//	1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1,
+//	1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1,
+//	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+//	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+//};
+
+void wld_genmap(struct wld_map *map)
+{
+	int *map_array = (int*)malloc(map->length * sizeof(int));
+	// randomly fill map with grass, water, and trees
+	for (int i=0; i < map->length; i++) {
+		map_array[i] = 1; // hard coded grass fow now;
+	}
+	map->map = map_array;
+}
+struct wld_map* wld_newmap(int depth)
+{
+	struct wld_map *map = (struct wld_map*)malloc(sizeof(struct wld_map));
+	map->rows = 12;
+	map->cols = 12;
+	map->length = 12 * 12;
+	map->depth = depth;
+	map->map = NULL;
+
+	wld_genmap(map);
+
+	return map;
+}
+
+void wld_delmap(struct wld_map *map)
+{
+	free(map->map);
+	free(map);
+}

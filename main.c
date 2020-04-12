@@ -306,26 +306,11 @@ enum PLAY_STATE play_state = PS_START;
 #define MAP_LENGTH 144
 #define GET_MAP_INDEX(x, y) y * MAP_COLS + x
 #define SET_MOB_COORDS(x, y) x, y, GET_MAP_INDEX(x, y)
-int map[] = {
-	1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
-	1, 2, 2, 1, 1, 0, 1, 1, 1, 1, 1, 1,
-	1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 2, 2, 2, 2, 1, 1, 1, 2, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 2, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1,
-	1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-};
 
-int map_rows = MAP_ROWS;
-int map_cols = MAP_COLS;
 int map_rows_scale = 1;
 int map_cols_scale = 2;
 WINDOW *map_pad;
+struct wld_map *map1;
 
 struct wld_mob mobs[] = {
 	// x, y, index, type
@@ -352,7 +337,8 @@ void ps_build_world()
 	clear();
 
 	// World is large indexed map to start
-	map_pad = newpad(map_rows * map_rows_scale, map_cols * map_cols_scale);
+	map1 = wld_newmap(1);
+	map_pad = newpad(map1->rows * map_rows_scale, map1->cols * map_cols_scale);
 
 	// setup mobs in mob map
 	for (int i=0; i < ARRAY_SIZE(mobs); i++) {
@@ -364,6 +350,7 @@ void ps_destroy_world()
 {
 	// THIS HAS NOT BEEN TESTED I CANT FIND DOCS ON HOW TO CLEAN UP PAD MEMORY
 	delwin(map_pad);
+	wld_delmap(map1);
 
 	clear();
 }
@@ -378,12 +365,12 @@ void ps_play_draw()
 	clear();
 	wclear(map_pad);
 
-	for (int r=0; r < map_rows; r++) {
-		for (int c=0; c < map_cols; c++) {
+	for (int r=0; r < map1->rows; r++) {
+		for (int c=0; c < map1->cols; c++) {
 			// load map into pad, then we can center pad on screen
 			// allows to reposition it easily and also to hold map bigger than screen
 
-			int index = r * map_cols + c;
+			int index = r * map1->cols + c;
 
 			// get mob from mob map index
 			int mob_id = mob_map[index];
@@ -393,7 +380,7 @@ void ps_play_draw()
 				mobtype = mob->type;
 			}
 
-			int tiletype = map[index];
+			int tiletype = map1->map[index];
 
 			struct wld_tiletype *tt = wld_get_tiletype(tiletype);
 			struct wld_mobtype *mt = wld_get_mobtype(mobtype);
@@ -427,12 +414,12 @@ void ps_play_draw()
 
 	// lets calculate where to offset the pad
 	int top, left;
-	DM_CALC_CENTER_TOPLEFT(stdscr, map_rows * map_rows_scale, map_cols * map_cols_scale, top, left);
+	DM_CALC_CENTER_TOPLEFT(stdscr, map1->rows * map_rows_scale, map1->cols * map_cols_scale, top, left);
 
 	// render pad
 	refresh(); // has to be called before prefresh for some reason?
 	// prefresh(pad,pminrow,pmincol,sminrow,smincol,smaxrow,smaxcol)
-	prefresh(map_pad, 0, 0, top, left, top + map_rows * map_rows_scale, left + map_cols * map_cols_scale);
+	prefresh(map_pad, 0, 0, top, left, top + map1->rows * map_rows_scale, left + map1->cols * map_cols_scale);
 }
 void ps_play_input()
 {
