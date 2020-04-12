@@ -300,6 +300,12 @@ enum PLAY_STATE
 };
 enum PLAY_STATE play_state = PS_START;
 
+
+#define MAP_ROWS 12
+#define MAP_COLS 12
+#define MAP_LENGTH 144
+#define GET_MAP_INDEX(x, y) y * MAP_COLS + x
+#define SET_MOB_COORDS(x, y) x, y, GET_MAP_INDEX(x, y)
 int map[] = {
 	1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
 	1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1,
@@ -314,17 +320,45 @@ int map[] = {
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 };
-int map_rows = 12;
-int map_cols = 12;
+
+int map_rows = MAP_ROWS;
+int map_cols = MAP_COLS;
 int map_rows_scale = 1;
 int map_cols_scale = 2;
 WINDOW *map_pad;
+
+struct wld_mob mobs[] = {
+	// x, y, index, type
+	{ SET_MOB_COORDS(7, 2), MOB_BUGBEAR },
+	{ SET_MOB_COORDS(4, 6), MOB_BUGBEAR },
+};
+int mob_map[] = {
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+};
+
 void ps_build_world()
 {
 	clear();
 
 	// World is large indexed map to start
 	map_pad = newpad(map_rows * map_rows_scale, map_cols * map_cols_scale);
+
+	// setup mobs in mob map
+	for (int i=0; i < ARRAY_SIZE(mobs); i++) {
+		int index = mobs[i].map_index;
+		mob_map[index] = i;
+	}
 }
 void ps_destroy_world()
 {
@@ -333,6 +367,12 @@ void ps_destroy_world()
 
 	clear();
 }
+// TODO function on translating a screen item to the pad item
+//void translate_screenyx_mapyx(int sy, int, sx)
+//{
+//	// get difference between pad top,left and screen top,left
+//	// subtract that from screen y,x to get pad y,x
+//}
 void ps_play_draw()
 {
 	clear();
@@ -344,10 +384,16 @@ void ps_play_draw()
 			// allows to reposition it easily and also to hold map bigger than screen
 
 			int index = r * map_cols + c;
-			int tiletype = map[index];
+
+			// get mob from mob map index
+			int mob_id = mob_map[index];
 			int mobtype = 0;
-			if (r == 2 && c == 2) // debug
-				mobtype = MOB_BUGBEAR;
+			if (mob_id > -1) {
+				struct wld_mob *mob = &mobs[mob_id];
+				mobtype = mob->type;
+			}
+
+			int tiletype = map[index];
 
 			struct wld_tiletype *tt = wld_get_tiletype(tiletype);
 			struct wld_mobtype *mt = wld_get_mobtype(mobtype);
@@ -381,7 +427,7 @@ void ps_play_draw()
 
 	// lets calculate where to offset the pad
 	int top, left;
-	calc_center_topleft(stdscr, map_rows * map_rows_scale, map_cols * map_cols_scale, top, left);
+	CALC_CENTER_TOPLEFT(stdscr, map_rows * map_rows_scale, map_cols * map_cols_scale, top, left);
 
 	// render pad
 	refresh(); // has to be called before prefresh for some reason?

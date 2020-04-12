@@ -1,3 +1,9 @@
+TODO:
+- how do we get mouse cursor?
+	- see mspy.c for example code
+	- we got pads to render the complete map, but now how do we translate cursor to pad?
+
+
 comparing with brogue:
 
 - menu items highlight their activate letter

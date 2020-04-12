@@ -18,6 +18,7 @@ struct wld_tiletype
 	int bg_color;
 	int fg_color;
 };
+// needs to correspond to tile type enum
 struct wld_tiletype wld_tiletypes[] = {
 	//                  bg fg
 	{ TILE_VOID,	' ', 0, 0 },
@@ -42,6 +43,7 @@ struct wld_mobtype
 	char sprite;
 	int fg_color;
 };
+// needs to correspond to mobtype enum
 struct wld_mobtype wld_mobtypes[] = {
 	{ MOB_VOID,	' ', 0 },
 	{ MOB_BUGBEAR,	'b', 2 },
@@ -49,7 +51,12 @@ struct wld_mobtype wld_mobtypes[] = {
 struct wld_mobtype* wld_get_mobtype(int id)
 {
 	return &wld_mobtypes[id];
-}
+};
+struct wld_mob
+{
+	int map_x, map_y, map_index; // position in map geo and index
+	enum WLD_MOBTYPE type; // wld_mobtypes struct index
+};
 
 // COLORS
 int bg_colors[] = {
