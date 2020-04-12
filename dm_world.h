@@ -3,6 +3,12 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
+#ifndef bool
+#define false 0
+#define true 1
+typedef int bool; // or #define bool int
+#endif
+
 // TILE TYPES
 enum WLD_TILETYPE
 {
@@ -10,6 +16,7 @@ enum WLD_TILETYPE
 	TILE_GRASS = 1,
 	TILE_WATER = 2,
 	TILE_TREE = 3,
+	TILE_STONEWALL = 4,
 };
 struct wld_tiletype
 {
@@ -17,14 +24,16 @@ struct wld_tiletype
 	char sprite;
 	int bg_color;
 	int fg_color;
+	bool is_block;
 };
 // needs to correspond to tile type enum
 struct wld_tiletype wld_tiletypes[] = {
-	//                  bg fg
-	{ TILE_VOID,	' ', 0, 0 },
-	{ TILE_GRASS,	'w', 1, 0 },
-	{ TILE_WATER,	' ', 4, 0 },
-	{ TILE_TREE,	'T', 1, 0 },
+	//			     bg fg block
+	{ TILE_VOID,		' ', 0, 0, false }, // 0
+	{ TILE_GRASS,		'"', 0, 1, false }, // 1
+	{ TILE_WATER,		' ', 4, 2, false }, // 2
+	{ TILE_TREE,		'T', 0, 1, true  }, // 3
+	{ TILE_STONEWALL,	'#', 0, 2, true  }, // 4
 };
 struct wld_tiletype* wld_get_tiletype(int id)
 {
@@ -150,6 +159,10 @@ void wld_genmap(struct wld_map *map)
 	// randomly fill map with grass, water, and trees
 	for (int i=0; i < map->length; i++) {
 		tile_map_array[i] = 1; // hard coded grass fow now;
+		if (i == 27)
+			tile_map_array[i] = 3; // tree
+		if (i == 44 || i == 45)
+			tile_map_array[i] = 4; // wall
 		mob_map_array[i] = -1; // initialize to -1 for "no mob"
 	}
 	map->tile_map = tile_map_array;
@@ -230,8 +243,15 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 	// current rules just check if a mob is ther
 	int map_index = wld_calcindex(x, y, map->cols);
 	int mob_id = map->mob_map[map_index];
-	// TODO we should also check if the TILE_TYPE is a wall or some sort
-	return mob_id == -1;
+	if (mob_id > -1)
+		return false;
+
+	int tiletype = map->tile_map[map_index];
+	struct wld_tiletype *tt = &wld_tiletypes[tiletype];
+	if (tt->is_block)
+		return false;
+
+	return true;
 }
 void wld_movemob(struct wld_mob *mob, int relx, int rely)
 {

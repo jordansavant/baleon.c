@@ -10,6 +10,12 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #endif
 
+#ifndef bool
+#define false 0
+#define true 1
+typedef int bool; // or #define bool int
+#endif
+
 #define SCOLOR_NORMAL	1
 #define TCOLOR_NORMAL	2
 #define TCOLOR_OMINOUS	3
@@ -19,32 +25,32 @@
 
 #define KEY_RETURN	10
 #define KEY_ESC		27
-#define KEY_A		97
-#define KEY_B		98
-#define KEY_C		99
-#define KEY_D		100
-#define KEY_E		101
-#define KEY_F		102
-#define KEY_G		103
-#define KEY_H		104
-#define KEY_I		105
-#define KEY_J		106
-#define KEY_K		107
-#define KEY_L		108
-#define KEY_M		109
-#define KEY_N		110
-#define KEY_O		111
-#define KEY_P		112
-#define KEY_Q		113
-#define KEY_R		114
-#define KEY_S		115
-#define KEY_T		116
-#define KEY_U		117
-#define KEY_V		118
-#define KEY_W		119
-#define KEY_X		120
-#define KEY_Y		121
-#define KEY_Z		122
+#define KEY_a		97
+#define KEY_b		98
+#define KEY_c		99
+#define KEY_d		100
+#define KEY_e		101
+#define KEY_f		102
+#define KEY_g		103
+#define KEY_h		104
+#define KEY_i		105
+#define KEY_j		106
+#define KEY_k		107
+#define KEY_l		108
+#define KEY_m		109
+#define KEY_n		110
+#define KEY_o		111
+#define KEY_p		112
+#define KEY_q		113
+#define KEY_r		114
+#define KEY_s		115
+#define KEY_t		116
+#define KEY_u		117
+#define KEY_v		118
+#define KEY_w		119
+#define KEY_x		120
+#define KEY_y		121
+#define KEY_z		122
 
 // UTILS
 void skip_delay(double wait_s)
@@ -192,7 +198,7 @@ void g_title_onquit(char *label)
 	bool listen = true;
 	while (listen) {
 		switch (getch()) {
-		case KEY_Y:
+		case KEY_y:
 			game_state = GS_EXIT;
 			g_title_done = true;
 			listen = false;
@@ -200,7 +206,7 @@ void g_title_onquit(char *label)
 		case ERR:
 			break;
 		default:
-		case KEY_N:
+		case KEY_n:
 			dm_clear_row(g_title_prompt_row);
 			refresh();
 			listen = false;
@@ -355,7 +361,7 @@ void ps_destroy_world()
 //}
 void ps_play_draw()
 {
-	clear();
+	//clear();
 	wclear(map_pad);
 
 	for (int r=0; r < map1->rows; r++) {
@@ -425,35 +431,35 @@ void ps_play_input()
 			play_state = PS_MENU;
 			listen = false;
 			break;
-		case KEY_W:
+		case KEY_w:
 			wld_movemob(map1->player, 0, -1);
 			listen = false;
 			break;
-		case KEY_S:
+		case KEY_s:
 			wld_movemob(map1->player, 0, 1);
 			listen = false;
 			break;
-		case KEY_A:
+		case KEY_a:
 			wld_movemob(map1->player, -1, 0);
 			listen = false;
 			break;
-		case KEY_D:
+		case KEY_d:
 			wld_movemob(map1->player, 1, 0);
 			listen = false;
 			break;
-		case KEY_Q:
+		case KEY_q:
 			wld_movemob(map1->player, -1, -1);
 			listen = false;
 			break;
-		case KEY_E:
+		case KEY_e:
 			wld_movemob(map1->player, 1, -1);
 			listen = false;
 			break;
-		case KEY_Z:
+		case KEY_z:
 			wld_movemob(map1->player, -1, 1);
 			listen = false;
 			break;
-		case KEY_X:
+		case KEY_x:
 			wld_movemob(map1->player, 1, 1);
 			listen = false;
 			break;
@@ -483,7 +489,7 @@ void ps_menu_input()
 			play_state = PS_PLAY;
 			listen = false;
 			break;
-		case KEY_Q:
+		case KEY_q:
 			play_state = PS_END;
 			listen = false;
 			break;
