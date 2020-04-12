@@ -4,7 +4,7 @@
 
 #include "dm_gametime.h"
 #include "dm_draw.h"
-#include "dmg_world.h"
+#include "dm_world.h"
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))

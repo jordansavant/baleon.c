@@ -3,7 +3,7 @@ CC=gcc
 CFLAGS=-I.
 BUILD = main.c dm_gametime.c dm_draw.c
 LIBS = -lncurses -lmenu
-DEPS = dm_gametime.h dm_draw.h dmg_world.h
+DEPS = dm_gametime.h dm_draw.h dm_world.h
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
