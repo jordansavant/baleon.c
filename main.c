@@ -2,7 +2,7 @@
 #include <ncurses.h>
 #include <menu.h>
 
-#include "dmg_gametime.h"
+#include "dm_gametime.h"
 #include "dm_draw.h"
 #include "dmg_world.h"
 
@@ -26,9 +26,9 @@
 // UTILS
 void skip_delay(double wait_s)
 {
-	struct gametimer gt = gametimer_new(wait_s);
+	struct dm_gametimer gt = dm_gametimer_new(wait_s);
 	nodelay(stdscr, true);
-	while (!gametimer_done(&gt))
+	while (!dm_gametimer_done(&gt))
 		if (getch() != ERR)
 			break;
 	nodelay(stdscr, false);
@@ -121,7 +121,7 @@ void g_intro()
 	};
 
 	// roll in title but allow for escaping
-	struct gametimer gt = gametimer_new(0);
+	struct dm_gametimer gt = dm_gametimer_new(0);
 
 	nodelay(stdscr, true); // dont pause interrupt on getch
 
@@ -129,8 +129,8 @@ void g_intro()
 		dm_center(reels[i].row, reels[i].string, reels[i].colorpair, TCOLOR_NORMAL, true);
 		refresh();
 		// wait a second before loading the menu
-		gametimer_set(reels[i].time_in, &gt);
-		while (!gametimer_done(&gt))
+		dm_gametimer_set(reels[i].time_in, &gt);
+		while (!dm_gametimer_done(&gt))
 			if (getch() != ERR)
 				goto defer; // i went there
 	}
@@ -144,8 +144,8 @@ void g_intro()
 			else
 				dm_clear_row(reels[i].row);
 			refresh();
-			gametimer_set(reels[i].time_out, &gt);
-			while (!gametimer_done(&gt))
+			dm_gametimer_set(reels[i].time_out, &gt);
+			while (!dm_gametimer_done(&gt))
 				if (getch() != ERR)
 					goto defer; // i went there
 		}
