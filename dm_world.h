@@ -56,8 +56,10 @@ struct wld_mobtype* wld_get_mobtype(int id)
 };
 struct wld_mob
 {
+	int id; // positin in maps mob list
 	int map_x, map_y, map_index; // position in map geo and index
 	enum WLD_MOBTYPE type; // wld_mobtypes struct index
+	struct wld_map *map;
 };
 
 // COLORS
@@ -167,6 +169,9 @@ void wld_genmobs(struct wld_map *map)
 	for (int i=0; i < mob_count; i++) {
 		// create mob
 		struct wld_mob *mob = &map->mobs[i];
+		// create reference to parent map
+		mob->id = i;
+		mob->map = map;
 		// first mob is player
 		if (i == 0) {
 			// hardcoded to center of map until we get a heuristic for map entrance
@@ -208,11 +213,44 @@ struct wld_map* wld_newmap(int depth)
 
 	return map;
 }
-
 void wld_delmap(struct wld_map *map)
 {
 	free(map->mobs);
 	free(map->mob_map);
 	free(map->tile_map);
 	free(map);
+}
+bool wld_canmoveto(struct wld_map *map, int x, int y)
+{
+	// make sure its in bounds
+	if (x >= map->cols || y >= map->rows || x < 0 || y < 0) {
+		return false;
+	}
+
+	// current rules just check if a mob is ther
+	int map_index = wld_calcindex(x, y, map->cols);
+	int mob_id = map->mob_map[map_index];
+	// TODO we should also check if the TILE_TYPE is a wall or some sort
+	return mob_id == -1;
+}
+void wld_movemob(struct wld_mob *mob, int relx, int rely)
+{
+	// TODO speeds and things could come into play here
+	int newx = mob->map_x + relx;
+	int newy = mob->map_y + rely;
+
+	// test if we can do this move
+	if (wld_canmoveto(mob->map, newx, newy)) {
+		int old_index = mob->map_index;
+		int new_index = wld_calcindex(newx, newy, mob->map->cols);
+
+		// update indexes
+		mob->map->mob_map[new_index] = mob->id;
+		mob->map->mob_map[old_index] = -1; // vacated
+
+		// update position
+		mob->map_index = new_index;
+		mob->map_x = newx;
+		mob->map_y = newy;
+	}
 }
