@@ -1,14 +1,37 @@
+CORE MECHANIC:
+- subdue enemies and choose to absorb their essence
+	- grants "aberrations" that produce strengths and weaknesses
+	- abberations come from enemies killed, can they come from objects in the world?
+- why this may be fun?
+	- mystery of aberrations
+	- cocktail of how they react
+	- with many aberrations comes highly unique combinations of characters
+
+
 TODO:
-- how do we get mouse cursor? (do we need this)
-	- see mspy.c for example code
-	- we got pads to render the complete map, but now how do we translate cursor to pad?
-- sample xogeni map has been loaded
-- shadowcast changes
+- cursor hover tile w/ arrow movements
+- ui: info bar
+- ui: event log
+- ui: control bar
+- mob stats: health
+- attack mob: melee
+- attack mob: ranged
+- multi map w/ transition
+- port xogeni parts
+- shadowcast
 	- angband got away with 16 colors
 	- looks like stuff within line of site was BOLDED while last memory was not
 
 
-comparing with brogue:
+FEATURE CREEP
+- input recorder?
+- how do we get mouse cursor? (do we need this)
+	- see mspy.c for example code
+	- we got pads to render the complete map, but now how do we translate cursor to pad?
+
+
+
+BROGUE NOTES
 
 - menu items highlight their activate letter
 - hovering over equipment opens context menu

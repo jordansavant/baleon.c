@@ -278,7 +278,7 @@ void g_title()
 	title_items[n_choices] = (ITEM *)NULL; // last item must be null terminated
 	title_menu = new_menu((ITEM **)title_items);
 	set_menu_win(title_menu, title_menu_win);
-	set_menu_mark(title_menu, "~ ");
+	set_menu_mark(title_menu, "@ ");
 	post_menu(title_menu);
 
 	wrefresh(title_menu_win);
@@ -287,9 +287,11 @@ void g_title()
 	while (!g_title_done) {
 		switch (wgetch(title_menu_win)) {
 		case KEY_DOWN:
+		case KEY_s:
 			menu_driver(title_menu, REQ_NEXT_ITEM);
 			break;
 		case KEY_UP:
+		case KEY_w:
 			menu_driver(title_menu, REQ_PREV_ITEM);
 			break;
 		// Enter
