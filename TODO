@@ -1,7 +1,11 @@
 TODO:
-- how do we get mouse cursor?
+- how do we get mouse cursor? (do we need this)
 	- see mspy.c for example code
 	- we got pads to render the complete map, but now how do we translate cursor to pad?
+- sample xogeni map has been loaded
+- shadowcast changes
+	- angband got away with 16 colors
+	- looks like stuff within line of site was BOLDED while last memory was not
 
 
 comparing with brogue:

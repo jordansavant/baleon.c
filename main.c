@@ -362,7 +362,7 @@ void ps_destroy_world()
 void ps_play_draw()
 {
 	//clear();
-	wclear(map_pad);
+	//wclear(map_pad);
 
 	for (int r=0; r < map1->rows; r++) {
 		for (int c=0; c < map1->cols; c++) {
