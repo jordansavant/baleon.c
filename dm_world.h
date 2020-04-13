@@ -63,6 +63,14 @@ struct wld_tiletype
 	int fg_color;
 	bool is_block;
 };
+struct wld_tile
+{
+	int id; // position in tile list
+	int map_x, map_y, map_index;
+	enum WLD_TILETYPE type;
+	struct wld_map *map;
+	// on_enter, on_leave events
+};
 // needs to correspond to tile type enum
 struct wld_tiletype wld_tiletypes[] = {
 	//			     bg fg block
@@ -132,6 +140,7 @@ struct wld_map {
 	int length;
 	int depth;
 	int *tile_map; // array of tile types
+	struct wld_tile *tiles;
 	int *mob_map; // array of mob ids in mob listing
 	struct wld_mob *mobs;
 	struct wld_mob *player;
@@ -210,43 +219,58 @@ int map_data[] = {
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 };
 
+int wld_calcindex(int x, int y, int cols)
+{
+	return y * cols + x;
+}
+int wld_calcx(int index, int cols)
+{
+	return index % cols;
+}
+int wld_calcy(int index, int cols)
+{
+	return index / cols;
+}
 void wld_genmap(struct wld_map *map)
 {
 	int *tile_map_array = (int*)malloc(map->length * sizeof(int));
 	int *mob_map_array = (int*)malloc(map->length * sizeof(int));
 
+	map->tiles = (struct wld_tile*)malloc(map->length * sizeof(struct wld_tile));
+
 	// randomly fill map with grass, water, and trees
 	for (int i=0; i < map->length; i++) {
-		int map_data_type = map_data[i];
+		int map_data_type = map_data[i]; // global
+
+		struct wld_tile *tile = &map->tiles[i];
+		tile->id = i;
+		tile->map = map;
+		tile->map_x = wld_calcx(i, map->cols);
+		tile->map_y = wld_calcy(i, map->cols);
+
 		switch (map_data_type) {
 		default:
 		case 1:
-			tile_map_array[i] = 0; // hard coded grass fow now;
+			tile->type = TILE_VOID;
 			break;
 		case 2:
-			tile_map_array[i] = 4; // wall
+			tile->type = TILE_STONEWALL;
 			break;
 		case 3:
-			tile_map_array[i] = 2; // water
+			tile->type = TILE_WATER;
 			break;
 		}
-		//if (i == 27)
-		//	tile_map_array[i] = 3; // tree
-		//if (i == 44 || i == 45)
-		//	tile_map_array[i] = 4; // wall
+
+		tile_map_array[i] = i; // set tile map to this tile id
 		mob_map_array[i] = -1; // initialize to -1 for "no mob"
 	}
 	map->tile_map = tile_map_array;
 	map->mob_map = mob_map_array;
 }
-int wld_calcindex(int x, int y, int cols)
-{
-	return y * cols + x;
-}
 void wld_genmobs(struct wld_map *map)
 {
 	// hardcoded to 3 mobs for now
-	int mob_count = 1;
+	int mob_count = 2;
 	map->mobs = (struct wld_mob*)malloc(mob_count * sizeof(struct wld_mob));
 
 	// setup mobs in mob map
@@ -268,8 +292,8 @@ void wld_genmobs(struct wld_map *map)
 		}else {
 			// TODO this can conflict with the player if we are not careful
 			// hardcoded diagonal positions
-			mob->map_x = 2 + i;
-			mob->map_y = 2 + i;
+			mob->map_x = 38;
+			mob->map_y = 36;
 			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
 			mob->type = MOB_BUGBEAR;
 		}
@@ -287,6 +311,7 @@ struct wld_map* wld_newmap(int depth)
 	map->depth = depth;
 	map->tile_map = NULL;
 	map->mob_map = NULL;
+	map->tiles = NULL;
 	map->mobs = NULL;
 	map->player = NULL;
 
@@ -302,6 +327,7 @@ void wld_delmap(struct wld_map *map)
 {
 	free(map->mobs);
 	free(map->mob_map);
+	free(map->tiles);
 	free(map->tile_map);
 	free(map);
 }

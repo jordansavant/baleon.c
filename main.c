@@ -369,7 +369,8 @@ void ps_play_draw()
 			int index = r * map1->cols + c;
 
 			// get tile from tile map
-			int tiletype = map1->tile_map[index];
+			int tile_id = map1->tile_map[index];
+			int tiletype = map1->tiles[tile_id].type;
 
 			// get mob from mob map index
 			int mob_id = map1->mob_map[index];
