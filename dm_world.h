@@ -344,7 +344,8 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 	if (mob_id > -1)
 		return false;
 
-	int tiletype = map->tile_map[map_index];
+	int tile_id = map->tile_map[map_index];
+	int tiletype = map->tiles[tile_id].type;
 	struct wld_tiletype *tt = &wld_tiletypes[tiletype];
 	if (tt->is_block)
 		return false;
