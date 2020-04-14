@@ -35,17 +35,6 @@ int color_base = 100;
 int fg_size = 8;
 int bg_size = 8;
 
-void wld_setup()
-{
-	for (int i=0; i < bg_size; i++) {
-		for (int j=0; j < fg_size; j++) {
-			int index = j * fg_size + i;
-			int colorpair_id = color_base + index;
-			init_pair(colorpair_id, fg_colors[j], bg_colors[i]);
-		}
-	}
-}
-
 // TILE TYPES
 enum WLD_TILETYPE
 {
@@ -58,7 +47,7 @@ enum WLD_TILETYPE
 struct wld_tiletype
 {
 	int type;
-	char sprite;
+	unsigned long sprite;
 	int bg_color;
 	int fg_color;
 	bool is_block;
@@ -73,14 +62,8 @@ struct wld_tile
 	// on_enter, on_leave events
 };
 // needs to correspond to tile type enum
-struct wld_tiletype wld_tiletypes[] = {
-	//			     bg fg block
-	{ TILE_VOID,		' ', 0, 0, false, "" }, // 0
-	{ TILE_GRASS,		'"', 0, 1, false, "A small tuft of grass" }, // 1
-	{ TILE_WATER,		' ', 4, 2, false, "A pool of water glistens" }, // 2
-	{ TILE_TREE,		'T', 0, 1, true,  "A large tree"  }, // 3
-	{ TILE_STONEWALL,	'#', 0, 2, true,  "A stone wall" }, // 4
-};
+struct wld_tiletype *wld_tiletypes;
+
 struct wld_tiletype* wld_get_tiletype(int id)
 {
 	return &wld_tiletypes[id];
@@ -96,16 +79,13 @@ enum WLD_MOBTYPE
 struct wld_mobtype
 {
 	int type;
-	char sprite;
+	unsigned long sprite;
 	int fg_color;
 	char *short_desc;
 };
 // needs to correspond to mobtype enum
-struct wld_mobtype wld_mobtypes[] = {
-	{ MOB_VOID,	' ', 0, "" },
-	{ MOB_PLAYER,	'@', 7, "You" },
-	{ MOB_BUGBEAR,	'b', 2, "A bugbear" },
-};
+struct wld_mobtype *wld_mobtypes;
+
 struct wld_mobtype* wld_get_mobtype(int id)
 {
 	return &wld_mobtypes[id];
@@ -418,4 +398,57 @@ struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y)
 	if (id > -1)
 		return &map->mobs[id];
 	return NULL;
+}
+
+
+
+
+void wld_setup()
+{
+	// build color maps
+	for (int i=0; i < bg_size; i++) {
+		for (int j=0; j < fg_size; j++) {
+			int index = j * fg_size + i;
+			int colorpair_id = color_base + index;
+			init_pair(colorpair_id, fg_colors[j], bg_colors[i]);
+		}
+	}
+
+	// copy tiletypes into malloc
+	struct wld_tiletype tts[] = {
+		{ TILE_VOID,            ' ', 0, 0, false, "" }, // 0
+		{ TILE_GRASS,           '"', 0, 1, false, "A small tuft of grass" }, // 1
+		{ TILE_WATER,           ' ', 4, 2, false, "A pool of water glistens" }, // 2
+		{ TILE_TREE,            'T', 0, 1, true,  "A large tree"  }, // 3
+		{ TILE_STONEWALL,       '#', 0, 2, true,  "A stone wall" }, // 4
+	};
+	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
+	for (int i=0; i<ARRAY_SIZE(tts); i++) {
+		wld_tiletypes[i].type = tts[i].type;
+		wld_tiletypes[i].sprite = tts[i].sprite;
+		wld_tiletypes[i].fg_color = tts[i].fg_color;
+		wld_tiletypes[i].bg_color = tts[i].bg_color;
+		wld_tiletypes[i].is_block = tts[i].is_block;
+		wld_tiletypes[i].short_desc = tts[i].short_desc;
+	}
+
+	// copy mob types into malloc
+	struct wld_mobtype mts [] = {
+		{ MOB_VOID,	' ',	0,	"" },
+		{ MOB_PLAYER,	'@',	7,	"You" },
+		{ MOB_BUGBEAR,	'b',	2,	"A bugbear" },
+	};
+	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
+	for (int i=0; i<ARRAY_SIZE(mts); i++) {
+		wld_mobtypes[i].type = mts[i].type;
+		wld_mobtypes[i].sprite = mts[i].sprite;
+		wld_mobtypes[i].fg_color = mts[i].fg_color;
+		wld_mobtypes[i].short_desc = mts[i].short_desc;
+	}
+}
+
+void wld_teardown()
+{
+	free(wld_mobtypes);
+	free(wld_tiletypes);
 }

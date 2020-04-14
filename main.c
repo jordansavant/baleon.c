@@ -150,6 +150,9 @@ bool g_setup()
 
 void g_teardown()
 {
+	// teardown world vars
+	wld_teardown();
+
 	// teardown ncurses
 	keypad(stdscr,FALSE);
 	curs_set(1);
@@ -415,6 +418,7 @@ void ps_play_draw()
 	// do not clear, it causes awful redraw
 	//clear();
 	//wclear(map_pad);
+	box(stdscr, ACS_VLINE, ACS_HLINE);
 
 	// Draw map
 	for (int r=0; r < map1->rows; r++) {
@@ -438,7 +442,7 @@ void ps_play_draw()
 			int colorpair = wld_cpair(tiletype, mobtype);
 
 			// default symbol to mob, if no mob symbol then tile symbol if there is one
-			char cha = mt->sprite;
+			unsigned long cha = mt->sprite;
 			if (mt->sprite == ' ')
 				cha = tt->sprite;
 
@@ -466,7 +470,7 @@ void ps_play_draw()
 	}
 
 	// Draw cursor
-	wmove(map_pad, map1->cursor->y, map1->cursor->x);
+	wmove(map_pad, map1->cursor->y * map_rows_scale, map1->cursor->x * map_cols_scale);
 	wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
 	char ch = mvwinch(map_pad, map1->cursor->y * map_rows_scale, map1->cursor->x * map_cols_scale) & A_CHARTEXT;
 	waddch(map_pad, ch);
