@@ -134,6 +134,12 @@ int wld_cpair_bg(int tiletype)
 
 // WORLD MAP
 
+struct wld_cursor {
+	int x;
+	int y;
+	int index;
+};
+
 struct wld_map {
 	int rows;
 	int cols;
@@ -144,6 +150,7 @@ struct wld_map {
 	int *mob_map; // array of mob ids in mob listing
 	struct wld_mob *mobs;
 	struct wld_mob *player;
+	struct wld_cursor *cursor;
 };
 
 //int map[] = {
@@ -314,6 +321,10 @@ struct wld_map* wld_newmap(int depth)
 	map->tiles = NULL;
 	map->mobs = NULL;
 	map->player = NULL;
+	map->cursor = (struct wld_cursor*)malloc(sizeof(struct wld_cursor));
+	map->cursor->x = 0;
+	map->cursor->y = 0;
+	map->cursor->index = 0;
 
 	// populate tiles
 	wld_genmap(map);
@@ -325,6 +336,7 @@ struct wld_map* wld_newmap(int depth)
 }
 void wld_delmap(struct wld_map *map)
 {
+	free(map->cursor);
 	free(map->mobs);
 	free(map->mob_map);
 	free(map->tiles);
@@ -372,4 +384,25 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely)
 		mob->map_x = newx;
 		mob->map_y = newy;
 	}
+}
+void wld_movecursor(struct wld_map *map, int relx, int rely)
+{
+	map->cursor->x += relx;
+	map->cursor->y += rely;
+	if (map->cursor->x < 0 || map->cursor->x >= map->cols || map->cursor->y <0 || map->cursor->y >= map->rows)
+	{
+		// undo
+		map->cursor->x -= relx;
+		map->cursor->y -= rely;
+	} else {
+		map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
+	}
+
+	//int newx = map->cursor->x + relx;
+	//int newy = map->cursor->y + rely;
+	//int newindex = wld_calcindex(newx, newy, map->cols);
+	//// TODO give it bounds checks
+	//map->cursor->x = newx;
+	//map->cursor->y = newy;
+	//map->cursor->index = newindex;
 }

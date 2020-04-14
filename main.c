@@ -22,9 +22,12 @@ typedef int bool; // or #define bool int
 #define TCOLOR_BLACK	4
 #define TCOLOR_SKY	5
 #define TCOLOR_DAWN	6
+#define SCOLOR_ALLWHITE 7
+#define SCOLOR_CURSOR   8
 
 #define KEY_RETURN	10
 #define KEY_ESC		27
+
 #define KEY_a		97
 #define KEY_b		98
 #define KEY_c		99
@@ -51,6 +54,17 @@ typedef int bool; // or #define bool int
 #define KEY_x		120
 #define KEY_y		121
 #define KEY_z		122
+
+#define KEY_0		48
+#define KEY_1		49
+#define KEY_2		50
+#define KEY_3		51
+#define KEY_4		52
+#define KEY_5		53
+#define KEY_6		54
+#define KEY_7		55
+#define KEY_8		56
+#define KEY_9		57
 
 // UTILS
 void skip_delay(double wait_s)
@@ -105,13 +119,15 @@ bool g_setup()
 	noecho();
 	keypad(stdscr, true); // turn on F key listening
 
-	// colors
-	init_pair(SCOLOR_NORMAL, COLOR_WHITE, COLOR_BLACK);
-	init_pair(TCOLOR_NORMAL, COLOR_WHITE, COLOR_BLACK);
-	init_pair(TCOLOR_OMINOUS, COLOR_RED, COLOR_BLACK);
-	init_pair(TCOLOR_BLACK, COLOR_BLACK, COLOR_BLACK);
-	init_pair(TCOLOR_SKY, COLOR_CYAN, COLOR_BLACK);
-	init_pair(TCOLOR_DAWN, COLOR_YELLOW, COLOR_BLACK);
+	// colors ID			FG		BG
+	init_pair(SCOLOR_NORMAL,	COLOR_WHITE,	COLOR_BLACK);
+	init_pair(TCOLOR_NORMAL,	COLOR_WHITE,	COLOR_BLACK);
+	init_pair(TCOLOR_OMINOUS,	COLOR_RED,	COLOR_BLACK);
+	init_pair(TCOLOR_BLACK,		COLOR_BLACK,	COLOR_BLACK);
+	init_pair(TCOLOR_SKY,		COLOR_CYAN,	COLOR_BLACK);
+	init_pair(TCOLOR_DAWN,		COLOR_YELLOW,	COLOR_BLACK);
+	init_pair(SCOLOR_ALLWHITE,	COLOR_WHITE,	COLOR_WHITE);
+	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_WHITE);
 
 	// setup world colors
 	wld_setup();
@@ -363,9 +379,11 @@ void ps_destroy_world()
 //}
 void ps_play_draw()
 {
+	// do not clear, it causes awful redraw
 	//clear();
 	//wclear(map_pad);
 
+	// Draw map
 	for (int r=0; r < map1->rows; r++) {
 		for (int c=0; c < map1->cols; c++) {
 			int index = r * map1->cols + c;
@@ -414,6 +432,12 @@ void ps_play_draw()
 		}
 	}
 
+	// Draw cursor
+	wmove(map_pad, map1->cursor->y, map1->cursor->x);
+	wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
+	char ch = mvwinch(map_pad, map1->cursor->y * map_rows_scale, map1->cursor->x * map_cols_scale) & A_CHARTEXT;
+	waddch(map_pad, ch);
+
 	// lets calculate where to offset the pad
 	int top, left;
 	DM_CALC_CENTER_TOPLEFT(stdscr, map1->rows * map_rows_scale, map1->cols * map_cols_scale, top, left);
@@ -422,6 +446,7 @@ void ps_play_draw()
 	refresh(); // has to be called before prefresh for some reason?
 	// prefresh(pad,pminrow,pmincol,sminrow,smincol,smaxrow,smaxcol)
 	prefresh(map_pad, 0, 0, top, left, top + map1->rows * map_rows_scale, left + map1->cols * map_cols_scale);
+
 }
 void ps_play_input()
 {
@@ -430,6 +455,40 @@ void ps_play_input()
 	bool listen = true;
 	while (listen) {
 		switch (getch()) {
+		// Cursor movement
+		case KEY_8: // up
+			wld_movecursor(map1, 0, -1);
+			listen = false;
+			break;
+		case KEY_2: // down
+			wld_movecursor(map1, 0, 1);
+			listen = false;
+			break;
+		case KEY_4: // left
+			wld_movecursor(map1, -1, 0);
+			listen = false;
+			break;
+		case KEY_6: // right
+			wld_movecursor(map1, 1, 0);
+			listen = false;
+			break;
+		case KEY_7: // upleft
+			wld_movecursor(map1, -1, -1);
+			listen = false;
+			break;
+		case KEY_9: // upright
+			wld_movecursor(map1, 1, -1);
+			listen = false;
+			break;
+		case KEY_1: // downleft
+			wld_movecursor(map1, -1, 1);
+			listen = false;
+			break;
+		case KEY_3: // downright
+			wld_movecursor(map1, 1, 1);
+			listen = false;
+			break;
+		// Player movement
 		case KEY_ESC:
 			play_state = PS_MENU;
 			listen = false;
