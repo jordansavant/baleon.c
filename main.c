@@ -91,14 +91,6 @@ void debug(char *msg)
 	refresh();
 }
 
-void cursorinfo(char *msg)
-{
-	int y = getmaxy(stdscr);
-	dm_clear_row(y - 2);
-	dm_center(y - 2, msg, TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	refresh();
-}
-
 
 // GAME CODE
 enum GAME_STATE
@@ -366,6 +358,43 @@ int map_cols_scale = 2;
 WINDOW *map_pad;
 struct wld_map *map1;
 
+WINDOW* cursorpanel;
+WINDOW* mobpanel;
+
+void ui_box(WINDOW* win)
+{
+	box(win, ACS_VLINE, '=');
+}
+// helper to write to a row in a panel we boxed
+void ui_write(WINDOW *win, int row, char *msg)
+{
+	dm_clear_row_in_win(win, row + 1);
+	wmove(win, row + 1, 2);
+	waddstr(win, msg);
+}
+
+//void ui_anchor_ur(WINDOW* win, float height, float width)
+void ui_anchor_ur(WINDOW* win, float height, float width, int minrows, int mincols)
+{
+	int y, x;
+	getmaxyx(stdscr, y, x);
+	int rows = y * height;
+	int cols = x * width;
+	if (minrows > 0 && rows < minrows)
+		rows = minrows;
+	if (mincols > 0 && cols < mincols)
+		cols = mincols;
+	wresize(win, rows, cols);
+	mvwin(win, 0, x - cols);
+}
+
+void ui_cursorinfo(char *msg)
+{
+	ui_write(cursorpanel, 0, msg);
+	ui_box(cursorpanel);
+	wrefresh(cursorpanel);
+}
+
 void ui_update_cursorinfo(struct wld_map *map)
 {
 	int x = map->cursor->x;
@@ -379,10 +408,17 @@ void ui_update_cursorinfo(struct wld_map *map)
 	if (m != NULL) {
 		// TODO get "what" the mob is doing
 		struct wld_mobtype *mt = &wld_mobtypes[m->type];
-		cursorinfo(mt->short_desc);
+		ui_cursorinfo(mt->short_desc);
 	} else {
-		cursorinfo(tt->short_desc);
+		ui_cursorinfo(tt->short_desc);
 	}
+}
+void ui_update_mobpanel(struct wld_map *map)
+{
+	// probably just need to do a shadowcast event each turn to get mobs in vision
+	ui_write(mobpanel, 0, "MOBS:");
+	ui_box(mobpanel);
+	wrefresh(mobpanel);
 }
 
 void map_on_cursormove(struct wld_map *map, int x, int y, int index)
@@ -406,6 +442,22 @@ void ps_destroy_world()
 	wld_delmap(map1);
 
 	clear();
+}
+
+void ps_build_ui()
+{
+	cursorpanel = newwin(3, 50, 0, 0);
+	ui_box(cursorpanel);
+
+	// anchor to right side
+	mobpanel = newwin(0, 0, 0, 0);
+	ui_anchor_ur(mobpanel, 1, .2, 0, 30);
+	ui_box(mobpanel);
+}
+void ps_destroy_ui()
+{
+	delwin(mobpanel);
+	delwin(cursorpanel);
 }
 // TODO function on translating a screen item to the pad item
 //void translate_screenyx_mapyx(int sy, int, sx)
@@ -482,6 +534,12 @@ void ps_play_draw()
 	refresh(); // has to be called before prefresh for some reason?
 	// prefresh(pad,pminrow,pmincol,sminrow,smincol,smaxrow,smaxcol)
 	prefresh(map_pad, 0, 0, top, left, top + map1->rows * map_rows_scale, left + map1->cols * map_cols_scale);
+
+	// UI constants (needs to be done in an event?)
+	ui_update_mobpanel(map1);
+
+	wrefresh(cursorpanel);
+	wrefresh(mobpanel);
 
 }
 void ps_play_input()
@@ -591,6 +649,7 @@ void g_newgame()
 		switch (play_state) {
 		case PS_START:
 			ps_build_world();
+			ps_build_ui();
 			play_state = PS_PLAY;
 			break;
 		case PS_PLAY:
@@ -609,6 +668,7 @@ void g_newgame()
 			ps_menu_input();
 			break;
 		case PS_END:
+			ps_destroy_ui();
 			ps_destroy_world();
 			play_state = PS_EXIT;
 			game_state = GS_TITLE;

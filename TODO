@@ -9,10 +9,24 @@ CORE MECHANIC:
 
 
 TODO:
-- cursor hover tile w/ arrow movements
-- ui: info bar
-- ui: event log
-- ui: control bar
+- 
+- ui:
+	- info bar for short descriptions for hovered events
+	- event log
+	- action bar (things you can do where you are at)
+	- mob panel
+		- lists visible mobs and things
+		- their timers? health?
+		- we are a mob?
+	- interrupt event panel
+		- appears when events occur
+		- used for deeper inspection?
+	- character panel
+		- active timers (effects) (brogue)
+			- health
+			- exp?
+		- stats (defense?)
+	- inventory panel?
 - mob stats: health
 - attack mob: melee
 - attack mob: ranged
@@ -24,6 +38,7 @@ TODO:
 
 
 FEATURE CREEP
+- ui reloader when terminal fucks up
 - input recorder?
 - how do we get mouse cursor? (do we need this)
 	- see mspy.c for example code

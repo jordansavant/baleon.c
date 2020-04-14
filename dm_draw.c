@@ -29,6 +29,11 @@ void dm_clear_row(int row)
 	move(row, 0);
 	clrtoeol();
 }
+void dm_clear_row_in_win(WINDOW* win, int row)
+{
+	wmove(win, row, 0);
+	wclrtoeol(win);
+}
 
 // get a center a window in std
 WINDOW* dm_new_center_win(int row, int width, int height, int offset_x)
