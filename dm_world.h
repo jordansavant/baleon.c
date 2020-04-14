@@ -62,6 +62,7 @@ struct wld_tiletype
 	int bg_color;
 	int fg_color;
 	bool is_block;
+	char *short_desc;
 };
 struct wld_tile
 {
@@ -74,11 +75,11 @@ struct wld_tile
 // needs to correspond to tile type enum
 struct wld_tiletype wld_tiletypes[] = {
 	//			     bg fg block
-	{ TILE_VOID,		' ', 0, 0, false }, // 0
-	{ TILE_GRASS,		'"', 0, 1, false }, // 1
-	{ TILE_WATER,		' ', 4, 2, false }, // 2
-	{ TILE_TREE,		'T', 0, 1, true  }, // 3
-	{ TILE_STONEWALL,	'#', 0, 2, true  }, // 4
+	{ TILE_VOID,		' ', 0, 0, false, "" }, // 0
+	{ TILE_GRASS,		'"', 0, 1, false, "A small tuft of grass" }, // 1
+	{ TILE_WATER,		' ', 4, 2, false, "A pool of water glistens" }, // 2
+	{ TILE_TREE,		'T', 0, 1, true,  "A large tree"  }, // 3
+	{ TILE_STONEWALL,	'#', 0, 2, true,  "A stone wall" }, // 4
 };
 struct wld_tiletype* wld_get_tiletype(int id)
 {
@@ -97,12 +98,13 @@ struct wld_mobtype
 	int type;
 	char sprite;
 	int fg_color;
+	char *short_desc;
 };
 // needs to correspond to mobtype enum
 struct wld_mobtype wld_mobtypes[] = {
-	{ MOB_VOID,	' ', 0 },
-	{ MOB_PLAYER,	'@', 7 },
-	{ MOB_BUGBEAR,	'b', 2 },
+	{ MOB_VOID,	' ', 0, "" },
+	{ MOB_PLAYER,	'@', 7, "You" },
+	{ MOB_BUGBEAR,	'b', 2, "A bugbear" },
 };
 struct wld_mobtype* wld_get_mobtype(int id)
 {
@@ -403,4 +405,17 @@ void wld_movecursor(struct wld_map *map, int relx, int rely)
 		map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
 		map->on_cursormove(map, map->cursor->x, map->cursor->y, map->cursor->index);
 	}
+}
+struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y)
+{
+	int index = wld_calcindex(x, y, map->cols);
+	return &map->tiles[map->tile_map[index]];
+}
+struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y)
+{
+	int index = wld_calcindex(x, y, map->cols);
+	int id = map->mob_map[index];
+	if (id > -1)
+		return &map->mobs[id];
+	return NULL;
 }

@@ -86,8 +86,7 @@ void escapedelay(bool on)
 }
 void debug(char *msg)
 {
-	int y, x;
-	getmaxyx(stdscr, y, x);
+	int y = getmaxy(stdscr);
 	dm_center(y - 1, msg, TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 	refresh();
 }
@@ -95,6 +94,7 @@ void debug(char *msg)
 void cursorinfo(char *msg)
 {
 	int y = getmaxy(stdscr);
+	dm_clear_row(y - 2);
 	dm_center(y - 2, msg, TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
 	refresh();
 }
@@ -363,9 +363,28 @@ int map_cols_scale = 2;
 WINDOW *map_pad;
 struct wld_map *map1;
 
+void ui_update_cursorinfo(struct wld_map *map)
+{
+	int x = map->cursor->x;
+	int y = map->cursor->y;
+
+	// Get details about the tile they are on
+	struct wld_tile *t = wld_gettileat(map, x, y);
+	struct wld_tiletype *tt = &wld_tiletypes[t->type];
+
+	struct wld_mob *m = wld_getmobat(map, x, y);
+	if (m != NULL) {
+		// TODO get "what" the mob is doing
+		struct wld_mobtype *mt = &wld_mobtypes[m->type];
+		cursorinfo(mt->short_desc);
+	} else {
+		cursorinfo(tt->short_desc);
+	}
+}
+
 void map_on_cursormove(struct wld_map *map, int x, int y, int index)
 {
-	cursorinfo("cursor moved!");
+	ui_update_cursorinfo(map);
 }
 
 void ps_build_world()
