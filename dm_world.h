@@ -151,6 +151,9 @@ struct wld_map {
 	struct wld_mob *mobs;
 	struct wld_mob *player;
 	struct wld_cursor *cursor;
+
+	// function pointers game subscribes to for events
+	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
 };
 
 //int map[] = {
@@ -310,8 +313,9 @@ void wld_genmobs(struct wld_map *map)
 }
 struct wld_map* wld_newmap(int depth)
 {
-	int mapxy = 56;
 	struct wld_map *map = (struct wld_map*)malloc(sizeof(struct wld_map));
+
+	// data
 	map->rows = 56;
 	map->cols = 56;
 	map->length = 56 * 56;
@@ -325,6 +329,9 @@ struct wld_map* wld_newmap(int depth)
 	map->cursor->x = 0;
 	map->cursor->y = 0;
 	map->cursor->index = 0;
+
+	// function events
+	map->on_cursormove = NULL;
 
 	// populate tiles
 	wld_genmap(map);
@@ -387,22 +394,13 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely)
 }
 void wld_movecursor(struct wld_map *map, int relx, int rely)
 {
-	map->cursor->x += relx;
-	map->cursor->y += rely;
-	if (map->cursor->x < 0 || map->cursor->x >= map->cols || map->cursor->y <0 || map->cursor->y >= map->rows)
+	int newx = map->cursor->x + relx;
+	int newy = map->cursor->y + rely;
+	if (newx >= 0 && newx < map->cols && newy >= 0 && newy < map->rows)
 	{
-		// undo
-		map->cursor->x -= relx;
-		map->cursor->y -= rely;
-	} else {
+		map->cursor->x = newx;
+		map->cursor->y = newy;
 		map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
+		map->on_cursormove(map, map->cursor->x, map->cursor->y, map->cursor->index);
 	}
-
-	//int newx = map->cursor->x + relx;
-	//int newy = map->cursor->y + rely;
-	//int newindex = wld_calcindex(newx, newy, map->cols);
-	//// TODO give it bounds checks
-	//map->cursor->x = newx;
-	//map->cursor->y = newy;
-	//map->cursor->index = newindex;
 }

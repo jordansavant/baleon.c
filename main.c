@@ -24,6 +24,7 @@ typedef int bool; // or #define bool int
 #define TCOLOR_DAWN	6
 #define SCOLOR_ALLWHITE 7
 #define SCOLOR_CURSOR   8
+#define TCOLOR_PURPLE   9
 
 #define KEY_RETURN	10
 #define KEY_ESC		27
@@ -91,6 +92,13 @@ void debug(char *msg)
 	refresh();
 }
 
+void cursorinfo(char *msg)
+{
+	int y = getmaxy(stdscr);
+	dm_center(y - 2, msg, TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	refresh();
+}
+
 
 // GAME CODE
 enum GAME_STATE
@@ -128,6 +136,7 @@ bool g_setup()
 	init_pair(TCOLOR_DAWN,		COLOR_YELLOW,	COLOR_BLACK);
 	init_pair(SCOLOR_ALLWHITE,	COLOR_WHITE,	COLOR_WHITE);
 	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_WHITE);
+	init_pair(TCOLOR_PURPLE,	COLOR_MAGENTA,	COLOR_BLACK);
 
 	// setup world colors
 	wld_setup();
@@ -252,16 +261,16 @@ void g_title()
 
 	g_title_done = false;
 
-	dm_center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	dm_center( 2, "   +:+:    :+:   :+: :+:   :+:        :+:      : :+:    :+: :+:+:   :+:+ ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	dm_center( 3, "    +:+    +:+  +:+   +:+  +:+        +:+        +:+    +:+ :+:+:+  +:+  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	dm_center( 4, "    +#++:++#+  +#++:++#++: +#+        +#++:+#    +#+    +:+ +#+ +:+ +#+  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	dm_center( 5, "    +#+    +#+ +#+     +#+ +#+     +# +#+     +# +#+    +#+ +#+  +#+#+#  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	dm_center( 6, "    #+#    #+# #+#     #+# ########## ##########  +#+  +#+  #+#   #+#+#  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	dm_center( 7, "    ###+  +###  ##     ##                           ###     ###    ####  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	dm_center( 8, "   ##########                                               ##       ##  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	dm_center( 9, "  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #         #  ", TCOLOR_SKY, TCOLOR_NORMAL, 0);
-	dm_center(10, "    ~~ RISING AGAINST THE DARK ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	dm_center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
+	dm_center( 2, "   +:+:    :+:   :+: :+:   :+:        :+:      : :+:    :+: :+:+:   :+:+ ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
+	dm_center( 3, "    +:+    +:+  +:+   +:+  +:+        +:+        +:+    +:+ :+:+:+  +:+  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
+	dm_center( 4, "    +#++:++#+  +#++:++#++: +#+        +#++:+#    +#+    +:+ +#+ +:+ +#+  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
+	dm_center( 5, "    +#+    +#+ +#+     +#+ +#+     +# +#+     +# +#+    +#+ +#+  +#+#+#  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
+	dm_center( 6, "    #+#    #+# #+#     #+# ########## ##########  +#+  +#+  #+#   #+#+#  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
+	dm_center( 7, "    ###+  +###  ##     ##                           ###     ###    ####  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
+	dm_center( 8, "   ##########                                               ##       ##  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
+	dm_center( 9, "  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #         #  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, -1);
+	dm_center(10, "    ~~ Aberrati@ns in The Dark ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_DAWN, TCOLOR_NORMAL, 0);
 
 	refresh();
 
@@ -354,6 +363,10 @@ int map_cols_scale = 2;
 WINDOW *map_pad;
 struct wld_map *map1;
 
+void map_on_cursormove(struct wld_map *map, int x, int y, int index)
+{
+	cursorinfo("cursor moved!");
+}
 
 void ps_build_world()
 {
@@ -362,6 +375,7 @@ void ps_build_world()
 	// World is large indexed map to start
 	map1 = wld_newmap(1);
 	map_pad = newpad(map1->rows * map_rows_scale, map1->cols * map_cols_scale);
+	map1->on_cursormove = map_on_cursormove;
 }
 void ps_destroy_world()
 {
@@ -454,76 +468,63 @@ void ps_play_input()
 	escapedelay(false);
 	bool listen = true;
 	while (listen) {
+		listen = false;
 		switch (getch()) {
 		// Cursor movement
 		case KEY_8: // up
 			wld_movecursor(map1, 0, -1);
-			listen = false;
 			break;
 		case KEY_2: // down
 			wld_movecursor(map1, 0, 1);
-			listen = false;
 			break;
 		case KEY_4: // left
 			wld_movecursor(map1, -1, 0);
-			listen = false;
 			break;
 		case KEY_6: // right
 			wld_movecursor(map1, 1, 0);
-			listen = false;
 			break;
 		case KEY_7: // upleft
 			wld_movecursor(map1, -1, -1);
-			listen = false;
 			break;
 		case KEY_9: // upright
 			wld_movecursor(map1, 1, -1);
-			listen = false;
 			break;
 		case KEY_1: // downleft
 			wld_movecursor(map1, -1, 1);
-			listen = false;
 			break;
 		case KEY_3: // downright
 			wld_movecursor(map1, 1, 1);
-			listen = false;
 			break;
 		// Player movement
 		case KEY_ESC:
 			play_state = PS_MENU;
-			listen = false;
 			break;
 		case KEY_w:
 			wld_movemob(map1->player, 0, -1);
-			listen = false;
 			break;
 		case KEY_s:
 			wld_movemob(map1->player, 0, 1);
-			listen = false;
 			break;
 		case KEY_a:
 			wld_movemob(map1->player, -1, 0);
-			listen = false;
 			break;
 		case KEY_d:
 			wld_movemob(map1->player, 1, 0);
-			listen = false;
 			break;
 		case KEY_q:
 			wld_movemob(map1->player, -1, -1);
-			listen = false;
 			break;
 		case KEY_e:
 			wld_movemob(map1->player, 1, -1);
-			listen = false;
 			break;
 		case KEY_z:
 			wld_movemob(map1->player, -1, 1);
-			listen = false;
 			break;
 		case KEY_x:
 			wld_movemob(map1->player, 1, 1);
-			listen = false;
+			break;
+		default:
+			listen = true;
 			break;
 		}
 	}
