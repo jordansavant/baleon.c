@@ -281,6 +281,11 @@ void wld_genmobs(struct wld_map *map)
 			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
 			mob->type = MOB_PLAYER;
 			map->player = mob; // assign to map specifically
+
+			// set cursor nearby
+			map->cursor->x = mob->map_x + 2;
+			map->cursor->y = mob->map_y;
+			map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
 		}else {
 			// TODO this can conflict with the player if we are not careful
 			// hardcoded diagonal positions

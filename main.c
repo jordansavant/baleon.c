@@ -135,7 +135,7 @@ bool g_setup()
 	init_pair(TCOLOR_SKY,		COLOR_CYAN,	COLOR_BLACK);
 	init_pair(TCOLOR_DAWN,		COLOR_YELLOW,	COLOR_BLACK);
 	init_pair(SCOLOR_ALLWHITE,	COLOR_WHITE,	COLOR_WHITE);
-	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_WHITE);
+	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_CYAN);
 	init_pair(TCOLOR_PURPLE,	COLOR_MAGENTA,	COLOR_BLACK);
 
 	// setup world colors
@@ -418,7 +418,6 @@ void ps_play_draw()
 	// do not clear, it causes awful redraw
 	//clear();
 	//wclear(map_pad);
-	box(stdscr, ACS_VLINE, ACS_HLINE);
 
 	// Draw map
 	for (int r=0; r < map1->rows; r++) {
