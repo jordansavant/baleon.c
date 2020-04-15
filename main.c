@@ -614,6 +614,11 @@ void ps_play_input()
 void ps_play_update()
 {
 	// depending on input change and trigger various updates
+
+	// loop over map mobs and run their update routines
+	for (int i=0; i < map1->mobs_length; i++) {
+		wld_mob_update(&map1->mobs[i]);
+	}
 }
 
 void ps_menu_draw()

@@ -9,7 +9,10 @@
 typedef int bool; // or #define bool int
 #endif
 
-// COLORS
+
+///////////////////////////
+// RAW DATA
+
 int bg_colors[] = {
 	COLOR_BLACK,  // 0 void
 	COLOR_GREEN,  // 1 grass
@@ -30,22 +33,22 @@ int fg_colors[] = {
 	COLOR_YELLOW, // 6
 	COLOR_MAGENTA, // 7
 };
-
 int color_base = 100;
 int fg_size = 8;
 int bg_size = 8;
 
-// TILE TYPES
-enum WLD_TILETYPE
-{
+
+///////////////////////////
+// TILE STRUCTS
+
+enum WLD_TILETYPE {
 	TILE_VOID = 0,
 	TILE_GRASS = 1,
 	TILE_WATER = 2,
 	TILE_TREE = 3,
 	TILE_STONEWALL = 4,
 };
-struct wld_tiletype
-{
+struct wld_tiletype {
 	int type;
 	unsigned long sprite;
 	int bg_color;
@@ -53,42 +56,36 @@ struct wld_tiletype
 	bool is_block;
 	char *short_desc;
 };
-struct wld_tile
-{
+struct wld_tile {
 	int id; // position in tile list
 	int map_x, map_y, map_index;
 	enum WLD_TILETYPE type;
 	struct wld_map *map;
 	// on_enter, on_leave events
 };
-// needs to correspond to tile type enum
 struct wld_tiletype *wld_tiletypes;
 
-struct wld_tiletype* wld_get_tiletype(int id)
-{
-	return &wld_tiletypes[id];
-}
 
-// MOB TYPES
-enum WLD_MOBTYPE
-{
+///////////////////////////
+// MOB STRUCTS
+
+enum WLD_MOBTYPE {
 	MOB_VOID = 0,
 	MOB_PLAYER = 1,
 	MOB_BUGBEAR = 2,
 };
-struct wld_mobtype
-{
+enum WLD_MOB_STATE {
+	MS_START,
+	MS_DEAD,
+	MS_WANDER,
+	MS_SLEEP,
+	MS_HUNT,
+};
+struct wld_mobtype {
 	int type;
 	unsigned long sprite;
 	int fg_color;
 	char *short_desc;
-};
-// needs to correspond to mobtype enum
-struct wld_mobtype *wld_mobtypes;
-
-struct wld_mobtype* wld_get_mobtype(int id)
-{
-	return &wld_mobtypes[id];
 };
 struct wld_mob
 {
@@ -96,25 +93,14 @@ struct wld_mob
 	int map_x, map_y, map_index; // position in map geo and index
 	enum WLD_MOBTYPE type; // wld_mobtypes struct index
 	struct wld_map *map;
+	enum WLD_MOB_STATE state;
+	void (*ai_wander)(struct wld_mob*, enum WLD_MOB_STATE);
 };
+struct wld_mobtype *wld_mobtypes;
 
-// TILE AND MOB COLOR LOOKUPS
-int wld_cpair(int tiletype, int mobtype)
-{
-	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
-	if (mobtype == 0)
-		return color_base + (tt->fg_color * fg_size + tt->bg_color);
-	struct wld_mobtype *mt = wld_get_mobtype(mobtype);
-	return color_base + (mt->fg_color * fg_size + tt->bg_color);
-}
 
-int wld_cpair_bg(int tiletype)
-{
-	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
-	return color_base + tt->bg_color; // no addition of foreground so it is black
-}
-
-// WORLD MAP
+///////////////////////////
+// WORLD STRUCTS
 
 struct wld_cursor {
 	int x;
@@ -129,14 +115,147 @@ struct wld_map {
 	int depth;
 	int *tile_map; // array of tile types
 	struct wld_tile *tiles;
+	unsigned int tiles_length;
 	int *mob_map; // array of mob ids in mob listing
 	struct wld_mob *mobs;
+	unsigned int mobs_length;
 	struct wld_mob *player;
 	struct wld_cursor *cursor;
 
 	// function pointers game subscribes to for events
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
 };
+
+
+///////////////////////////
+// UTILITY METHODS
+
+struct wld_tiletype* wld_get_tiletype(int id)
+{
+	return &wld_tiletypes[id];
+}
+struct wld_mobtype* wld_get_mobtype(int id)
+{
+	return &wld_mobtypes[id];
+};
+int wld_cpair(int tiletype, int mobtype)
+{
+	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
+	if (mobtype == 0)
+		return color_base + (tt->fg_color * fg_size + tt->bg_color);
+	struct wld_mobtype *mt = wld_get_mobtype(mobtype);
+	return color_base + (mt->fg_color * fg_size + tt->bg_color);
+}
+
+int wld_cpair_bg(int tiletype)
+{
+	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
+	return color_base + tt->bg_color; // no addition of foreground so it is black
+}
+int wld_calcindex(int x, int y, int cols)
+{
+	return y * cols + x;
+}
+int wld_calcx(int index, int cols)
+{
+	return index % cols;
+}
+int wld_calcy(int index, int cols)
+{
+	return index / cols;
+}
+bool wld_canmoveto(struct wld_map *map, int x, int y)
+{
+	// make sure its in bounds
+	if (x >= map->cols || y >= map->rows || x < 0 || y < 0) {
+		return false;
+	}
+
+	// current rules just check if a mob is ther
+	int map_index = wld_calcindex(x, y, map->cols);
+	int mob_id = map->mob_map[map_index];
+	if (mob_id > -1)
+		return false;
+
+	int tile_id = map->tile_map[map_index];
+	int tiletype = map->tiles[tile_id].type;
+	struct wld_tiletype *tt = &wld_tiletypes[tiletype];
+	if (tt->is_block)
+		return false;
+
+	return true;
+}
+void wld_movemob(struct wld_mob *mob, int relx, int rely)
+{
+	// TODO speeds and things could come into play here
+	int newx = mob->map_x + relx;
+	int newy = mob->map_y + rely;
+
+	// test if we can do this move
+	if (wld_canmoveto(mob->map, newx, newy)) {
+		int old_index = mob->map_index;
+		int new_index = wld_calcindex(newx, newy, mob->map->cols);
+
+		// update indexes
+		mob->map->mob_map[new_index] = mob->id;
+		mob->map->mob_map[old_index] = -1; // vacated
+
+		// update position
+		mob->map_index = new_index;
+		mob->map_x = newx;
+		mob->map_y = newy;
+	}
+}
+void wld_movecursor(struct wld_map *map, int relx, int rely)
+{
+	int newx = map->cursor->x + relx;
+	int newy = map->cursor->y + rely;
+	if (newx >= 0 && newx < map->cols && newy >= 0 && newy < map->rows)
+	{
+		map->cursor->x = newx;
+		map->cursor->y = newy;
+		map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
+		map->on_cursormove(map, map->cursor->x, map->cursor->y, map->cursor->index);
+	}
+}
+struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y)
+{
+	int index = wld_calcindex(x, y, map->cols);
+	return &map->tiles[map->tile_map[index]];
+}
+struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y)
+{
+	int index = wld_calcindex(x, y, map->cols);
+	int id = map->mob_map[index];
+	if (id > -1)
+		return &map->mobs[id];
+	return NULL;
+}
+
+
+///////////////////////////
+// MOB AI
+
+void ai_mob_wander(struct wld_mob *mob, enum WLD_MOB_STATE state)
+{
+	wld_movemob(mob, 1, 0);
+}
+void wld_mob_update(struct wld_mob *mob)
+{
+	switch (mob->state) {
+	case MS_START:
+		// TODO setup starting state (like a constructor)
+		mob->state = MS_WANDER;
+		break;
+	case MS_WANDER:
+		if (mob->ai_wander != NULL)
+			mob->ai_wander(mob, mob->state);
+		break;
+	}
+}
+
+///////////////////////////
+// MAP INITIALIZATION
 
 //int map[] = {
 //	1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
@@ -211,24 +330,13 @@ int map_data[] = {
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 };
 
-int wld_calcindex(int x, int y, int cols)
-{
-	return y * cols + x;
-}
-int wld_calcx(int index, int cols)
-{
-	return index % cols;
-}
-int wld_calcy(int index, int cols)
-{
-	return index / cols;
-}
-void wld_genmap(struct wld_map *map)
+void wld_gentiles(struct wld_map *map)
 {
 	int *tile_map_array = (int*)malloc(map->length * sizeof(int));
 	int *mob_map_array = (int*)malloc(map->length * sizeof(int));
 
 	map->tiles = (struct wld_tile*)malloc(map->length * sizeof(struct wld_tile));
+	map->tiles_length = map->length;
 
 	// randomly fill map with grass, water, and trees
 	for (int i=0; i < map->length; i++) {
@@ -264,6 +372,7 @@ void wld_genmobs(struct wld_map *map)
 	// hardcoded to 3 mobs for now
 	int mob_count = 2;
 	map->mobs = (struct wld_mob*)malloc(mob_count * sizeof(struct wld_mob));
+	map->mobs_length = mob_count;
 
 	// setup mobs in mob map
 	for (int i=0; i < mob_count; i++) {
@@ -272,6 +381,9 @@ void wld_genmobs(struct wld_map *map)
 		// create reference to parent map
 		mob->id = i;
 		mob->map = map;
+		mob->state = MS_START;
+		mob->ai_wander = NULL;
+
 		// first mob is player
 		if (i == 0) {
 			// hardcoded to center of map until we get a heuristic for map entrance
@@ -293,6 +405,7 @@ void wld_genmobs(struct wld_map *map)
 			mob->map_y = 36;
 			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
 			mob->type = MOB_BUGBEAR;
+			mob->ai_wander = ai_mob_wander;
 		}
 		// set mob's id into the mob map
 		map->mob_map[mob->map_index] = i;
@@ -321,7 +434,7 @@ struct wld_map* wld_newmap(int depth)
 	map->on_cursormove = NULL;
 
 	// populate tiles
-	wld_genmap(map);
+	wld_gentiles(map);
 
 	// build an populate map with mobs
 	wld_genmobs(map);
@@ -337,76 +450,10 @@ void wld_delmap(struct wld_map *map)
 	free(map->tile_map);
 	free(map);
 }
-bool wld_canmoveto(struct wld_map *map, int x, int y)
-{
-	// make sure its in bounds
-	if (x >= map->cols || y >= map->rows || x < 0 || y < 0) {
-		return false;
-	}
-
-	// current rules just check if a mob is ther
-	int map_index = wld_calcindex(x, y, map->cols);
-	int mob_id = map->mob_map[map_index];
-	if (mob_id > -1)
-		return false;
-
-	int tile_id = map->tile_map[map_index];
-	int tiletype = map->tiles[tile_id].type;
-	struct wld_tiletype *tt = &wld_tiletypes[tiletype];
-	if (tt->is_block)
-		return false;
-
-	return true;
-}
-void wld_movemob(struct wld_mob *mob, int relx, int rely)
-{
-	// TODO speeds and things could come into play here
-	int newx = mob->map_x + relx;
-	int newy = mob->map_y + rely;
-
-	// test if we can do this move
-	if (wld_canmoveto(mob->map, newx, newy)) {
-		int old_index = mob->map_index;
-		int new_index = wld_calcindex(newx, newy, mob->map->cols);
-
-		// update indexes
-		mob->map->mob_map[new_index] = mob->id;
-		mob->map->mob_map[old_index] = -1; // vacated
-
-		// update position
-		mob->map_index = new_index;
-		mob->map_x = newx;
-		mob->map_y = newy;
-	}
-}
-void wld_movecursor(struct wld_map *map, int relx, int rely)
-{
-	int newx = map->cursor->x + relx;
-	int newy = map->cursor->y + rely;
-	if (newx >= 0 && newx < map->cols && newy >= 0 && newy < map->rows)
-	{
-		map->cursor->x = newx;
-		map->cursor->y = newy;
-		map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
-		map->on_cursormove(map, map->cursor->x, map->cursor->y, map->cursor->index);
-	}
-}
-struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y)
-{
-	int index = wld_calcindex(x, y, map->cols);
-	return &map->tiles[map->tile_map[index]];
-}
-struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y)
-{
-	int index = wld_calcindex(x, y, map->cols);
-	int id = map->mob_map[index];
-	if (id > -1)
-		return &map->mobs[id];
-	return NULL;
-}
 
 
-
+///////////////////////////
+// WORLD INITALIZATION
 
 void wld_setup()
 {
@@ -451,7 +498,6 @@ void wld_setup()
 		wld_mobtypes[i].short_desc = mts[i].short_desc;
 	}
 }
-
 void wld_teardown()
 {
 	free(wld_mobtypes);
