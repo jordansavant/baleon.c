@@ -95,6 +95,7 @@ struct wld_mob
 	struct wld_map *map;
 	enum WLD_MOB_STATE state;
 	void (*ai_wander)(struct wld_mob*, enum WLD_MOB_STATE);
+	int queuex, queuey;
 };
 struct wld_mobtype *wld_mobtypes;
 
@@ -107,7 +108,6 @@ struct wld_cursor {
 	int y;
 	int index;
 };
-
 struct wld_map {
 	int rows;
 	int cols;
@@ -185,9 +185,15 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 
 	return true;
 }
+void wld_queuemobmove(struct wld_mob *mob, int relx, int rely)
+{
+	mob->queuex += relx;
+	mob->queuey += rely;
+}
 void wld_movemob(struct wld_mob *mob, int relx, int rely)
 {
 	// TODO speeds and things could come into play here
+	// TODO need to make sure they do not diagonally move around corners
 	int newx = mob->map_x + relx;
 	int newy = mob->map_y + rely;
 
@@ -242,6 +248,7 @@ void ai_mob_wander(struct wld_mob *mob, enum WLD_MOB_STATE state)
 }
 void wld_mob_update(struct wld_mob *mob)
 {
+	// apply ai
 	switch (mob->state) {
 	case MS_START:
 		// TODO setup starting state (like a constructor)
@@ -252,6 +259,12 @@ void wld_mob_update(struct wld_mob *mob)
 			mob->ai_wander(mob, mob->state);
 		break;
 	}
+
+	// apply changes
+	// TODO maybe this should be a dynamic array?
+	wld_movemob(mob, mob->queuex, mob->queuey);
+	mob->queuex = 0;
+	mob->queuey = 0;
 }
 
 ///////////////////////////
@@ -382,6 +395,8 @@ void wld_genmobs(struct wld_map *map)
 		mob->id = i;
 		mob->map = map;
 		mob->state = MS_START;
+		mob->queuex = 0;
+		mob->queuey = 0;
 		mob->ai_wander = NULL;
 
 		// first mob is player
@@ -407,6 +422,7 @@ void wld_genmobs(struct wld_map *map)
 			mob->type = MOB_BUGBEAR;
 			mob->ai_wander = ai_mob_wander;
 		}
+
 		// set mob's id into the mob map
 		map->mob_map[mob->map_index] = i;
 	}

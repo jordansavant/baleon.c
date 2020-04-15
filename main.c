@@ -346,6 +346,7 @@ enum PLAY_STATE
 	PS_START,
 	PS_PLAY,
 	PS_MENU,
+	PS_MAPCHANGE,
 	PS_END, // do not call exit directly
 	PS_EXIT,
 };
@@ -356,7 +357,7 @@ enum PLAY_STATE play_state = PS_START;
 int map_rows_scale = 1;
 int map_cols_scale = 2;
 WINDOW *map_pad;
-struct wld_map *map1;
+struct wld_map *current_map;
 
 WINDOW* cursorpanel;
 WINDOW* mobpanel;
@@ -431,15 +432,15 @@ void ps_build_world()
 	clear();
 
 	// World is large indexed map to start
-	map1 = wld_newmap(1);
-	map_pad = newpad(map1->rows * map_rows_scale, map1->cols * map_cols_scale);
-	map1->on_cursormove = map_on_cursormove;
+	current_map = wld_newmap(1);
+	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
+	current_map->on_cursormove = map_on_cursormove;
 }
 void ps_destroy_world()
 {
 	// THIS HAS NOT BEEN TESTED I CANT FIND DOCS ON HOW TO CLEAN UP PAD MEMORY
 	delwin(map_pad);
-	wld_delmap(map1);
+	wld_delmap(current_map);
 
 	clear();
 }
@@ -472,19 +473,19 @@ void ps_play_draw()
 	//wclear(map_pad);
 
 	// Draw map
-	for (int r=0; r < map1->rows; r++) {
-		for (int c=0; c < map1->cols; c++) {
-			int index = r * map1->cols + c;
+	for (int r=0; r < current_map->rows; r++) {
+		for (int c=0; c < current_map->cols; c++) {
+			int index = r * current_map->cols + c;
 
 			// get tile from tile map
-			int tile_id = map1->tile_map[index];
-			int tiletype = map1->tiles[tile_id].type;
+			int tile_id = current_map->tile_map[index];
+			int tiletype = current_map->tiles[tile_id].type;
 
 			// get mob from mob map index
-			int mob_id = map1->mob_map[index];
+			int mob_id = current_map->mob_map[index];
 			int mobtype = 0;
 			if (mob_id > -1) {
-				mobtype = map1->mobs[mob_id].type;
+				mobtype = current_map->mobs[mob_id].type;
 			}
 
 			// get type structs for rendering
@@ -521,87 +522,96 @@ void ps_play_draw()
 	}
 
 	// Draw cursor
-	wmove(map_pad, map1->cursor->y * map_rows_scale, map1->cursor->x * map_cols_scale);
+	wmove(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale);
 	wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
-	char ch = mvwinch(map_pad, map1->cursor->y * map_rows_scale, map1->cursor->x * map_cols_scale) & A_CHARTEXT;
+	char ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale) & A_CHARTEXT;
 	waddch(map_pad, ch);
 
 	// lets calculate where to offset the pad
 	int top, left;
-	DM_CALC_CENTER_TOPLEFT(stdscr, map1->rows * map_rows_scale, map1->cols * map_cols_scale, top, left);
+	DM_CALC_CENTER_TOPLEFT(stdscr, current_map->rows * map_rows_scale, current_map->cols * map_cols_scale, top, left);
 
 	// render pad
 	refresh(); // has to be called before prefresh for some reason?
 	// prefresh(pad,pminrow,pmincol,sminrow,smincol,smaxrow,smaxcol)
-	prefresh(map_pad, 0, 0, top, left, top + map1->rows * map_rows_scale, left + map1->cols * map_cols_scale);
+	prefresh(map_pad, 0, 0, top, left, top + current_map->rows * map_rows_scale, left + current_map->cols * map_cols_scale);
 
 	// UI constants (needs to be done in an event?)
-	ui_update_mobpanel(map1);
+	ui_update_mobpanel(current_map);
 
 	wrefresh(cursorpanel);
 	wrefresh(mobpanel);
-
 }
+bool trigger_world = false;
 void ps_play_input()
 {
 	nodelay(stdscr, true);
 	escapedelay(false);
 	bool listen = true;
+	trigger_world = false;
 	while (listen) {
 		listen = false;
 		switch (getch()) {
 		// Cursor movement
 		case KEY_8: // up
-			wld_movecursor(map1, 0, -1);
+			wld_movecursor(current_map, 0, -1);
 			break;
 		case KEY_2: // down
-			wld_movecursor(map1, 0, 1);
+			wld_movecursor(current_map, 0, 1);
 			break;
 		case KEY_4: // left
-			wld_movecursor(map1, -1, 0);
+			wld_movecursor(current_map, -1, 0);
 			break;
 		case KEY_6: // right
-			wld_movecursor(map1, 1, 0);
+			wld_movecursor(current_map, 1, 0);
 			break;
 		case KEY_7: // upleft
-			wld_movecursor(map1, -1, -1);
+			wld_movecursor(current_map, -1, -1);
 			break;
 		case KEY_9: // upright
-			wld_movecursor(map1, 1, -1);
+			wld_movecursor(current_map, 1, -1);
 			break;
 		case KEY_1: // downleft
-			wld_movecursor(map1, -1, 1);
+			wld_movecursor(current_map, -1, 1);
 			break;
 		case KEY_3: // downright
-			wld_movecursor(map1, 1, 1);
+			wld_movecursor(current_map, 1, 1);
 			break;
 		// Player movement
 		case KEY_ESC:
 			play_state = PS_MENU;
 			break;
 		case KEY_w:
-			wld_movemob(map1->player, 0, -1);
+			wld_queuemobmove(current_map->player, 0, -1);
+			trigger_world = true;
 			break;
 		case KEY_s:
-			wld_movemob(map1->player, 0, 1);
+			wld_queuemobmove(current_map->player, 0, 1);
+			trigger_world = true;
 			break;
 		case KEY_a:
-			wld_movemob(map1->player, -1, 0);
+			wld_queuemobmove(current_map->player, -1, 0);
+			trigger_world = true;
 			break;
 		case KEY_d:
-			wld_movemob(map1->player, 1, 0);
+			wld_queuemobmove(current_map->player, 1, 0);
+			trigger_world = true;
 			break;
 		case KEY_q:
-			wld_movemob(map1->player, -1, -1);
+			wld_queuemobmove(current_map->player, -1, -1);
+			trigger_world = true;
 			break;
 		case KEY_e:
-			wld_movemob(map1->player, 1, -1);
+			wld_queuemobmove(current_map->player, 1, -1);
+			trigger_world = true;
 			break;
 		case KEY_z:
-			wld_movemob(map1->player, -1, 1);
+			wld_queuemobmove(current_map->player, -1, 1);
+			trigger_world = true;
 			break;
 		case KEY_x:
-			wld_movemob(map1->player, 1, 1);
+			wld_queuemobmove(current_map->player, 1, 1);
+			trigger_world = true;
 			break;
 		default:
 			listen = true;
@@ -615,9 +625,11 @@ void ps_play_update()
 {
 	// depending on input change and trigger various updates
 
-	// loop over map mobs and run their update routines
-	for (int i=0; i < map1->mobs_length; i++) {
-		wld_mob_update(&map1->mobs[i]);
+	if (trigger_world) {
+		// loop over map mobs and run their update routines
+		for (int i=0; i < current_map->mobs_length; i++) {
+			wld_mob_update(&current_map->mobs[i]);
+		}
 	}
 }
 
@@ -671,6 +683,8 @@ void g_newgame()
 		case PS_MENU:
 			ps_menu_draw();
 			ps_menu_input();
+			break;
+		case PS_MAPCHANGE:
 			break;
 		case PS_END:
 			ps_destroy_ui();
