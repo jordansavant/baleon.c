@@ -50,6 +50,7 @@ enum WLD_TILETYPE {
 	TILE_WATER = 2,
 	TILE_TREE = 3,
 	TILE_STONEWALL = 4,
+	TILE_STONEFLOOR = 5,
 };
 struct wld_tiletype {
 	int type;
@@ -254,7 +255,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 	{
 		on_see(mob, x, y, radius);
 	}
-	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 10, wld_ss_isblocked, wld_ss_onvisible);
+	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 20, wld_ss_isblocked, wld_ss_onvisible);
 }
 
 
@@ -384,7 +385,7 @@ void wld_gentiles(struct wld_map *map)
 		switch (map_data_type) {
 		default:
 		case 1:
-			tile->type = TILE_VOID;
+			tile->type = TILE_STONEFLOOR;
 			break;
 		case 2:
 			tile->type = TILE_STONEWALL;
@@ -507,8 +508,9 @@ void wld_setup()
 		{ TILE_VOID,            ' ', 0, 0, false, "" }, // 0
 		{ TILE_GRASS,           '"', 0, 1, false, "A small tuft of grass" }, // 1
 		{ TILE_WATER,           ' ', 4, 2, false, "A pool of water glistens" }, // 2
-		{ TILE_TREE,            'T', 0, 1, true,  "A large tree"  }, // 3
-		{ TILE_STONEWALL,       '#', 0, 2, true,  "A stone wall" }, // 4
+		{ TILE_TREE,            'T', 0, 1, true,  "A large tree" }, // 3
+		{ TILE_STONEWALL,       '#', 2, 2, true,  "A stone wall" }, // 4
+		{ TILE_STONEFLOOR,      '.', 0, 2, false, "Stone floor" }, // 5
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {

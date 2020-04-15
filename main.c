@@ -497,7 +497,6 @@ void ps_play_draw_tile(struct wld_tile *t)
 	int r = t->map_y;
 	int c = t->map_x;
 	//dmlogxy("onvisible player", current_map->player->map_x, current_map->player->map_y);
-	dmlogxy("onvisible", c, r);
 
 	// get tile from tile map
 	int tile_id = t->map->tile_map[index];
@@ -520,26 +519,23 @@ void ps_play_draw_tile(struct wld_tile *t)
 		cha = tt->sprite;
 
 	// render to pad
-	move(r * map_rows_scale, c * map_cols_scale);
-	// wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out
-	attrset(COLOR_PAIR(colorpair));
-	// wattrset(map_pad, COLOR_PAIR(colorpair));
-	addch(cha);
-	// waddch(map_pad, cha); // pad
+	wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out
+	wattrset(map_pad, COLOR_PAIR(colorpair));
+	waddch(map_pad, cha); // pad
 
 	// extra padding if we are scaling the columns to make it appear at a better ratio in the terminal
 	if (map_cols_scale > 1 || map_rows_scale > 1) {
 		int bg_only = wld_cpair_bg(tiletype);
-		for (int i=0; i < map_cols_scale; i++) {
-			wmove(map_pad, r * map_rows_scale, c * map_cols_scale + i+1);
+		for (int i=1; i < map_cols_scale; i++) {
+			wmove(map_pad, r * map_rows_scale, c * map_cols_scale + i);
 			wattrset(map_pad, COLOR_PAIR(bg_only));
 			waddch(map_pad, ' '); // pad
-
-			for (int j=0; j < map_rows_scale; j++) {
-				wmove(map_pad, r * map_rows_scale + j+1, c * map_cols_scale + i);
-				wattrset(map_pad, COLOR_PAIR(bg_only));
-				waddch(map_pad, ' '); // pad
-			}
+			// TODO, stopped working correctly after shadowcaster
+			//for (int j=1; j < map_rows_scale; j++) {
+			//	wmove(map_pad, r * map_rows_scale + j, c * map_cols_scale + i);
+			//	wattrset(map_pad, COLOR_PAIR(bg_only));
+			//	waddch(map_pad, ' '); // pad
+			//}
 		}
 	}
 }
@@ -569,10 +565,10 @@ void ps_play_draw()
 	}
 
 	// Draw cursor
-	wmove(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale);
-	wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
-	char ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale) & A_CHARTEXT;
-	waddch(map_pad, ch);
+	//wmove(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale);
+	//wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
+	//char ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale) & A_CHARTEXT;
+	//waddch(map_pad, ch);
 
 	// lets calculate where to offset the pad
 	int top, left;
@@ -581,7 +577,7 @@ void ps_play_draw()
 	// render pad
 	refresh(); // has to be called before prefresh for some reason?
 	// prefresh(pad,pminrow,pmincol,sminrow,smincol,smaxrow,smaxcol)
-	//prefresh(map_pad, 0, 0, top, left, top + current_map->rows * map_rows_scale, left + current_map->cols * map_cols_scale);
+	prefresh(map_pad, 0, 0, top, left, top + current_map->rows * map_rows_scale, left + current_map->cols * map_cols_scale);
 
 	// UI constants (needs to be done in an event?)
 	ui_update_mobpanel(current_map);
