@@ -491,44 +491,26 @@ void ps_destroy_ui()
 //	// get difference between pad top,left and screen top,left
 //	// subtract that from screen y,x to get pad y,x
 //}
-void ps_play_draw_tile(struct wld_tile *t)
+void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
 {
-	int index = t->map_index;
-	int r = t->map_y;
-	int c = t->map_x;
-	//dmlogxy("onvisible player", current_map->player->map_x, current_map->player->map_y);
-
-	// get tile from tile map
-	int tile_id = t->map->tile_map[index];
-	int tiletype = t->map->tiles[tile_id].type;
-
-	// get mob from mob map index
-	int mob_id = t->map->mob_map[index];
-	int mobtype = 0;
-	if (mob_id > -1)
-		mobtype = t->map->mobs[mob_id].type;
-
-	// get type structs for rendering
-	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
-	struct wld_mobtype *mt = wld_get_mobtype(mobtype);
-	int colorpair = wld_cpair(tiletype, mobtype);
-
-	// default symbol to mob, if no mob symbol then tile symbol if there is one
-	unsigned long cha = mt->sprite;
-	if (mt->sprite == ' ')
-		cha = tt->sprite;
-
-	// render to pad
+	// get the map tile at this position and draw it
+	struct wld_tile *t = wld_gettileat(mob->map, x, y);
+	t->is_visible = true;
+	t->was_visible = true;
+}
+void ps_draw_tile(int r, int c, char cha, int colorpair, bool bold)
+{
 	wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out
-	wattrset(map_pad, COLOR_PAIR(colorpair));
+	if (bold)
+		wattrset(map_pad, COLOR_PAIR(colorpair) | A_BOLD);
+	else
+		wattrset(map_pad, COLOR_PAIR(colorpair));
 	waddch(map_pad, cha); // pad
-
 	// extra padding if we are scaling the columns to make it appear at a better ratio in the terminal
 	if (map_cols_scale > 1 || map_rows_scale > 1) {
-		int bg_only = wld_cpair_bg(tiletype);
 		for (int i=1; i < map_cols_scale; i++) {
 			wmove(map_pad, r * map_rows_scale, c * map_cols_scale + i);
-			wattrset(map_pad, COLOR_PAIR(bg_only));
+			wattrset(map_pad, COLOR_PAIR(colorpair));
 			waddch(map_pad, ' '); // pad
 			// TODO, stopped working correctly after shadowcaster
 			//for (int j=1; j < map_rows_scale; j++) {
@@ -539,36 +521,43 @@ void ps_play_draw_tile(struct wld_tile *t)
 		}
 	}
 }
-void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
-{
-	// get the map tile at this position and draw it
-	//debug("SHADOWCAST");
-	struct wld_tile *t = wld_gettileat(mob->map, x, y);
-	ps_play_draw_tile(t);
-}
 void ps_play_draw()
 {
 	// do not clear, it causes awful redraw
 	//clear();
 	//wclear(map_pad);
-
-	// Get a list of visible map tiles from the player in the world
-	dmlog("play draw");
+	// Draw tiles within the vision of the player
 	wld_mobvision(current_map->player, ps_play_draw_onvisible);
 
-	// Draw map
+	// Clear map without flutter
 	for (int r=0; r < current_map->rows; r++) {
+		wmove(map_pad, r, 0);
+		wclrtoeol(map_pad);
 		for (int c=0; c < current_map->cols; c++) {
-			int index = r * current_map->cols + c;
+			struct wld_tile *t = wld_gettileat(current_map, c, r);
+			struct wld_tiletype *tt = wld_get_tiletype(t->type);
 
+			if (t->is_visible) {
+				struct draw_struct ds = wld_get_drawstruct(current_map, c, r);
+
+				ps_draw_tile(r, c, ds.sprite, ds.colorpair, true);
+
+			} else if (t->was_visible) {
+				struct draw_struct ds = wld_get_memory_drawstruct(current_map, c, r);
+
+				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
+			}
+
+			t->is_visible = false;
 		}
 	}
 
+
 	// Draw cursor
-	//wmove(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale);
-	//wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
-	//char ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale) & A_CHARTEXT;
-	//waddch(map_pad, ch);
+	wmove(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale);
+	wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
+	char ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale) & A_CHARTEXT;
+	waddch(map_pad, ch);
 
 	// lets calculate where to offset the pad
 	int top, left;

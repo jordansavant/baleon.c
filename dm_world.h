@@ -57,6 +57,9 @@ struct wld_tiletype {
 	unsigned long sprite;
 	int bg_color;
 	int fg_color;
+	unsigned long memory_sprite;
+	int memory_bg_color;
+	int memory_fg_color;
 	bool is_block;
 	char *short_desc;
 };
@@ -65,6 +68,8 @@ struct wld_tile {
 	int map_x, map_y, map_index;
 	enum WLD_TILETYPE type;
 	struct wld_map *map;
+	bool is_visible;
+	bool was_visible;
 	// on_enter, on_leave events
 };
 struct wld_tiletype *wld_tiletypes;
@@ -89,6 +94,8 @@ struct wld_mobtype {
 	int type;
 	unsigned long sprite;
 	int fg_color;
+	unsigned long memory_sprite;
+	int memory_fg_color;
 	char *short_desc;
 };
 struct wld_mob
@@ -149,6 +156,11 @@ int wld_cpair(int tiletype, int mobtype)
 		return color_base + (tt->fg_color * fg_size + tt->bg_color);
 	struct wld_mobtype *mt = wld_get_mobtype(mobtype);
 	return color_base + (mt->fg_color * fg_size + tt->bg_color);
+}
+int wld_cpairmem(int tiletype)
+{
+	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
+	return color_base + (tt->memory_fg_color * fg_size + tt->memory_bg_color);
 }
 
 int wld_cpair_bg(int tiletype)
@@ -256,6 +268,41 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 		on_see(mob, x, y, radius);
 	}
 	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 20, wld_ss_isblocked, wld_ss_onvisible);
+}
+struct draw_struct {
+	int colorpair;
+	unsigned long sprite;
+};
+struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
+{
+	struct wld_tile *t = wld_gettileat(map, x, y);
+	struct wld_tiletype *tt = wld_get_tiletype(t->type);
+	unsigned long cha = tt->sprite;
+	int mob_id = map->mob_map[t->map_index];
+	int colorpair;
+	if (mob_id > -1) {
+		struct wld_mob *m = wld_getmobat(map, x, y);
+		struct wld_mobtype *mt = wld_get_mobtype(m->type);
+		if (mt->sprite != ' ')
+			cha = mt->sprite;
+		colorpair = wld_cpair(t->type, m->type);
+	} else {
+		colorpair = wld_cpair(t->type, 0);
+	}
+
+	struct draw_struct ds = { colorpair, cha };
+	return ds;
+}
+struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y)
+{
+	// memory we do not look at mob data
+	struct wld_tile *t = wld_gettileat(map, x, y);
+	struct wld_tiletype *tt = wld_get_tiletype(t->type);
+	unsigned long cha = tt->memory_sprite;
+	int colorpair = wld_cpairmem(t->type);
+
+	struct draw_struct ds = { colorpair, cha };
+	return ds;
 }
 
 
@@ -381,6 +428,8 @@ void wld_gentiles(struct wld_map *map)
 		tile->map_x = wld_calcx(i, map->cols);
 		tile->map_y = wld_calcy(i, map->cols);
 		tile->map_index = i;
+		tile->is_visible = false;
+		tile->was_visible = false;
 
 		switch (map_data_type) {
 		default:
@@ -505,12 +554,12 @@ void wld_setup()
 
 	// copy tiletypes into malloc
 	struct wld_tiletype tts[] = {
-		{ TILE_VOID,            ' ', 0, 0, false, "" }, // 0
-		{ TILE_GRASS,           '"', 0, 1, false, "A small tuft of grass" }, // 1
-		{ TILE_WATER,           ' ', 4, 2, false, "A pool of water glistens" }, // 2
-		{ TILE_TREE,            'T', 0, 1, true,  "A large tree" }, // 3
-		{ TILE_STONEWALL,       '#', 2, 2, true,  "A stone wall" }, // 4
-		{ TILE_STONEFLOOR,      '.', 0, 2, false, "Stone floor" }, // 5
+		{ TILE_VOID,            ' ', 0, 0, ' ', 0, 0, false, "" }, // 0
+		{ TILE_GRASS,           '"', 0, 1, '"', 0, 0, false, "A small tuft of grass" }, // 1
+		{ TILE_WATER,           ' ', 4, 2, ' ', 0, 0, false, "A pool of water glistens" }, // 2
+		{ TILE_TREE,            'T', 0, 1, 'T', 0, 0, true,  "A large tree" }, // 3
+		{ TILE_STONEWALL,       '#', 0, 2, '#', 0, 3, true,  "A stone wall" }, // 4
+		{ TILE_STONEFLOOR,      '.', 0, 2, '.', 0, 3, false, "Stone floor" }, // 5
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
@@ -518,15 +567,18 @@ void wld_setup()
 		wld_tiletypes[i].sprite = tts[i].sprite;
 		wld_tiletypes[i].fg_color = tts[i].fg_color;
 		wld_tiletypes[i].bg_color = tts[i].bg_color;
+		wld_tiletypes[i].memory_sprite = tts[i].memory_sprite;
+		wld_tiletypes[i].memory_fg_color = tts[i].memory_fg_color;
+		wld_tiletypes[i].memory_bg_color = tts[i].memory_bg_color;
 		wld_tiletypes[i].is_block = tts[i].is_block;
 		wld_tiletypes[i].short_desc = tts[i].short_desc;
 	}
 
 	// copy mob types into malloc
 	struct wld_mobtype mts [] = {
-		{ MOB_VOID,	' ',	0,	"" },
-		{ MOB_PLAYER,	'@',	7,	"You" },
-		{ MOB_BUGBEAR,	'b',	2,	"A bugbear" },
+		{ MOB_VOID,	' ', 0, ' ', 0, "" },
+		{ MOB_PLAYER,	'@', 7, '@', 2, "You" },
+		{ MOB_BUGBEAR,	'b', 3, 'b', 2, "A bugbear" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
