@@ -558,8 +558,8 @@ void wld_setup()
 		{ TILE_GRASS,           '"', 0, 1, '"', 0, 0, false, "A small tuft of grass" }, // 1
 		{ TILE_WATER,           ' ', 4, 2, ' ', 0, 0, false, "A pool of water glistens" }, // 2
 		{ TILE_TREE,            'T', 0, 1, 'T', 0, 0, true,  "A large tree" }, // 3
-		{ TILE_STONEWALL,       '#', 0, 2, '#', 0, 3, true,  "A stone wall" }, // 4
-		{ TILE_STONEFLOOR,      '.', 0, 2, '.', 0, 3, false, "Stone floor" }, // 5
+		{ TILE_STONEWALL,       '#', 2, 2, '#', 0, 1, true,  "A stone wall" }, // 4
+		{ TILE_STONEFLOOR,      '.', 0, 2, '.', 0, 1, false, "Stone floor" }, // 5
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {

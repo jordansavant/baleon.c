@@ -498,7 +498,7 @@ void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
 	t->is_visible = true;
 	t->was_visible = true;
 }
-void ps_draw_tile(int r, int c, char cha, int colorpair, bool bold)
+void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold)
 {
 	wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out
 	if (bold)
@@ -540,7 +540,7 @@ void ps_play_draw()
 			if (t->is_visible) {
 				struct draw_struct ds = wld_get_drawstruct(current_map, c, r);
 
-				ps_draw_tile(r, c, ds.sprite, ds.colorpair, true);
+				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
 
 			} else if (t->was_visible) {
 				struct draw_struct ds = wld_get_memory_drawstruct(current_map, c, r);
@@ -556,7 +556,7 @@ void ps_play_draw()
 	// Draw cursor
 	wmove(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale);
 	wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
-	char ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale) & A_CHARTEXT;
+	unsigned long ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale) & A_CHARTEXT;
 	waddch(map_pad, ch);
 
 	// lets calculate where to offset the pad
