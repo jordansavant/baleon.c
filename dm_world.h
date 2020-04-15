@@ -1,5 +1,6 @@
 // Contains all definitions for the world
 #include "mt_rand.h"
+#include "dm_algorithm.h"
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -239,6 +240,22 @@ struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y)
 		return &map->mobs[id];
 	return NULL;
 }
+void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double))
+{
+	// todo get radius of mobs vision?
+	struct wld_map* map = mob->map;
+	bool wld_ss_isblocked(int x, int y)
+	{
+		struct wld_tile *t = wld_gettileat(map, x, y);
+		struct wld_tiletype *tt = wld_get_tiletype(t->type);
+		return tt->is_block;
+	}
+	void wld_ss_onvisible(int x, int y, double radius)
+	{
+		on_see(mob, x, y, radius);
+	}
+	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 10, wld_ss_isblocked, wld_ss_onvisible);
+}
 
 
 ///////////////////////////
@@ -362,6 +379,7 @@ void wld_gentiles(struct wld_map *map)
 		tile->map = map;
 		tile->map_x = wld_calcx(i, map->cols);
 		tile->map_y = wld_calcy(i, map->cols);
+		tile->map_index = i;
 
 		switch (map_data_type) {
 		default:

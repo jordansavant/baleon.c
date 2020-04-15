@@ -2,6 +2,9 @@
 #include <ncurses.h>
 #include <menu.h>
 
+// debug
+#include <stdio.h>
+
 #include "dm_gametime.h"
 #include "dm_draw.h"
 #include "dm_world.h"
@@ -68,6 +71,28 @@ typedef int bool; // or #define bool int
 #define KEY_9		57
 
 // UTILS
+FILE* fp;
+void dmlog(char *msg)
+{
+	fprintf(fp, "%s\n", msg);
+	fflush(fp);
+}
+void dmlogi(char *msg, int i)
+{
+	fprintf(fp, "%s %d \n", msg, i);
+	fflush(fp);
+}
+void dmlogc(char *msg, char c)
+{
+	fprintf(fp, "%s %c \n", msg, c);
+	fflush(fp);
+}
+void dmlogxy(char *msg, int x, int y)
+{
+	fprintf(fp, "%s x %d y %d \n", msg, x, y);
+	fflush(fp);
+}
+
 void skip_delay(double wait_s)
 {
 	struct dm_gametimer gt = dm_gametimer_new(wait_s);
@@ -466,58 +491,80 @@ void ps_destroy_ui()
 //	// get difference between pad top,left and screen top,left
 //	// subtract that from screen y,x to get pad y,x
 //}
+void ps_play_draw_tile(struct wld_tile *t)
+{
+	int index = t->map_index;
+	int r = t->map_y;
+	int c = t->map_x;
+	//dmlogxy("onvisible player", current_map->player->map_x, current_map->player->map_y);
+	dmlogxy("onvisible", c, r);
+
+	// get tile from tile map
+	int tile_id = t->map->tile_map[index];
+	int tiletype = t->map->tiles[tile_id].type;
+
+	// get mob from mob map index
+	int mob_id = t->map->mob_map[index];
+	int mobtype = 0;
+	if (mob_id > -1)
+		mobtype = t->map->mobs[mob_id].type;
+
+	// get type structs for rendering
+	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
+	struct wld_mobtype *mt = wld_get_mobtype(mobtype);
+	int colorpair = wld_cpair(tiletype, mobtype);
+
+	// default symbol to mob, if no mob symbol then tile symbol if there is one
+	unsigned long cha = mt->sprite;
+	if (mt->sprite == ' ')
+		cha = tt->sprite;
+
+	// render to pad
+	move(r * map_rows_scale, c * map_cols_scale);
+	// wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out
+	attrset(COLOR_PAIR(colorpair));
+	// wattrset(map_pad, COLOR_PAIR(colorpair));
+	addch(cha);
+	// waddch(map_pad, cha); // pad
+
+	// extra padding if we are scaling the columns to make it appear at a better ratio in the terminal
+	if (map_cols_scale > 1 || map_rows_scale > 1) {
+		int bg_only = wld_cpair_bg(tiletype);
+		for (int i=0; i < map_cols_scale; i++) {
+			wmove(map_pad, r * map_rows_scale, c * map_cols_scale + i+1);
+			wattrset(map_pad, COLOR_PAIR(bg_only));
+			waddch(map_pad, ' '); // pad
+
+			for (int j=0; j < map_rows_scale; j++) {
+				wmove(map_pad, r * map_rows_scale + j+1, c * map_cols_scale + i);
+				wattrset(map_pad, COLOR_PAIR(bg_only));
+				waddch(map_pad, ' '); // pad
+			}
+		}
+	}
+}
+void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
+{
+	// get the map tile at this position and draw it
+	//debug("SHADOWCAST");
+	struct wld_tile *t = wld_gettileat(mob->map, x, y);
+	ps_play_draw_tile(t);
+}
 void ps_play_draw()
 {
 	// do not clear, it causes awful redraw
 	//clear();
 	//wclear(map_pad);
 
+	// Get a list of visible map tiles from the player in the world
+	dmlog("play draw");
+	wld_mobvision(current_map->player, ps_play_draw_onvisible);
+
 	// Draw map
 	for (int r=0; r < current_map->rows; r++) {
 		for (int c=0; c < current_map->cols; c++) {
 			int index = r * current_map->cols + c;
 
-			// get tile from tile map
-			int tile_id = current_map->tile_map[index];
-			int tiletype = current_map->tiles[tile_id].type;
-
-			// get mob from mob map index
-			int mob_id = current_map->mob_map[index];
-			int mobtype = 0;
-			if (mob_id > -1) {
-				mobtype = current_map->mobs[mob_id].type;
-			}
-
-			// get type structs for rendering
-			struct wld_tiletype *tt = wld_get_tiletype(tiletype);
-			struct wld_mobtype *mt = wld_get_mobtype(mobtype);
-			int colorpair = wld_cpair(tiletype, mobtype);
-
-			// default symbol to mob, if no mob symbol then tile symbol if there is one
-			unsigned long cha = mt->sprite;
-			if (mt->sprite == ' ')
-				cha = tt->sprite;
-
-			// render to pad
-			wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out
-			wattrset(map_pad, COLOR_PAIR(colorpair));
-			waddch(map_pad, cha); // pad
-
-			// extra padding if we are scaling the columns to make it appear at a better ratio in the terminal
-			if (map_cols_scale > 1 || map_rows_scale > 1) {
-				int bg_only = wld_cpair_bg(tiletype);
-				for (int i=0; i < map_cols_scale; i++) {
-					wmove(map_pad, r * map_rows_scale, c * map_cols_scale + i+1);
-					wattrset(map_pad, COLOR_PAIR(bg_only));
-					waddch(map_pad, ' '); // pad
-
-					for (int j=0; j < map_rows_scale; j++) {
-						wmove(map_pad, r * map_rows_scale + j+1, c * map_cols_scale + i);
-						wattrset(map_pad, COLOR_PAIR(bg_only));
-						waddch(map_pad, ' '); // pad
-					}
-				}
-			}
 		}
 	}
 
@@ -534,7 +581,7 @@ void ps_play_draw()
 	// render pad
 	refresh(); // has to be called before prefresh for some reason?
 	// prefresh(pad,pminrow,pmincol,sminrow,smincol,smaxrow,smaxcol)
-	prefresh(map_pad, 0, 0, top, left, top + current_map->rows * map_rows_scale, left + current_map->cols * map_cols_scale);
+	//prefresh(map_pad, 0, 0, top, left, top + current_map->rows * map_rows_scale, left + current_map->cols * map_cols_scale);
 
 	// UI constants (needs to be done in an event?)
 	ui_update_mobpanel(current_map);
@@ -702,6 +749,9 @@ int main(void)
 		return 1;
 	}
 
+	fp = fopen("log.txt", "w");
+	dmlog("game start...");
+
 	game_state = GS_START;
 	while (game_state != GS_EXIT) {
 		switch (game_state) {
@@ -719,6 +769,9 @@ int main(void)
 			break;
 		}
 	}
+
+	dmlog("game end...");
+	fclose(fp);
 
 	g_teardown();
 
