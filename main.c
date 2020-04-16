@@ -538,11 +538,8 @@ void ps_destroy_world()
 	clear();
 }
 
-void ps_reset_ui()
+void ps_layout_ui()
 {
-	clear();
-	endwin();
-	refresh();
 	int sx, sy;
 	getmaxyx(stdscr,sy,sx);
 
@@ -568,11 +565,16 @@ void ps_reset_ui()
 	// make map the leftover width up to the mob panel
 	ui_map_cols = sx - mobpanel_cols;
 	ui_map_rows = sy - logpanel_rows;
-	wrefresh(cursorpanel);
-	wrefresh(logpanel);
-	wrefresh(mobpanel);
+}
+void ps_reset_ui()
+{
+	clear();
+	endwin();
 	refresh();
-	ui_cursorinfo("");
+
+	ps_layout_ui();
+
+	refresh();
 }
 void ps_build_ui()
 {
@@ -580,7 +582,7 @@ void ps_build_ui()
 	logpanel = newwin(0, 0, 0, 0);
 	mobpanel = newwin(0, 0, 0, 0);
 
-	ps_reset_ui();
+	ps_layout_ui();
 
 	ui_loginfo("You awake in darkness, then a light appears...");
 }
