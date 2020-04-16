@@ -383,6 +383,9 @@ int map_rows_scale = 1;
 int map_cols_scale = 2;
 WINDOW *map_pad;
 struct wld_map *current_map;
+int ui_map_cols = 100;
+int ui_map_rows = 50;
+int ui_map_padding = 10;
 
 // PLAY UI PANELS
 WINDOW* cursorpanel;
@@ -425,6 +428,13 @@ void ui_anchor_br(WINDOW *win, int rows, int cols)
 	getmaxyx(stdscr, y, x);
 	wresize(win, rows, cols);
 	mvwin(win, y - rows, x - cols);
+}
+void ui_anchor_bl(WINDOW *win, int rows, int cols)
+{
+	int y, x;
+	getmaxyx(stdscr, y, x);
+	wresize(win, rows, cols);
+	mvwin(win, y - rows, 0);
 }
 
 void ui_cursorinfo(char *msg)
@@ -528,7 +538,8 @@ void ps_destroy_world()
 
 void ps_build_ui()
 {
-	cursorpanel = newwin(3, 50, 0, 0);
+	cursorpanel = newwin(0, 0, 0, 0);
+	ui_anchor_bl(cursorpanel, 3, 50);
 	ui_box(cursorpanel);
 
 	// info panel is at bottom
@@ -542,11 +553,8 @@ void ps_build_ui()
 	mobpanel = newwin(0, 0, 0, 0);
 	ui_anchor_ur(mobpanel, .75, .2, 0, 30);
 	ui_box(mobpanel);
-}
-void ps_position_ui()
-{
-	// TODO implement this to position the ui windows and boundaries of map
-	// TODO then call this if we get a terminal resize event
+
+	ui_loginfo("You awake in darkness, then a light appears...");
 }
 void ps_destroy_ui()
 {
@@ -627,13 +635,32 @@ void ps_play_draw()
 	waddch(map_pad, ch);
 
 	// lets calculate where to offset the pad
-	int top, left;
-	DM_CALC_CENTER_TOPLEFT(stdscr, current_map->rows * map_rows_scale, current_map->cols * map_cols_scale, top, left);
+	// we need to shift the pad if the player is within X range of a map edge
+	int plyrpad_x = current_map->player->map_x;
+	int plyrpad_y = current_map->player->map_y;
+
+	int shiftpad_x = 0, shiftpad_y = 0, shiftwin_x = 0, shiftwin_y = 0;
+	int paddingx = ui_map_padding * map_cols_scale;
+	int paddingy = ui_map_padding * map_rows_scale;
+	if (plyrpad_x < paddingx)
+		shiftwin_x += paddingx - plyrpad_x * map_cols_scale;
+	if (plyrpad_x * map_cols_scale > ui_map_cols - paddingx)
+		shiftpad_x += paddingx + (plyrpad_x * map_cols_scale - ui_map_cols);
+	if (plyrpad_y < paddingy)
+		shiftwin_y += paddingy - plyrpad_y * map_rows_scale;
+	if (plyrpad_y * map_rows_scale > ui_map_rows - paddingy)
+		shiftpad_y += paddingy + (plyrpad_y * map_rows_scale - ui_map_rows);
+
+	refresh(); // has to be called before prefresh for some reason?
+	prefresh(map_pad, 0 + shiftpad_y, 0 + shiftpad_x, 0 + shiftwin_y, 0 + shiftwin_x, ui_map_rows, ui_map_cols);
 
 	// render pad
-	refresh(); // has to be called before prefresh for some reason?
-	// prefresh(pad,pminrow,pmincol,sminrow,smincol,smaxrow,smaxcol)
-	prefresh(map_pad, 0, 0, top, left, top + current_map->rows * map_rows_scale, left + current_map->cols * map_cols_scale);
+	// prefresh(pad, pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol)
+	//prefresh(map_pad, 0, 0, 0, 0, current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
+	//int top, left;
+	//DM_CALC_CENTER_TOPLEFT(stdscr, current_map->rows * map_rows_scale, current_map->cols * map_cols_scale, top, left);
+	//prefresh(map_pad, 0, 0, top, left, top + current_map->rows * map_rows_scale, left + current_map->cols * map_cols_scale);
+	//prefresh(map_pad, diffy, diffx, winy, winx, current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
 
 	// UI constants (needs to be done in an event?)
 	ui_update_logpanel(current_map);
