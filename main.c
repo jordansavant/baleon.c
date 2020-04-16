@@ -2,6 +2,7 @@
 #include <string.h>
 #include <ncurses.h>
 #include <menu.h>
+#include <signal.h>
 
 #include "dm_debug.h"
 #include "dm_gametime.h"
@@ -111,6 +112,11 @@ enum GAME_STATE
 };
 enum GAME_STATE game_state = GS_START;
 
+bool term_resized = false;
+void on_term_resize(int dummy)
+{
+	term_resized = true;
+}
 bool g_setup()
 {
 	// setup debug file pointer
@@ -148,6 +154,8 @@ bool g_setup()
 	// set primary color
 	bkgd(COLOR_PAIR(SCOLOR_NORMAL));
 
+	// listen to os signal
+	signal(SIGWINCH, on_term_resize);
 
 	return true;
 }
@@ -530,21 +538,22 @@ void ps_destroy_world()
 	clear();
 }
 
-void ps_build_ui()
+void ps_reset_ui()
 {
+	clear();
+	endwin();
+	refresh();
 	int sx, sy;
 	getmaxyx(stdscr,sy,sx);
 
 	int cursorpanel_cols = 50;
 	int cursorpanel_rows = 3;
-	cursorpanel = newwin(0, 0, 0, 0);
 	ui_anchor_bl(cursorpanel, cursorpanel_rows, cursorpanel_cols);
 	ui_box(cursorpanel);
 
 	// info panel is at bottom
 	int logpanel_cols = LOG_LENGTH + 2;
 	int logpanel_rows = LOG_COUNT + 2;
-	logpanel = newwin(0, 0, 0, 0);
 	ui_anchor_br(logpanel, logpanel_rows, logpanel_cols);
 	ui_box(logpanel);
 
@@ -552,14 +561,26 @@ void ps_build_ui()
 	// TODO make this fit the right side
 	// TODO scrollable?
 	int mobpanel_cols = 30;
-	int mobpanel_rows = sy - logpanel_rows;
-	mobpanel = newwin(0, 0, 0, 0);
+	int mobpanel_rows = sy - logpanel_rows + 1;
 	ui_anchor_ur(mobpanel, mobpanel_rows, mobpanel_cols);
 	ui_box(mobpanel);
 
 	// make map the leftover width up to the mob panel
 	ui_map_cols = sx - mobpanel_cols;
 	ui_map_rows = sy - logpanel_rows;
+	wrefresh(cursorpanel);
+	wrefresh(logpanel);
+	wrefresh(mobpanel);
+	refresh();
+	ui_cursorinfo("");
+}
+void ps_build_ui()
+{
+	cursorpanel = newwin(0, 0, 0, 0);
+	logpanel = newwin(0, 0, 0, 0);
+	mobpanel = newwin(0, 0, 0, 0);
+
+	ps_reset_ui();
 
 	ui_loginfo("You awake in darkness, then a light appears...");
 }
@@ -832,6 +853,13 @@ void g_newgame()
 
 			// update world
 			ps_play_update();
+
+			// not sure if i am going to keep this
+			// fix ui that may have changed
+			if (term_resized) {
+				ps_reset_ui();
+				term_resized = false;
+			}
 
 			break;
 		case PS_MENU:
