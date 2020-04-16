@@ -113,7 +113,7 @@ struct wld_mob
 	void (*ai_decide_combat)(struct wld_mob*);
 	int queuex, queuey, queuetarget;
 	int health, maxhealth;
-	bool is_dead;
+	bool is_player, is_dead;
 };
 struct wld_mobtype *wld_mobtypes;
 
@@ -142,7 +142,10 @@ struct wld_map {
 
 	// function pointers game subscribes to for events
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
+	void (*on_mob_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_mob_attack_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_mob_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_mob_kill_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 };
 
 
@@ -331,7 +334,7 @@ void ai_default_wander(struct wld_mob *mob)
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
 	// TODO
-	return true;
+	return !mob->map->player->is_dead;
 }
 void ai_default_decide_combat(struct wld_mob *mob)
 {
@@ -358,23 +361,32 @@ void ai_default_decide_combat(struct wld_mob *mob)
 }
 void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 {
-	dmlog("mob dead");
 	defender->state = MS_DEAD;
 	defender->health = 0;
 	defender->is_dead = true;
 	// notify event
-	aggressor->map->on_mob_kill_mob(aggressor->map, aggressor, defender);
+	if (!defender->is_player && aggressor->map->on_mob_kill_mob)
+		aggressor->map->on_mob_kill_mob(aggressor->map, aggressor, defender);
+	if (defender->is_player && aggressor->map->on_mob_kill_player)
+		aggressor->map->on_mob_kill_player(aggressor->map, aggressor, defender);
 }
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 {
-	dmlog("attack mob");
 	defender->health -= 34;
+
+	// TODO pass damage amount, attack type, etc
+	if (!defender->is_player && aggressor->map->on_mob_kill_mob)
+		aggressor->map->on_mob_attack_mob(aggressor->map, aggressor, defender);
+	if (defender->is_player && aggressor->map->on_mob_attack_player)
+		aggressor->map->on_mob_attack_player(aggressor->map, aggressor, defender);
+
 	if (defender->health <= 0)
 		ai_mob_kill_mob(aggressor, defender);
+
 }
 void wld_update_mob(struct wld_mob *mob)
 {
-	// apply ai
+	// setup
 	if (mob->state == MS_START) {
 		mob->health = mob->maxhealth;
 		mob->state = MS_WANDER;
@@ -382,16 +394,7 @@ void wld_update_mob(struct wld_mob *mob)
 	}
 
 	// if player
-	if (mob->map_index == mob->map->player->map_index) {
-		// Input detect can adjust player state
-		// need to react differently to death etc
-		// move input listener functions to this to only listen to certain input based on state of player mob
-		switch (mob->state) {
-		case MS_DEAD:
-			dmlog("player dead");
-			break;
-		}
-	} else {
+	if (!mob->is_player) {
 ai_rerun:
 		switch (mob->state) {
 		case MS_WANDER:
@@ -578,6 +581,7 @@ void wld_genmobs(struct wld_map *map)
 			mob->map_y = map->rows / 2;
 			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
 			mob->type = MOB_PLAYER;
+			mob->is_player = true;
 			map->player = mob; // assign to map specifically
 
 			// set cursor nearby
@@ -591,6 +595,7 @@ void wld_genmobs(struct wld_map *map)
 			mob->map_y = 36;
 			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
 			mob->type = MOB_BUGBEAR;
+			mob->is_player = false;
 			mob->ai_wander = ai_default_wander;
 			mob->ai_detect_combat = ai_default_detect_combat;
 			mob->ai_decide_combat = ai_default_decide_combat;
@@ -621,7 +626,10 @@ struct wld_map* wld_newmap(int depth)
 
 	// function events
 	map->on_cursormove = NULL;
+	map->on_mob_attack_mob = NULL;
+	map->on_mob_attack_player = NULL;
 	map->on_mob_kill_mob = NULL;
+	map->on_mob_kill_player = NULL;
 
 	// populate tiles
 	wld_gentiles(map);

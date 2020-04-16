@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <ncurses.h>
 #include <menu.h>
 
@@ -362,7 +363,11 @@ WINDOW *map_pad;
 struct wld_map *current_map;
 
 WINDOW* cursorpanel;
+WINDOW* logpanel;
 WINDOW* mobpanel;
+#define LOG_COUNT 15
+#define LOG_LENGTH 60
+char logs[LOG_COUNT][LOG_LENGTH];
 
 void ui_box(WINDOW* win)
 {
@@ -390,6 +395,13 @@ void ui_anchor_ur(WINDOW* win, float height, float width, int minrows, int minco
 	wresize(win, rows, cols);
 	mvwin(win, 0, x - cols);
 }
+void ui_anchor_br(WINDOW *win, int rows, int cols)
+{
+	int y, x;
+	getmaxyx(stdscr, y, x);
+	wresize(win, rows, cols);
+	mvwin(win, y - rows, x - cols);
+}
 
 void ui_cursorinfo(char *msg)
 {
@@ -397,6 +409,17 @@ void ui_cursorinfo(char *msg)
 	ui_box(cursorpanel);
 	wrefresh(cursorpanel);
 }
+
+void ui_loginfo(char *msg)
+{
+	// rotate strings onto log
+	for (int i=0; i < LOG_COUNT - 1; i++) {
+		strcpy(logs[i], logs[i+1]);
+	}
+	strcpy(logs[LOG_COUNT - 1], msg);
+	dmlog(msg);
+}
+
 void ui_update_cursorinfo(struct wld_map *map)
 {
 	int x = map->cursor->x;
@@ -418,6 +441,15 @@ void ui_update_cursorinfo(struct wld_map *map)
 		ui_cursorinfo("");
 	}
 }
+void ui_update_logpanel(struct wld_map *map)
+{
+	for (int i=0; i < LOG_COUNT; i++) {
+		ui_write(logpanel, i, logs[i]);
+	}
+
+	ui_box(logpanel);
+	wrefresh(logpanel);
+}
 void ui_update_mobpanel(struct wld_map *map)
 {
 	// probably just need to do a shadowcast event each turn to get mobs in vision
@@ -430,9 +462,13 @@ void map_on_cursormove(struct wld_map *map, int x, int y, int index)
 {
 	ui_update_cursorinfo(map);
 }
-void map_on_mob_kill_mob(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* defender)
+void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
-	debug("MOB KILLED MOB");
+	ui_loginfo("mob attacked player");
+}
+void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
+{
+	ui_loginfo("mob killed player");
 	play_state = PS_GAMEOVER;
 }
 
@@ -444,7 +480,8 @@ void ps_build_world()
 	current_map = wld_newmap(1);
 	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
 	current_map->on_cursormove = map_on_cursormove;
-	current_map->on_mob_kill_mob = map_on_mob_kill_mob;
+	current_map->on_mob_attack_player = map_on_mob_attack_player;
+	current_map->on_mob_kill_player = map_on_mob_kill_player;
 }
 void ps_destroy_world()
 {
@@ -460,14 +497,27 @@ void ps_build_ui()
 	cursorpanel = newwin(3, 50, 0, 0);
 	ui_box(cursorpanel);
 
-	// anchor to right side
+	// info panel is at bottom
+	logpanel = newwin(0, 0, 0, 0);
+	ui_anchor_br(logpanel, LOG_COUNT + 2, LOG_LENGTH + 2);
+	ui_box(logpanel);
+
+	// anchor mobpanel to right side
+	// TODO make this fit the right side
+	// TODO scrollable?
 	mobpanel = newwin(0, 0, 0, 0);
-	ui_anchor_ur(mobpanel, 1, .2, 0, 30);
+	ui_anchor_ur(mobpanel, .75, .2, 0, 30);
 	ui_box(mobpanel);
+}
+void ps_position_ui()
+{
+	// TODO implement this to position the ui windows and boundaries of map
+	// TODO then call this if we get a terminal resize event
 }
 void ps_destroy_ui()
 {
 	delwin(mobpanel);
+	delwin(logpanel);
 	delwin(cursorpanel);
 }
 // TODO function on translating a screen item to the pad item
@@ -552,6 +602,7 @@ void ps_play_draw()
 	prefresh(map_pad, 0, 0, top, left, top + current_map->rows * map_rows_scale, left + current_map->cols * map_cols_scale);
 
 	// UI constants (needs to be done in an event?)
+	ui_update_logpanel(current_map);
 	ui_update_mobpanel(current_map);
 
 	wrefresh(cursorpanel);
@@ -714,8 +765,11 @@ void g_newgame()
 		case PS_MAPCHANGE:
 			break;
 		case PS_GAMEOVER:
-			debug("GAME OVER");
-			getch();
+			// draw world
+			ps_play_draw();
+
+			getch(); // wait until player does something then quit
+
 			play_state = PS_END;
 		case PS_END:
 			ps_destroy_ui();
