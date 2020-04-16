@@ -2,9 +2,7 @@
 #include <ncurses.h>
 #include <menu.h>
 
-// debug
-#include <stdio.h>
-
+#include "dm_debug.h"
 #include "dm_gametime.h"
 #include "dm_draw.h"
 #include "dm_world.h"
@@ -71,28 +69,6 @@ typedef int bool; // or #define bool int
 #define KEY_9		57
 
 // UTILS
-FILE* fp;
-void dmlog(char *msg)
-{
-	fprintf(fp, "%s\n", msg);
-	fflush(fp);
-}
-void dmlogi(char *msg, int i)
-{
-	fprintf(fp, "%s %d \n", msg, i);
-	fflush(fp);
-}
-void dmlogc(char *msg, char c)
-{
-	fprintf(fp, "%s %c \n", msg, c);
-	fflush(fp);
-}
-void dmlogxy(char *msg, int x, int y)
-{
-	fprintf(fp, "%s x %d y %d \n", msg, x, y);
-	fflush(fp);
-}
-
 void skip_delay(double wait_s)
 {
 	struct dm_gametimer gt = dm_gametimer_new(wait_s);
@@ -730,12 +706,12 @@ void g_newgame()
 
 int main(void)
 {
+	dm_fp = fopen("log.txt", "w");
+	dmlog("game start...");
+
 	if (!g_setup()) {
 		return 1;
 	}
-
-	fp = fopen("log.txt", "w");
-	dmlog("game start...");
 
 	game_state = GS_START;
 	while (game_state != GS_EXIT) {
@@ -755,10 +731,10 @@ int main(void)
 		}
 	}
 
-	dmlog("game end...");
-	fclose(fp);
-
 	g_teardown();
+
+	dmlog("game end...");
+	fclose(dm_fp);
 
 	return 0;
 }
