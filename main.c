@@ -636,7 +636,7 @@ void ps_play_update()
 	if (trigger_world) {
 		// loop over map mobs and run their update routines
 		for (int i=0; i < current_map->mobs_length; i++) {
-			wld_mob_update(&current_map->mobs[i]);
+			wld_update_mob(&current_map->mobs[i]);
 		}
 	}
 

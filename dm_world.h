@@ -87,6 +87,7 @@ enum WLD_MOB_STATE {
 	MS_START,
 	MS_DEAD,
 	MS_WANDER,
+	MS_COMBAT,
 	MS_SLEEP,
 	MS_HUNT,
 };
@@ -105,7 +106,9 @@ struct wld_mob
 	enum WLD_MOBTYPE type; // wld_mobtypes struct index
 	struct wld_map *map;
 	enum WLD_MOB_STATE state;
-	void (*ai_wander)(struct wld_mob*, enum WLD_MOB_STATE);
+	void (*ai_wander)(struct wld_mob*);
+	bool (*ai_detect_combat)(struct wld_mob*);
+	void (*ai_decide_combat)(struct wld_mob*);
 	int queuex, queuey;
 };
 struct wld_mobtype *wld_mobtypes;
@@ -309,11 +312,30 @@ struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y)
 ///////////////////////////
 // MOB AI
 
-void ai_mob_wander(struct wld_mob *mob, enum WLD_MOB_STATE state)
+void ai_default_wander(struct wld_mob *mob)
 {
-	wld_movemob(mob, 1, 0);
+	mob->queuex += 1;
 }
-void wld_mob_update(struct wld_mob *mob)
+bool ai_default_detect_combat(struct wld_mob *mob)
+{
+	// TODO
+	return true;
+}
+void ai_default_decide_combat(struct wld_mob *mob)
+{
+	// GET PLAYER (TODO in visible range, if can see, etc)
+	int x = mob->map->player->map_x;
+	int y = mob->map->player->map_y;
+	if (x < mob->map_x)
+		mob->queuex += -1;
+	else if (x > mob->map_x)
+		mob->queuex += 1;
+	if (y < mob->map_y)
+		mob->queuey += -1;
+	else if (y > mob->map_y)
+		mob->queuey += 1;
+}
+void wld_update_mob(struct wld_mob *mob)
 {
 	// apply ai
 	switch (mob->state) {
@@ -322,9 +344,24 @@ void wld_mob_update(struct wld_mob *mob)
 		mob->state = MS_WANDER;
 		break;
 	case MS_WANDER:
-		if (mob->ai_wander != NULL)
-			mob->ai_wander(mob, mob->state);
+		if (mob->ai_detect_combat != NULL && mob->ai_detect_combat(mob)) {
+			// enter combat
+			mob->state = MS_COMBAT;
+		} else if (mob->ai_wander != NULL) {
+			// wander
+			mob->ai_wander(mob);
+		}
 		break;
+	case MS_COMBAT:
+		if (mob->ai_detect_combat != NULL && !mob->ai_detect_combat(mob)) {
+			// exit combat
+			mob->state = MS_WANDER;
+		} else if(mob->ai_decide_combat != NULL) {
+			// decide on what to do during combat
+			// could be to move, could be to attack
+			// calls other mob combat routines or movement routines
+			mob->ai_decide_combat(mob);
+		}
 	}
 
 	// apply changes
@@ -490,7 +527,9 @@ void wld_genmobs(struct wld_map *map)
 			mob->map_y = 36;
 			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
 			mob->type = MOB_BUGBEAR;
-			mob->ai_wander = ai_mob_wander;
+			mob->ai_wander = ai_default_wander;
+			mob->ai_detect_combat = ai_default_detect_combat;
+			mob->ai_decide_combat = ai_default_decide_combat;
 		}
 
 		// set mob's id into the mob map
