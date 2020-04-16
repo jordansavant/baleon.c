@@ -1,6 +1,7 @@
 // Contains all definitions for the world
 #include "mt_rand.h"
 #include "dm_algorithm.h"
+#include "dm_debug.h"
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -338,29 +339,39 @@ void ai_default_decide_combat(struct wld_mob *mob)
 void wld_update_mob(struct wld_mob *mob)
 {
 	// apply ai
-	switch (mob->state) {
-	case MS_START:
-		// TODO setup starting state (like a constructor)
-		mob->state = MS_WANDER;
-		break;
-	case MS_WANDER:
-		if (mob->ai_detect_combat != NULL && mob->ai_detect_combat(mob)) {
-			// enter combat
-			mob->state = MS_COMBAT;
-		} else if (mob->ai_wander != NULL) {
-			// wander
-			mob->ai_wander(mob);
-		}
-		break;
-	case MS_COMBAT:
-		if (mob->ai_detect_combat != NULL && !mob->ai_detect_combat(mob)) {
-			// exit combat
+	// if player
+	if (mob->map_index == mob->map->player->map_index) {
+		// Input detect can adjust player state
+		// need to react differently to death etc
+	} else {
+ai_rerun:
+		switch (mob->state) {
+		case MS_START:
+			// TODO setup starting state (like a constructor)
 			mob->state = MS_WANDER;
-		} else if(mob->ai_decide_combat != NULL) {
-			// decide on what to do during combat
-			// could be to move, could be to attack
-			// calls other mob combat routines or movement routines
-			mob->ai_decide_combat(mob);
+			goto ai_rerun;
+			break;
+		case MS_WANDER:
+			if (mob->ai_detect_combat != NULL && mob->ai_detect_combat(mob)) {
+				// enter combat
+				mob->state = MS_COMBAT;
+				goto ai_rerun;
+			} else if (mob->ai_wander != NULL) {
+				// wander
+				mob->ai_wander(mob);
+			}
+			break;
+		case MS_COMBAT:
+			if (mob->ai_detect_combat != NULL && !mob->ai_detect_combat(mob)) {
+				// exit combat
+				mob->state = MS_WANDER;
+			} else if(mob->ai_decide_combat != NULL) {
+				// decide on what to do during combat
+				// could be to move, could be to attack
+				// calls other mob combat routines or movement routines
+				mob->ai_decide_combat(mob);
+			}
+			break;
 		}
 	}
 

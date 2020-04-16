@@ -634,10 +634,14 @@ void ps_play_update()
 	// depending on input change and trigger various updates
 
 	if (trigger_world) {
+		dmlog("world update");
 		// loop over map mobs and run their update routines
 		for (int i=0; i < current_map->mobs_length; i++) {
+			dmlogii("pre mob", i, current_map->mobs[i].state);
 			wld_update_mob(&current_map->mobs[i]);
+			dmlogii("pst mob", i, current_map->mobs[i].state);
 		}
+		trigger_world = false;
 	}
 
 	// reset map elements
@@ -717,7 +721,7 @@ void g_newgame()
 int main(void)
 {
 	dm_fp = fopen("log.txt", "w");
-	dmlog("game start...");
+	dmlog("\ngame start...");
 
 	if (!g_setup()) {
 		return 1;
