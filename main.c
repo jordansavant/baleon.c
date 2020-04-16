@@ -69,7 +69,10 @@ typedef int bool; // or #define bool int
 #define KEY_8		56
 #define KEY_9		57
 
-// UTILS
+
+///////////////////////////
+// UTILITIES
+
 void skip_delay(double wait_s)
 {
 	struct dm_gametimer gt = dm_gametimer_new(wait_s);
@@ -94,6 +97,9 @@ void debug(char *msg)
 }
 
 
+///////////////////////////
+// GAME BUILD
+
 // GAME CODE
 enum GAME_STATE
 {
@@ -107,6 +113,10 @@ enum GAME_STATE game_state = GS_START;
 
 bool g_setup()
 {
+	// setup debug file pointer
+	dm_fp = fopen("log.txt", "w");
+	dmlog("\ngame start...");
+
 	// setup ncurses
 	initscr();
 	if (has_colors()) {
@@ -152,7 +162,15 @@ void g_teardown()
 	curs_set(1);
 	echo();
 	endwin();
+
+	// unload dm log
+	dmlog("game end...");
+	fclose(dm_fp);
 }
+
+
+///////////////////////////
+// INTRODUCTION STATE
 
 void g_intro()
 {
@@ -208,6 +226,9 @@ defer:
 	game_state = GS_TITLE; // to to title screen
 }
 
+
+///////////////////////////
+// TITLE SCREEN STATE
 
 bool g_title_done = false;
 int g_title_prompt_row = 18;
@@ -342,7 +363,9 @@ void g_title()
 }
 
 
-// GAME LOOP
+///////////////////////////
+// PLAY STATE
+
 enum PLAY_STATE
 {
 	PS_START,
@@ -355,13 +378,13 @@ enum PLAY_STATE
 };
 enum PLAY_STATE play_state = PS_START;
 
-
 // MAP SETTINGS / VARS
 int map_rows_scale = 1;
 int map_cols_scale = 2;
 WINDOW *map_pad;
 struct wld_map *current_map;
 
+// PLAY UI PANELS
 WINDOW* cursorpanel;
 WINDOW* logpanel;
 WINDOW* mobpanel;
@@ -371,8 +394,9 @@ char logs[LOG_COUNT][LOG_LENGTH];
 
 void ui_box(WINDOW* win)
 {
-	box(win, ACS_VLINE, '=');
+	box(win, ACS_VLINE, ACS_HLINE);
 }
+
 // helper to write to a row in a panel we boxed
 void ui_write(WINDOW *win, int row, char *msg)
 {
@@ -458,19 +482,29 @@ void ui_update_mobpanel(struct wld_map *map)
 	wrefresh(mobpanel);
 }
 
+
+///////////////////////////
+// MAP EVENT SUBSCRIPTIONS
+
 void map_on_cursormove(struct wld_map *map, int x, int y, int index)
 {
 	ui_update_cursorinfo(map);
 }
+
 void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
 	ui_loginfo("mob attacked player");
 }
+
 void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
 	ui_loginfo("mob killed player");
 	play_state = PS_GAMEOVER;
 }
+
+
+///////////////////////////
+// SETUP PLAY
 
 void ps_build_world()
 {
@@ -711,6 +745,10 @@ void ps_play_update()
 	}
 }
 
+
+///////////////////////////
+// SETUP PLAY MENU
+
 void ps_menu_draw()
 {
 	dm_center(20, "GAME MENU", TCOLOR_NORMAL, TCOLOR_NORMAL, false);
@@ -736,6 +774,10 @@ void ps_menu_input()
 	escapedelay(true);
 	nodelay(stdscr, false);
 }
+
+
+///////////////////////////
+// PLAY MAIN LOOP
 
 void g_newgame()
 {
@@ -781,11 +823,12 @@ void g_newgame()
 	}
 }
 
+
+///////////////////////////
+// MAIN
+
 int main(void)
 {
-	dm_fp = fopen("log.txt", "w");
-	dmlog("\ngame start...");
-
 	if (!g_setup()) {
 		return 1;
 	}
@@ -809,9 +852,6 @@ int main(void)
 	}
 
 	g_teardown();
-
-	dmlog("game end...");
-	fclose(dm_fp);
 
 	return 0;
 }
