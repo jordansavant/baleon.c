@@ -396,7 +396,6 @@ void ui_cursorinfo(char *msg)
 	ui_box(cursorpanel);
 	wrefresh(cursorpanel);
 }
-
 void ui_update_cursorinfo(struct wld_map *map)
 {
 	int x = map->cursor->x;
@@ -405,14 +404,17 @@ void ui_update_cursorinfo(struct wld_map *map)
 	// Get details about the tile they are on
 	struct wld_tile *t = wld_gettileat(map, x, y);
 	struct wld_tiletype *tt = &wld_tiletypes[t->type];
-
-	struct wld_mob *m = wld_getmobat(map, x, y);
-	if (m != NULL) {
-		// TODO get "what" the mob is doing
-		struct wld_mobtype *mt = &wld_mobtypes[m->type];
-		ui_cursorinfo(mt->short_desc);
+	if (t->is_visible) {
+		struct wld_mob *m = wld_getmobat(map, x, y);
+		if (m != NULL) {
+			// TODO get "what" the mob is doing
+			struct wld_mobtype *mt = &wld_mobtypes[m->type];
+			ui_cursorinfo(mt->short_desc);
+		} else {
+			ui_cursorinfo(tt->short_desc);
+		}
 	} else {
-		ui_cursorinfo(tt->short_desc);
+		ui_cursorinfo("");
 	}
 }
 void ui_update_mobpanel(struct wld_map *map)
@@ -523,8 +525,6 @@ void ps_play_draw()
 
 				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
 			}
-
-			t->is_visible = false;
 		}
 	}
 
@@ -637,6 +637,16 @@ void ps_play_update()
 		// loop over map mobs and run their update routines
 		for (int i=0; i < current_map->mobs_length; i++) {
 			wld_mob_update(&current_map->mobs[i]);
+		}
+	}
+
+	// reset map elements
+	// Clear map without flutter
+	for (int r=0; r < current_map->rows; r++) {
+		for (int c=0; c < current_map->cols; c++) {
+			struct wld_tile *t = wld_gettileat(current_map, c, r);
+			struct wld_tiletype *tt = wld_get_tiletype(t->type);
+			t->is_visible = false;
 		}
 	}
 }
