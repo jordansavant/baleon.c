@@ -2,6 +2,7 @@
 #include "mt_rand.h"
 #include "dm_algorithm.h"
 #include "dm_debug.h"
+#include <stdlib.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
@@ -110,7 +111,9 @@ struct wld_mob
 	void (*ai_wander)(struct wld_mob*);
 	bool (*ai_detect_combat)(struct wld_mob*);
 	void (*ai_decide_combat)(struct wld_mob*);
-	int queuex, queuey;
+	int queuex, queuey, queuetarget;
+	int health, maxhealth;
+	bool is_dead;
 };
 struct wld_mobtype *wld_mobtypes;
 
@@ -139,6 +142,7 @@ struct wld_map {
 
 	// function pointers game subscribes to for events
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
+	void (*on_mob_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 };
 
 
@@ -257,6 +261,13 @@ struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y)
 		return &map->mobs[id];
 	return NULL;
 }
+struct wld_mob* wld_getmobat_index(struct wld_map *map, int index)
+{
+	int id = map->mob_map[index];
+	if (id > -1)
+		return &map->mobs[id];
+	return NULL;
+}
 void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double))
 {
 	// todo get radius of mobs vision?
@@ -327,30 +338,62 @@ void ai_default_decide_combat(struct wld_mob *mob)
 	// GET PLAYER (TODO in visible range, if can see, etc)
 	int x = mob->map->player->map_x;
 	int y = mob->map->player->map_y;
-	if (x < mob->map_x)
-		mob->queuex += -1;
-	else if (x > mob->map_x)
-		mob->queuex += 1;
-	if (y < mob->map_y)
-		mob->queuey += -1;
-	else if (y > mob->map_y)
-		mob->queuey += 1;
+	int diffx = abs(x - mob->map_x);
+	int diffy = abs(y - mob->map_y);
+	// todo range and attack types?
+	if (diffx > 1 || diffy > 1) {
+		// move to target
+		if (x < mob->map_x)
+			mob->queuex += -1;
+		else if (x > mob->map_x)
+			mob->queuex += 1;
+		if (y < mob->map_y)
+			mob->queuey += -1;
+		else if (y > mob->map_y)
+			mob->queuey += 1;
+	} else {
+		// attack target
+		mob->queuetarget = mob->map->player->map_index;
+	}
+}
+void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender)
+{
+	dmlog("mob dead");
+	defender->state = MS_DEAD;
+	defender->health = 0;
+	defender->is_dead = true;
+	// notify event
+	aggressor->map->on_mob_kill_mob(aggressor->map, aggressor, defender);
+}
+void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender)
+{
+	dmlog("attack mob");
+	defender->health -= 34;
+	if (defender->health <= 0)
+		ai_mob_kill_mob(aggressor, defender);
 }
 void wld_update_mob(struct wld_mob *mob)
 {
 	// apply ai
+	if (mob->state == MS_START) {
+		mob->health = mob->maxhealth;
+		mob->state = MS_WANDER;
+		mob->is_dead = false;
+	}
+
 	// if player
 	if (mob->map_index == mob->map->player->map_index) {
 		// Input detect can adjust player state
 		// need to react differently to death etc
+		// move input listener functions to this to only listen to certain input based on state of player mob
+		switch (mob->state) {
+		case MS_DEAD:
+			dmlog("player dead");
+			break;
+		}
 	} else {
 ai_rerun:
 		switch (mob->state) {
-		case MS_START:
-			// TODO setup starting state (like a constructor)
-			mob->state = MS_WANDER;
-			goto ai_rerun;
-			break;
 		case MS_WANDER:
 			if (mob->ai_detect_combat != NULL && mob->ai_detect_combat(mob)) {
 				// enter combat
@@ -380,6 +423,14 @@ ai_rerun:
 	wld_movemob(mob, mob->queuex, mob->queuey);
 	mob->queuex = 0;
 	mob->queuey = 0;
+
+	if (mob->queuetarget > -1) {
+		// attack enemy
+		struct wld_mob* target = wld_getmobat_index(mob->map, mob->queuetarget);
+		if (target != NULL) {
+			ai_mob_attack_mob(mob, target);
+		}
+	}
 }
 
 ///////////////////////////
@@ -515,6 +566,8 @@ void wld_genmobs(struct wld_map *map)
 		mob->state = MS_START;
 		mob->queuex = 0;
 		mob->queuey = 0;
+		mob->queuetarget = -1;
+		mob->maxhealth = 100; // TODO define based on things
 		mob->ai_wander = NULL;
 
 		// first mob is player
@@ -568,6 +621,7 @@ struct wld_map* wld_newmap(int depth)
 
 	// function events
 	map->on_cursormove = NULL;
+	map->on_mob_kill_mob = NULL;
 
 	// populate tiles
 	wld_gentiles(map);

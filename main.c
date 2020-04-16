@@ -348,6 +348,7 @@ enum PLAY_STATE
 	PS_PLAY,
 	PS_MENU,
 	PS_MAPCHANGE,
+	PS_GAMEOVER,
 	PS_END, // do not call exit directly
 	PS_EXIT,
 };
@@ -429,6 +430,11 @@ void map_on_cursormove(struct wld_map *map, int x, int y, int index)
 {
 	ui_update_cursorinfo(map);
 }
+void map_on_mob_kill_mob(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* defender)
+{
+	debug("MOB KILLED MOB");
+	play_state = PS_GAMEOVER;
+}
 
 void ps_build_world()
 {
@@ -438,6 +444,7 @@ void ps_build_world()
 	current_map = wld_newmap(1);
 	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
 	current_map->on_cursormove = map_on_cursormove;
+	current_map->on_mob_kill_mob = map_on_mob_kill_mob;
 }
 void ps_destroy_world()
 {
@@ -637,9 +644,7 @@ void ps_play_update()
 		dmlog("world update");
 		// loop over map mobs and run their update routines
 		for (int i=0; i < current_map->mobs_length; i++) {
-			dmlogii("pre mob", i, current_map->mobs[i].state);
 			wld_update_mob(&current_map->mobs[i]);
-			dmlogii("pst mob", i, current_map->mobs[i].state);
 		}
 		trigger_world = false;
 	}
@@ -708,6 +713,10 @@ void g_newgame()
 			break;
 		case PS_MAPCHANGE:
 			break;
+		case PS_GAMEOVER:
+			debug("GAME OVER");
+			getch();
+			play_state = PS_END;
 		case PS_END:
 			ps_destroy_ui();
 			ps_destroy_world();
