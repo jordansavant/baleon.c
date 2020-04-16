@@ -1,5 +1,6 @@
 // Contains all definitions for the world
 #include "mt_rand.h"
+#include "dm_debug.h"
 #include "dm_algorithm.h"
 
 #ifndef ARRAY_SIZE
@@ -37,8 +38,21 @@ int fg_colors[] = {
 	COLOR_MAGENTA, // 7
 };
 int color_base = 100;
+int custom_tile_fgbase = 300;
+int custom_tile_bgbase = 400;
+int custom_tile_memory_fgbase = 500;
+int custom_tile_memory_bgbase = 600;
+int custom_mob_fgbase = 700;
+int custom_mob_memory_fgbase = 800;
+int color_tbg_mfg = 900;
+int color_tbg_tfg = 1000;
+int color_memory_tbg_tfg = 100;
+
 int fg_size = 8;
 int bg_size = 8;
+struct custom_color {
+	short id, r, g, b;
+};
 
 
 ///////////////////////////
@@ -55,11 +69,15 @@ enum WLD_TILETYPE {
 struct wld_tiletype {
 	int type;
 	unsigned long sprite;
-	int bg_color;
-	int fg_color;
+	//int bg_color;
+	//int fg_color;
+	short bg_id, bg_r, bg_g, bg_b;
+	short fg_id, fg_r, fg_g, fg_b;
 	unsigned long memory_sprite;
-	int memory_bg_color;
-	int memory_fg_color;
+	//int memory_bg_color;
+	//int memory_fg_color;
+	short memory_bg_id, memory_bg_r, memory_bg_g, memory_bg_b;
+	short memory_fg_id, memory_fg_r, memory_fg_g, memory_fg_b;
 	bool is_block;
 	char *short_desc;
 };
@@ -93,9 +111,9 @@ enum WLD_MOB_STATE {
 struct wld_mobtype {
 	int type;
 	unsigned long sprite;
-	int fg_color;
-	unsigned long memory_sprite;
-	int memory_fg_color;
+	short fg_id, fg_r, fg_g, fg_b;
+	//unsigned long memory_sprite;
+	//int memory_fg_color;
 	char *short_desc;
 };
 struct wld_mob
@@ -151,22 +169,23 @@ struct wld_mobtype* wld_get_mobtype(int id)
 };
 int wld_cpair(int tiletype, int mobtype)
 {
+	// normal color pair is the tile bg + mob fg
 	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
-	if (mobtype == 0)
-		return color_base + (tt->fg_color * fg_size + tt->bg_color);
+	// if no mob its tile bg + tile fg
+	if (mobtype == 0) {
+		int index = tiletype * ARRAY_SIZE(wld_tiletypes) + tiletype;
+		return color_tbg_tfg + index;
+	}
+	// tile + mob
 	struct wld_mobtype *mt = wld_get_mobtype(mobtype);
-	return color_base + (mt->fg_color * fg_size + tt->bg_color);
+	int index = tiletype * ARRAY_SIZE(wld_tiletypes) + mobtype;
+	return color_tbg_mfg + index;
 }
 int wld_cpairmem(int tiletype)
 {
 	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
-	return color_base + (tt->memory_fg_color * fg_size + tt->memory_bg_color);
-}
-
-int wld_cpair_bg(int tiletype)
-{
-	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
-	return color_base + tt->bg_color; // no addition of foreground so it is black
+	int index = tiletype * ARRAY_SIZE(wld_mobtypes) + tiletype;
+	return color_memory_tbg_tfg + index;
 }
 int wld_calcindex(int x, int y, int cols)
 {
@@ -267,7 +286,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 	{
 		on_see(mob, x, y, radius);
 	}
-	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 20, wld_ss_isblocked, wld_ss_onvisible);
+	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 1, wld_ss_isblocked, wld_ss_onvisible);
 }
 struct draw_struct {
 	int colorpair;
@@ -548,43 +567,105 @@ void wld_setup()
 		for (int j=0; j < fg_size; j++) {
 			int index = j * fg_size + i;
 			int colorpair_id = color_base + index;
-			init_pair(colorpair_id, fg_colors[j], bg_colors[i]);
+			//init_pair(colorpair_id, fg_colors[j], bg_colors[i]);
 		}
 	}
 
 	// copy tiletypes into malloc
 	struct wld_tiletype tts[] = {
-		{ TILE_VOID,            ' ', 0, 0, ' ', 0, 0, false, "" }, // 0
-		{ TILE_GRASS,           '"', 0, 1, '"', 0, 0, false, "A small tuft of grass" }, // 1
-		{ TILE_WATER,           ' ', 4, 2, ' ', 0, 0, false, "A pool of water glistens" }, // 2
-		{ TILE_TREE,            'T', 0, 1, 'T', 0, 0, true,  "A large tree" }, // 3
-		{ TILE_STONEWALL,       '#', 2, 2, '#', 0, 1, true,  "A stone wall" }, // 4
-		{ TILE_STONEFLOOR,      '.', 0, 2, '.', 0, 1, false, "Stone floor" }, // 5
+		{ TILE_VOID,            ' ', 0,0,0,0,		0,0,0,0,	' ', 0,0,0,0,		0,0,0,0,	false, "" }, // 0
+		{ TILE_GRASS,           '"', 0,0,0,0,		0,0,155,0,	'"', 0,0,0,0,		0,10,10,0,	false, "A small tuft of grass" }, // 1
+		{ TILE_WATER,           ' ', 0,0,0,255,		0,0,0,0,	' ', 0,0,0,0,		0,10,10,0,	false, "A pool of water glistens" }, // 2
+		{ TILE_TREE,            'T', 0,0,0,0,		0,0,155,0,	'T', 0,0,0,0,		0,10,10,10,	true,  "A large tree" }, // 3
+		{ TILE_STONEWALL,       '#', 0,50,50,50,	0,90,90,90,	'#', 0,10,10,10,	0,20,20,20,	true,  "A stone wall" }, // 4
+		{ TILE_STONEFLOOR,      '.', 0,50,50,50,	0,90,90,90,	'.', 0,10,10,10,	0,20,20,20,	false, "Stone floor" }, // 5
 	};
+	// copy mob types into malloc
+	struct wld_mobtype mts [] = {
+		{ MOB_VOID,	' ', 0,0,0,0,		"" },
+		{ MOB_PLAYER,	'@', 0,255,0,255,	"You" },
+		{ MOB_BUGBEAR,	'b', 0,255,0,0,		"A bugbear" },
+	};
+	// custom colors for objects
+	for (int i=0; i<ARRAY_SIZE(tts); i++) {
+		init_color(custom_tile_fgbase + i, (short)((double)tts[i].fg_r/255*1000), (short)((double)tts[i].fg_g/255*1000), (short)((double)tts[i].fg_b/255*1000));
+		init_color(custom_tile_bgbase + i, (short)((double)tts[i].bg_r/255*1000), (short)((double)tts[i].bg_g/255*1000), (short)((double)tts[i].bg_b/255*1000));
+		init_color(custom_tile_memory_fgbase + i, (short)((double)tts[i].memory_fg_r/255*1000), (short)((double)tts[i].memory_fg_g/255*1000), (short)((double)tts[i].memory_fg_b/255*1000));
+		init_color(custom_tile_memory_bgbase + i, (short)((double)tts[i].memory_bg_r/255*1000), (short)((double)tts[i].memory_bg_g/255*1000), (short)((double)tts[i].memory_bg_b/255*1000));
+		//dmlogi("tile color fgid", custom_tile_fgbase + i);
+		dmlogi("tile color bgid", custom_tile_bgbase + i);
+		dmlogiii("tile bg rgb", (short)((double)tts[i].bg_r/255*1000), (short)((double)tts[i].bg_g/255*1000), (short)((double)tts[i].bg_b/255*1000));
+		//dmlogi("tile color mfgid", custom_tile_memory_fgbase + i);
+		//dmlogi("tile color mbgid", custom_tile_memory_bgbase + i);
+	}
+	for (int i=0; i<ARRAY_SIZE(mts); i++) {
+		init_color(custom_mob_fgbase + i, (short)((double)mts[i].fg_r/255*1000), (short)((double)mts[i].fg_g/255*1000), (short)((double)mts[i].fg_b/255*1000));
+		dmlogi("mob color fgid", custom_mob_fgbase + i);
+		dmlogiii("mob rgb", (short)((double)mts[i].fg_r/255*1000), (short)((double)mts[i].fg_g/255*1000), (short)((double)mts[i].fg_b/255*1000));
+		//init_color(custom_mob_memory_fgbase, (short)((double)mts[i].memory_fg_r/255*1000), (short)((double)mts[i].memory_fg_g/255*1000), (short)((double)mts[i].memory_fg_b/255*1000));
+	}
+	// at this all colors for tiles and mobs have ids in their respective groups
+	// we can now create a color pair for each combination of tile and mob
+	int tts_size = ARRAY_SIZE(tts);
+	int mts_size = ARRAY_SIZE(mts);
+	for (int i=0; i < tts_size; i++) {
+		// tile on mob colors
+		for (int j=0; j < mts_size; j++) {
+			// index is tiles as the row, mob as the col
+			// index is tile type * num of tiletypes + mob type
+			int tile_bg_id = custom_tile_bgbase + i;
+			int mob_fg_id = custom_mob_fgbase + j;
+			dmlogii("tbg mfg", tile_bg_id, mob_fg_id);
+
+			int index = i * mts_size + j;
+			dmlogi("index", color_tbg_mfg + index);
+			init_pair(color_tbg_mfg + index, mob_fg_id, tile_bg_id);
+		}
+		// tile on tile colors
+		for (int j=0; j < tts_size; j++) {
+			int index = i * tts_size + j;
+			int tile_bg_id = custom_tile_bgbase + i;
+			int tile_fg_id = custom_tile_fgbase + j;
+			int tile_memory_fg_id = custom_tile_memory_fgbase + i;
+			int tile_memory_bg_id = custom_tile_memory_bgbase + j;
+			init_pair(color_tbg_tfg + index, tile_fg_id, tile_bg_id);
+			init_pair(color_memory_tbg_tfg + index, tile_memory_fg_id, tile_memory_bg_id);
+		}
+	}
+
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
 		wld_tiletypes[i].type = tts[i].type;
 		wld_tiletypes[i].sprite = tts[i].sprite;
-		wld_tiletypes[i].fg_color = tts[i].fg_color;
-		wld_tiletypes[i].bg_color = tts[i].bg_color;
+		wld_tiletypes[i].fg_id = custom_tile_fgbase + i;
+		wld_tiletypes[i].fg_r = tts[i].fg_r;
+		wld_tiletypes[i].fg_g = tts[i].fg_g;
+		wld_tiletypes[i].fg_b = tts[i].fg_b;
+		wld_tiletypes[i].bg_id = custom_tile_bgbase + i;
+		wld_tiletypes[i].bg_r = tts[i].bg_r;
+		wld_tiletypes[i].bg_g = tts[i].bg_g;
+		wld_tiletypes[i].bg_b = tts[i].bg_b;
 		wld_tiletypes[i].memory_sprite = tts[i].memory_sprite;
-		wld_tiletypes[i].memory_fg_color = tts[i].memory_fg_color;
-		wld_tiletypes[i].memory_bg_color = tts[i].memory_bg_color;
+		wld_tiletypes[i].memory_fg_id = custom_tile_memory_fgbase + i;
+		wld_tiletypes[i].memory_fg_r = tts[i].memory_fg_r;
+		wld_tiletypes[i].memory_fg_g = tts[i].memory_fg_g;
+		wld_tiletypes[i].memory_fg_b = tts[i].memory_fg_b;
+		wld_tiletypes[i].memory_bg_id = custom_tile_memory_bgbase + i;
+		wld_tiletypes[i].memory_bg_r = tts[i].memory_bg_r;
+		wld_tiletypes[i].memory_bg_g = tts[i].memory_bg_g;
+		wld_tiletypes[i].memory_bg_b = tts[i].memory_bg_b;
 		wld_tiletypes[i].is_block = tts[i].is_block;
 		wld_tiletypes[i].short_desc = tts[i].short_desc;
 	}
 
-	// copy mob types into malloc
-	struct wld_mobtype mts [] = {
-		{ MOB_VOID,	' ', 0, ' ', 0, "" },
-		{ MOB_PLAYER,	'@', 7, '@', 2, "You" },
-		{ MOB_BUGBEAR,	'b', 3, 'b', 2, "A bugbear" },
-	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
 		wld_mobtypes[i].type = mts[i].type;
 		wld_mobtypes[i].sprite = mts[i].sprite;
-		wld_mobtypes[i].fg_color = mts[i].fg_color;
+		wld_mobtypes[i].fg_id = custom_mob_fgbase + i;
+		wld_mobtypes[i].fg_r = mts[i].fg_r;
+		wld_mobtypes[i].fg_g = mts[i].fg_g;
+		wld_mobtypes[i].fg_b = mts[i].fg_b;
 		wld_mobtypes[i].short_desc = mts[i].short_desc;
 	}
 }

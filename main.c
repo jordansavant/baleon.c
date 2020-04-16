@@ -2,9 +2,7 @@
 #include <ncurses.h>
 #include <menu.h>
 
-// debug
-#include <stdio.h>
-
+#include "dm_debug.h"
 #include "dm_gametime.h"
 #include "dm_draw.h"
 #include "dm_world.h"
@@ -71,27 +69,6 @@ typedef int bool; // or #define bool int
 #define KEY_9		57
 
 // UTILS
-FILE* fp;
-void dmlog(char *msg)
-{
-	fprintf(fp, "%s\n", msg);
-	fflush(fp);
-}
-void dmlogi(char *msg, int i)
-{
-	fprintf(fp, "%s %d \n", msg, i);
-	fflush(fp);
-}
-void dmlogc(char *msg, char c)
-{
-	fprintf(fp, "%s %c \n", msg, c);
-	fflush(fp);
-}
-void dmlogxy(char *msg, int x, int y)
-{
-	fprintf(fp, "%s x %d y %d \n", msg, x, y);
-	fflush(fp);
-}
 
 void skip_delay(double wait_s)
 {
@@ -112,7 +89,7 @@ void escapedelay(bool on)
 void debug(char *msg)
 {
 	int y = getmaxy(stdscr);
-	dm_center(y - 1, msg, TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
+	dm_center(y - 1, msg, 7001, TCOLOR_NORMAL, 0);
 	refresh();
 }
 
@@ -500,6 +477,8 @@ void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
 }
 void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold)
 {
+	dmlogi("CPAIR", COLOR_PAIRS);
+	debug("ErAD");
 	wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out
 	if (bold)
 		wattrset(map_pad, COLOR_PAIR(colorpair) | A_BOLD);
@@ -730,12 +709,12 @@ void g_newgame()
 
 int main(void)
 {
+	dm_fp = fopen("log.txt", "w");
+	dmlog("game start...");
+
 	if (!g_setup()) {
 		return 1;
 	}
-
-	fp = fopen("log.txt", "w");
-	dmlog("game start...");
 
 	game_state = GS_START;
 	while (game_state != GS_EXIT) {
@@ -755,10 +734,10 @@ int main(void)
 		}
 	}
 
-	dmlog("game end...");
-	fclose(fp);
-
 	g_teardown();
+
+	dmlog("game end...");
+	fclose(dm_fp);
 
 	return 0;
 }
