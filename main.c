@@ -383,15 +383,15 @@ int map_rows_scale = 1;
 int map_cols_scale = 2;
 WINDOW *map_pad;
 struct wld_map *current_map;
-int ui_map_cols = 100;
-int ui_map_rows = 50;
-int ui_map_padding = 10;
+int ui_map_cols;
+int ui_map_rows;
+int ui_map_padding = 15;
 
 // PLAY UI PANELS
 WINDOW* cursorpanel;
 WINDOW* logpanel;
 WINDOW* mobpanel;
-#define LOG_COUNT 15
+#define LOG_COUNT 7
 #define LOG_LENGTH 60
 char logs[LOG_COUNT][LOG_LENGTH];
 
@@ -409,16 +409,10 @@ void ui_write(WINDOW *win, int row, char *msg)
 }
 
 //void ui_anchor_ur(WINDOW* win, float height, float width)
-void ui_anchor_ur(WINDOW* win, float height, float width, int minrows, int mincols)
+void ui_anchor_ur(WINDOW* win, int rows, int cols)
 {
 	int y, x;
 	getmaxyx(stdscr, y, x);
-	int rows = y * height;
-	int cols = x * width;
-	if (minrows > 0 && rows < minrows)
-		rows = minrows;
-	if (mincols > 0 && cols < mincols)
-		cols = mincols;
 	wresize(win, rows, cols);
 	mvwin(win, 0, x - cols);
 }
@@ -538,21 +532,34 @@ void ps_destroy_world()
 
 void ps_build_ui()
 {
+	int sx, sy;
+	getmaxyx(stdscr,sy,sx);
+
+	int cursorpanel_cols = 50;
+	int cursorpanel_rows = 3;
 	cursorpanel = newwin(0, 0, 0, 0);
-	ui_anchor_bl(cursorpanel, 3, 50);
+	ui_anchor_bl(cursorpanel, cursorpanel_rows, cursorpanel_cols);
 	ui_box(cursorpanel);
 
 	// info panel is at bottom
+	int logpanel_cols = LOG_LENGTH + 2;
+	int logpanel_rows = LOG_COUNT + 2;
 	logpanel = newwin(0, 0, 0, 0);
-	ui_anchor_br(logpanel, LOG_COUNT + 2, LOG_LENGTH + 2);
+	ui_anchor_br(logpanel, logpanel_rows, logpanel_cols);
 	ui_box(logpanel);
 
 	// anchor mobpanel to right side
 	// TODO make this fit the right side
 	// TODO scrollable?
+	int mobpanel_cols = 30;
+	int mobpanel_rows = sy - logpanel_rows;
 	mobpanel = newwin(0, 0, 0, 0);
-	ui_anchor_ur(mobpanel, .75, .2, 0, 30);
+	ui_anchor_ur(mobpanel, mobpanel_rows, mobpanel_cols);
 	ui_box(mobpanel);
+
+	// make map the leftover width up to the mob panel
+	ui_map_cols = sx - mobpanel_cols;
+	ui_map_rows = sy - logpanel_rows;
 
 	ui_loginfo("You awake in darkness, then a light appears...");
 }
@@ -812,8 +819,8 @@ void g_newgame()
 	while (play_state != PS_EXIT) {
 		switch (play_state) {
 		case PS_START:
-			ps_build_world();
 			ps_build_ui();
+			ps_build_world();
 			play_state = PS_PLAY;
 			break;
 		case PS_PLAY:
