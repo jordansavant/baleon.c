@@ -28,6 +28,7 @@ typedef int bool; // or #define bool int
 #define SCOLOR_ALLWHITE 7
 #define SCOLOR_CURSOR   8
 #define TCOLOR_PURPLE   9
+#define SCOLOR_BLOOD    10
 
 #define KEY_RETURN	10
 #define KEY_ESC		27
@@ -111,6 +112,7 @@ enum GAME_STATE
 	GS_EXIT
 };
 enum GAME_STATE game_state = GS_START;
+bool trigger_world = false;
 
 bool term_resized = false;
 void on_term_resize(int dummy)
@@ -147,6 +149,7 @@ bool g_setup()
 	init_pair(SCOLOR_ALLWHITE,	COLOR_WHITE,	COLOR_WHITE);
 	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_MAGENTA);
 	init_pair(TCOLOR_PURPLE,	COLOR_MAGENTA,	COLOR_BLACK);
+	init_pair(SCOLOR_BLOOD,		COLOR_BLACK,	COLOR_RED);
 
 	// setup world colors
 	wld_setup();
@@ -514,6 +517,99 @@ void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, stru
 	play_state = PS_GAMEOVER;
 }
 
+void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
+{
+	ui_loginfo("player attacked mob");
+}
+
+void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
+{
+	ui_loginfo("player killed mob");
+}
+// this runs in the player update loop and should take an input that triggers world updates
+void ai_player_input(struct wld_mob* player)
+{
+	nodelay(stdscr, true);
+	escapedelay(false);
+	bool listen = true;
+	trigger_world = false;
+	while (listen) {
+		listen = false;
+		switch (getch()) {
+		// Cursor movement
+		case KEY_8: // up
+			wld_movecursor(current_map, 0, -1);
+			break;
+		case KEY_2: // down
+			wld_movecursor(current_map, 0, 1);
+			break;
+		case KEY_4: // left
+			wld_movecursor(current_map, -1, 0);
+			break;
+		case KEY_6: // right
+			wld_movecursor(current_map, 1, 0);
+			break;
+		case KEY_7: // upleft
+			wld_movecursor(current_map, -1, -1);
+			break;
+		case KEY_9: // upright
+			wld_movecursor(current_map, 1, -1);
+			break;
+		case KEY_1: // downleft
+			wld_movecursor(current_map, -1, 1);
+			break;
+		case KEY_3: // downright
+			wld_movecursor(current_map, 1, 1);
+			break;
+		// Player movement
+		case KEY_ESC:
+			play_state = PS_MENU;
+			break;
+		case KEY_w:
+			wld_queuemobmove(player, 0, -1);
+			trigger_world = true;
+			break;
+		case KEY_s:
+			wld_queuemobmove(player, 0, 1);
+			trigger_world = true;
+			break;
+		case KEY_a:
+			wld_queuemobmove(player, -1, 0);
+			trigger_world = true;
+			break;
+		case KEY_d:
+			wld_queuemobmove(player, 1, 0);
+			trigger_world = true;
+			break;
+		case KEY_q:
+			wld_queuemobmove(player, -1, -1);
+			trigger_world = true;
+			break;
+		case KEY_e:
+			wld_queuemobmove(player, 1, -1);
+			trigger_world = true;
+			break;
+		case KEY_z:
+			wld_queuemobmove(player, -1, 1);
+			trigger_world = true;
+			break;
+		case KEY_x:
+			wld_queuemobmove(player, 1, 1);
+			trigger_world = true;
+			break;
+		// Player attack
+		case KEY_t:
+			trigger_world = ai_player_attack_melee(player);
+			break;
+		default:
+			listen = true;
+			break;
+		}
+	}
+	escapedelay(true);
+	nodelay(stdscr, false);
+}
+
 
 ///////////////////////////
 // SETUP PLAY
@@ -528,6 +624,9 @@ void ps_build_world()
 	current_map->on_cursormove = map_on_cursormove;
 	current_map->on_mob_attack_player = map_on_mob_attack_player;
 	current_map->on_mob_kill_player = map_on_mob_kill_player;
+	current_map->player->ai_player_input = ai_player_input;
+	current_map->on_player_attack_mob = map_on_player_attack_mob;
+	current_map->on_player_kill_mob = map_on_player_kill_mob;
 }
 void ps_destroy_world()
 {
@@ -566,6 +665,7 @@ void ps_layout_ui()
 	ui_map_cols = sx - mobpanel_cols;
 	ui_map_rows = sy - logpanel_rows;
 }
+// this is called when window resize event happens
 void ps_reset_ui()
 {
 	clear();
@@ -612,6 +712,7 @@ void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold)
 		wattrset(map_pad, COLOR_PAIR(colorpair) | A_BOLD);
 	else
 		wattrset(map_pad, COLOR_PAIR(colorpair));
+
 	waddch(map_pad, cha); // pad
 	// extra padding if we are scaling the columns to make it appear at a better ratio in the terminal
 	if (map_cols_scale > 1 || map_rows_scale > 1) {
@@ -647,7 +748,12 @@ void ps_play_draw()
 			if (t->is_visible) {
 				struct draw_struct ds = wld_get_drawstruct(current_map, c, r);
 
-				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
+				// if there is a dead mob on this then color it bloody
+				struct wld_mob *m = wld_getmobat_index(current_map, t->map_index);
+				if (m != NULL && m->is_dead)
+					ps_draw_tile(r, c, ds.sprite, SCOLOR_BLOOD, false);
+				else
+					ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
 
 			} else if (t->was_visible) {
 				struct draw_struct ds = wld_get_memory_drawstruct(current_map, c, r);
@@ -699,96 +805,17 @@ void ps_play_draw()
 	wrefresh(cursorpanel);
 	wrefresh(mobpanel);
 }
-bool trigger_world = false;
-void ps_play_input()
-{
-	nodelay(stdscr, true);
-	escapedelay(false);
-	bool listen = true;
-	trigger_world = false;
-	while (listen) {
-		listen = false;
-		switch (getch()) {
-		// Cursor movement
-		case KEY_8: // up
-			wld_movecursor(current_map, 0, -1);
-			break;
-		case KEY_2: // down
-			wld_movecursor(current_map, 0, 1);
-			break;
-		case KEY_4: // left
-			wld_movecursor(current_map, -1, 0);
-			break;
-		case KEY_6: // right
-			wld_movecursor(current_map, 1, 0);
-			break;
-		case KEY_7: // upleft
-			wld_movecursor(current_map, -1, -1);
-			break;
-		case KEY_9: // upright
-			wld_movecursor(current_map, 1, -1);
-			break;
-		case KEY_1: // downleft
-			wld_movecursor(current_map, -1, 1);
-			break;
-		case KEY_3: // downright
-			wld_movecursor(current_map, 1, 1);
-			break;
-		// Player movement
-		case KEY_ESC:
-			play_state = PS_MENU;
-			break;
-		case KEY_w:
-			wld_queuemobmove(current_map->player, 0, -1);
-			trigger_world = true;
-			break;
-		case KEY_s:
-			wld_queuemobmove(current_map->player, 0, 1);
-			trigger_world = true;
-			break;
-		case KEY_a:
-			wld_queuemobmove(current_map->player, -1, 0);
-			trigger_world = true;
-			break;
-		case KEY_d:
-			wld_queuemobmove(current_map->player, 1, 0);
-			trigger_world = true;
-			break;
-		case KEY_q:
-			wld_queuemobmove(current_map->player, -1, -1);
-			trigger_world = true;
-			break;
-		case KEY_e:
-			wld_queuemobmove(current_map->player, 1, -1);
-			trigger_world = true;
-			break;
-		case KEY_z:
-			wld_queuemobmove(current_map->player, -1, 1);
-			trigger_world = true;
-			break;
-		case KEY_x:
-			wld_queuemobmove(current_map->player, 1, 1);
-			trigger_world = true;
-			break;
-		default:
-			listen = true;
-			break;
-		}
-	}
-	escapedelay(true);
-	nodelay(stdscr, false);
-}
 void ps_play_update()
 {
 	// depending on input change and trigger various updates
 
-	if (trigger_world) {
-		dmlog("world update");
-		// loop over map mobs and run their update routines
-		for (int i=0; i < current_map->mobs_length; i++) {
-			wld_update_mob(&current_map->mobs[i]);
-		}
-		trigger_world = false;
+	// loop over map mobs and run their update routines
+	for (int i=0; i < current_map->mobs_length; i++) {
+		struct wld_mob *m = &current_map->mobs[i];
+		if (m->is_player)
+			wld_update_mob(m);
+		else if (trigger_world)
+			wld_update_mob(m);
 	}
 
 	// reset map elements
@@ -851,7 +878,7 @@ void g_newgame()
 			ps_play_draw();
 
 			// capture play input
-			ps_play_input();
+			//ps_play_input();
 
 			// update world
 			ps_play_update();

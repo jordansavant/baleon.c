@@ -111,9 +111,11 @@ struct wld_mob
 	void (*ai_wander)(struct wld_mob*);
 	bool (*ai_detect_combat)(struct wld_mob*);
 	void (*ai_decide_combat)(struct wld_mob*);
-	int queuex, queuey, queuetarget;
+	void (*ai_player_input)(struct wld_mob*);
+	int queue_x, queue_y, queue_target;
 	int health, maxhealth;
 	bool is_player, is_dead;
+	int cursor_target; // map index
 };
 struct wld_mobtype *wld_mobtypes;
 
@@ -146,6 +148,8 @@ struct wld_map {
 	void (*on_mob_attack_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_mob_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_mob_kill_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_player_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_player_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 };
 
 
@@ -214,8 +218,8 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 }
 void wld_queuemobmove(struct wld_mob *mob, int relx, int rely)
 {
-	mob->queuex += relx;
-	mob->queuey += rely;
+	mob->queue_x += relx;
+	mob->queue_y += rely;
 }
 void wld_movemob(struct wld_mob *mob, int relx, int rely)
 {
@@ -248,12 +252,19 @@ void wld_movecursor(struct wld_map *map, int relx, int rely)
 		map->cursor->x = newx;
 		map->cursor->y = newy;
 		map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
+		// notify subscriber
 		map->on_cursormove(map, map->cursor->x, map->cursor->y, map->cursor->index);
+		// if I am on top of a mob set them as the target
+		map->player->cursor_target = map->cursor->index;
 	}
 }
 struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y)
 {
 	int index = wld_calcindex(x, y, map->cols);
+	return &map->tiles[map->tile_map[index]];
+}
+struct wld_tile* wld_gettileat_index(struct wld_map *map, int index)
+{
 	return &map->tiles[map->tile_map[index]];
 }
 struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y)
@@ -322,6 +333,12 @@ struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y)
 	struct draw_struct ds = { colorpair, cha };
 	return ds;
 }
+bool wld_is_mob_nextto_mob(struct wld_mob* ma, struct wld_mob* mb)
+{
+	int diffx = abs(ma->map_x - mb->map_x);
+	int diffy = abs(ma->map_y - mb->map_y);
+	return diffx <= 1 && diffy <= 1;
+}
 
 
 ///////////////////////////
@@ -329,34 +346,31 @@ struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y)
 
 void ai_default_wander(struct wld_mob *mob)
 {
-	mob->queuex += 1;
+	mob->queue_x += 1;
 }
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
 	// TODO
-	return false && !mob->map->player->is_dead;
+	return !mob->map->player->is_dead;
 }
 void ai_default_decide_combat(struct wld_mob *mob)
 {
 	// GET PLAYER (TODO in visible range, if can see, etc)
-	int x = mob->map->player->map_x;
-	int y = mob->map->player->map_y;
-	int diffx = abs(x - mob->map_x);
-	int diffy = abs(y - mob->map_y);
-	// todo range and attack types?
-	if (diffx > 1 || diffy > 1) {
+	if (wld_is_mob_nextto_mob(mob, mob->map->player)) {
+		// attack target
+		mob->queue_target = mob->map->player->map_index;
+	} else {
+		int x = mob->map->player->map_x;
+		int y = mob->map->player->map_y;
 		// move to target
 		if (x < mob->map_x)
-			mob->queuex += -1;
+			mob->queue_x += -1;
 		else if (x > mob->map_x)
-			mob->queuex += 1;
+			mob->queue_x += 1;
 		if (y < mob->map_y)
-			mob->queuey += -1;
+			mob->queue_y += -1;
 		else if (y > mob->map_y)
-			mob->queuey += 1;
-	} else {
-		// attack target
-		mob->queuetarget = mob->map->player->map_index;
+			mob->queue_y += 1;
 	}
 }
 void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender)
@@ -369,6 +383,8 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 		aggressor->map->on_mob_kill_mob(aggressor->map, aggressor, defender);
 	if (defender->is_player && aggressor->map->on_mob_kill_player)
 		aggressor->map->on_mob_kill_player(aggressor->map, aggressor, defender);
+	if (aggressor->is_player && aggressor->map->on_player_kill_mob)
+		aggressor->map->on_player_kill_mob(aggressor->map, aggressor, defender);
 }
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 {
@@ -379,10 +395,30 @@ void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 		aggressor->map->on_mob_attack_mob(aggressor->map, aggressor, defender);
 	if (defender->is_player && aggressor->map->on_mob_attack_player)
 		aggressor->map->on_mob_attack_player(aggressor->map, aggressor, defender);
+	if (aggressor->is_player && aggressor->map->on_player_attack_mob)
+		aggressor->map->on_player_attack_mob(aggressor->map, aggressor, defender);
 
 	if (defender->health <= 0)
 		ai_mob_kill_mob(aggressor, defender);
 
+}
+// triggered from inputs that request attack
+// Bool returns if it was a valid option?
+bool ai_player_attack_melee(struct wld_mob* player)
+{
+	struct wld_tile *tile = wld_gettileat_index(player->map, player->cursor_target);
+	if (tile->is_visible) {
+		struct wld_mob *target = wld_getmobat_index(player->map, player->cursor_target);
+		// make sure its another valid mob
+		if (target != NULL && !target->is_player && !target->is_dead) {
+			// make sure its within melee
+			if (wld_is_mob_nextto_mob(player, target)) {
+				ai_mob_attack_mob(player, target);
+				return true;
+			}
+		}
+	}
+	return false;
 }
 void wld_update_mob(struct wld_mob *mob)
 {
@@ -396,6 +432,7 @@ void wld_update_mob(struct wld_mob *mob)
 	// if player
 	if (!mob->is_player) {
 ai_rerun:
+		dmlogi("state", mob->state);
 		switch (mob->state) {
 		case MS_WANDER:
 			if (mob->ai_detect_combat != NULL && mob->ai_detect_combat(mob)) {
@@ -419,21 +456,31 @@ ai_rerun:
 			}
 			break;
 		}
+	} else {
+		// listen for input commands
+		switch (mob->state) {
+		case MS_WANDER:
+			if (mob->ai_player_input != NULL) {
+				mob->ai_player_input(mob);
+			}
+			break;
+		}
 	}
 
 	// apply changes
 	// TODO maybe this should be a dynamic array?
-	wld_movemob(mob, mob->queuex, mob->queuey);
-	mob->queuex = 0;
-	mob->queuey = 0;
+	wld_movemob(mob, mob->queue_x, mob->queue_y);
+	mob->queue_x = 0;
+	mob->queue_y = 0;
 
-	if (mob->queuetarget > -1) {
+	if (mob->queue_target > -1) {
 		// attack enemy
-		struct wld_mob* target = wld_getmobat_index(mob->map, mob->queuetarget);
+		struct wld_mob* target = wld_getmobat_index(mob->map, mob->queue_target);
 		if (target != NULL) {
 			ai_mob_attack_mob(mob, target);
 		}
 	}
+	mob->queue_target = -1;
 }
 
 ///////////////////////////
@@ -567,11 +614,15 @@ void wld_genmobs(struct wld_map *map)
 		mob->id = i;
 		mob->map = map;
 		mob->state = MS_START;
-		mob->queuex = 0;
-		mob->queuey = 0;
-		mob->queuetarget = -1;
+		mob->queue_x = 0;
+		mob->queue_y = 0;
+		mob->queue_target = -1;
 		mob->maxhealth = 100; // TODO define based on things
 		mob->ai_wander = NULL;
+		mob->ai_detect_combat = NULL;
+		mob->ai_decide_combat = NULL;
+		mob->ai_player_input = NULL;
+		mob->cursor_target = -1;
 
 		// first mob is player
 		if (i == 0) {
@@ -588,7 +639,7 @@ void wld_genmobs(struct wld_map *map)
 			map->cursor->x = mob->map_x + 2;
 			map->cursor->y = mob->map_y;
 			map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
-		}else {
+		} else {
 			// TODO this can conflict with the player if we are not careful
 			// hardcoded diagonal positions
 			mob->map_x = 38;
@@ -630,6 +681,8 @@ struct wld_map* wld_newmap(int depth)
 	map->on_mob_attack_player = NULL;
 	map->on_mob_kill_mob = NULL;
 	map->on_mob_kill_player = NULL;
+	map->on_player_attack_mob = NULL;
+	map->on_player_kill_mob = NULL;
 
 	// populate tiles
 	wld_gentiles(map);
