@@ -1,4 +1,8 @@
+#ifndef DM_ALGORITHM
+#define DM_ALGORITHM
+
 #include <stdlib.h>
+#include "dm_defines.h"
 
 unsigned int shadowcast_id = 0;
 int shadow_multiples[4][8] = {
@@ -82,3 +86,4 @@ void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (
 	}
 }
 
+#endif

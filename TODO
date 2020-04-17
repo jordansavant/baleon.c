@@ -8,12 +8,12 @@ CORE MECHANIC:
 	- with many aberrations comes highly unique combinations of characters
 
 
+monster->attack_method = melee();
+monster->attack_method = spell();
+
+
 TODO:
-- 
 - ui:
-	- info bar for short descriptions for hovered events
-	- event log
-	- action bar (things you can do where you are at)
 	- mob panel
 		- lists visible mobs and things
 		- their timers? health?
@@ -27,14 +27,9 @@ TODO:
 			- exp?
 		- stats (defense?)
 	- inventory panel?
-- mob stats: health
-- attack mob: melee
 - attack mob: ranged
 - multi map w/ transition
 - port xogeni parts
-- shadowcast
-	- angband got away with 16 colors
-	- looks like stuff within line of site was BOLDED while last memory was not
 
 
 FEATURE CREEP

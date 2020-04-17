@@ -4,20 +4,11 @@
 #include <menu.h>
 #include <signal.h>
 
+#include "dm_defines.h"
 #include "dm_debug.h"
 #include "dm_gametime.h"
 #include "dm_draw.h"
 #include "dm_world.h"
-
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-#endif
-
-#ifndef bool
-#define false 0
-#define true 1
-typedef int bool; // or #define bool int
-#endif
 
 #define SCOLOR_NORMAL	1
 #define TCOLOR_NORMAL	2
@@ -122,8 +113,7 @@ void on_term_resize(int dummy)
 bool g_setup()
 {
 	// setup debug file pointer
-	dm_fp = fopen("log.txt", "w");
-	dmlog("\ngame start...");
+	dmlogopen("log.txt", "w");
 
 	// setup ncurses
 	initscr();
@@ -176,7 +166,7 @@ void g_teardown()
 
 	// unload dm log
 	dmlog("game end...");
-	fclose(dm_fp);
+	dmlogclose();
 }
 
 
@@ -466,12 +456,12 @@ void ui_update_cursorinfo(struct wld_map *map)
 
 	// Get details about the tile they are on
 	struct wld_tile *t = wld_gettileat(map, x, y);
-	struct wld_tiletype *tt = &wld_tiletypes[t->type];
+	struct wld_tiletype *tt = wld_get_tiletype(t->type);
 	if (t->is_visible) {
 		struct wld_mob *m = wld_getmobat(map, x, y);
 		if (m != NULL) {
 			// TODO get "what" the mob is doing
-			struct wld_mobtype *mt = &wld_mobtypes[m->type];
+			struct wld_mobtype *mt = wld_get_mobtype(m->type);
 			ui_cursorinfo(mt->short_desc);
 		} else {
 			ui_cursorinfo(tt->short_desc);
@@ -801,6 +791,7 @@ void ps_play_draw()
 	// UI constants (needs to be done in an event?)
 	ui_update_logpanel(current_map);
 	ui_update_mobpanel(current_map);
+	ui_update_cursorinfo(current_map);
 
 	wrefresh(cursorpanel);
 	wrefresh(mobpanel);

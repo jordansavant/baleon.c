@@ -1,10 +1,8 @@
-#include <time.h>
+#ifndef DM_GAMETIME
+#define DM_GAMETIME
 
-#ifndef bool
-#define false 0
-#define true 1
-typedef int bool; // or #define bool int
-#endif
+#include <time.h>
+#include "dm_defines.h"
 
 // Gets the difference in seconds between two timespecs (ts1 - ts2)
 double dm_timediff_s(struct timespec *ts1, struct timespec *ts2);
@@ -33,3 +31,5 @@ struct dm_deltatimer
 };
 struct dm_deltatimer dm_deltatimer_new(double wait_s);
 bool dm_deltatimer_update(struct dm_deltatimer *gt, double delta_s);
+
+#endif
