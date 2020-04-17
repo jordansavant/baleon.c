@@ -192,7 +192,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 	{
 		on_see(mob, x, y, radius);
 	}
-	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 20, wld_ss_isblocked, wld_ss_onvisible);
+	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 40, wld_ss_isblocked, wld_ss_onvisible);
 }
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 {

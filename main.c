@@ -466,7 +466,7 @@ void ui_positioninfo(char *msg)
 void ui_modeinfo(char *msg)
 {
 	if (msg[0] != '\0') {
-		char full[CURSOR_INFO_LENGTH] = "Y: ";
+		char full[CURSOR_INFO_LENGTH] = "y: ";
 		ui_write(cursorpanel, 2, strncat(full, msg, CURSOR_INFO_LENGTH - 6));
 	} else {
 		ui_write(cursorpanel, 2, "");
@@ -572,7 +572,7 @@ void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* aggressor, stru
 // this runs in the player update loop and should take an input that triggers world updates
 void ai_player_input(struct wld_mob* player)
 {
-	nodelay(stdscr, true);
+	//nodelay(stdscr, true);
 	escapedelay(false);
 	bool listen = true;
 	trigger_world = false;
@@ -632,7 +632,7 @@ void ai_player_input(struct wld_mob* player)
 				// TODO this is hardcoded to melee but needs to use equipped weapon's activation target
 				player->target_mode = TMODE_MELEE;
 				ui_loginfo("You draw your weapon for melee, range of 1.");
-				ui_modeinfo("melee");
+				ui_modeinfo("melee range 1");
 				listen = false;
 				break;
 			}
@@ -691,7 +691,7 @@ void ai_player_input(struct wld_mob* player)
 		} // eo switch always
 	} // eo while listen
 	escapedelay(true);
-	nodelay(stdscr, false);
+	//nodelay(stdscr, false);
 }
 
 
@@ -871,32 +871,20 @@ void ps_play_draw()
 	if (plyrpad_y * map_rows_scale > ui_map_rows - paddingy)
 		shiftpad_y += paddingy + (plyrpad_y * map_rows_scale - ui_map_rows);
 
-
-	// any of the pad excess needs to be blacked out
-	//attrset(COLOR_PAIR(SCOLOR_ALLBLACK));
-	//dmlogii("sp", shiftpad_x, shiftpad_y);
-	//dmlogii("sw", shiftwin_x, shiftwin_y);
-	//for (int r=0; r<current_map->rows; r++) {
-	//	wmove(map_pad, r, 0);
-	//	waddch(map_pad, ' ');
-	//}
-
 	refresh(); // has to be called before prefresh for some reason?
 	prefresh(map_pad, 0 + shiftpad_y, 0 + shiftpad_x, 0 + shiftwin_y, 0 + shiftwin_x, ui_map_rows, ui_map_cols);
-
-	// render pad
-	// prefresh(pad, pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol)
-	//prefresh(map_pad, 0, 0, 0, 0, current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
-	//int top, left;
-	//DM_CALC_CENTER_TOPLEFT(stdscr, current_map->rows * map_rows_scale, current_map->cols * map_cols_scale, top, left);
-	//prefresh(map_pad, 0, 0, top, left, top + current_map->rows * map_rows_scale, left + current_map->cols * map_cols_scale);
-	//prefresh(map_pad, diffy, diffx, winy, winx, current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
 
 	// UI constants (needs to be done in an event?)
 	ui_update_logpanel(current_map);
 	ui_update_mobpanel(current_map);
 	ui_update_cursorinfo(current_map);
 	ui_update_positioninfo(current_map);
+
+	// ascii tools
+	int y, x;
+	getmaxyx(stdscr, y, x);
+	move(ui_map_rows, 2);
+	addstr("y: draw/sheath   i: inventory   z: rest   p: pickup");
 
 	wrefresh(cursorpanel);
 	wrefresh(mobpanel);
