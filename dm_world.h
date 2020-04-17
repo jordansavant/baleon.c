@@ -355,7 +355,7 @@ void ai_default_wander(struct wld_mob *mob)
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
 	// TODO
-	return !mob->map->player->is_dead;
+	return false && !mob->map->player->is_dead;
 }
 void ai_default_decide_combat(struct wld_mob *mob)
 {

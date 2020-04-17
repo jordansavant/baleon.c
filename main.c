@@ -418,11 +418,11 @@ char logs[LOG_COUNT][LOG_LENGTH];
 #define translate_screenxy_mapxy(sx, sy, x, y) (x = translate_screenx_mapx(sx), y = translate_screeny_mapy(sy))
 int translate_screeny_mapy(int sy)
 {
-	return sy + map_padshift_y;
+	return sy - map_padshift_y / map_rows_scale;
 }
 int translate_screenx_mapx(int sx)
 {
-	return sx + map_padshift_x;
+	return sx - map_padshift_x / map_cols_scale;
 }
 
 void ui_box(WINDOW* win)
@@ -582,7 +582,9 @@ void ai_player_input(struct wld_mob* player)
 			break;
 		case KEY_MOUSE: { // mouse
 				MEVENT event;
-				if (getmouse(&event) == OK) {
+				int maxx, maxy;
+				getmaxyx(stdscr, maxy, maxx);
+				if (getmouse(&event) == OK && event.x < maxx && event.y < maxy && event.x > 0 && event.y > 0) {
 					int map_x, map_y;
 					translate_screenxy_mapxy(event.x / map_cols_scale, event.y / map_rows_scale, map_x, map_y);
 					dmlogii("MOUSE",map_x,map_y);
@@ -801,23 +803,29 @@ void ps_play_draw()
 	int shiftpad_x = 0, shiftpad_y = 0, shiftwin_x = 0, shiftwin_y = 0;
 	int paddingx = ui_map_padding * map_cols_scale;
 	int paddingy = ui_map_padding * map_rows_scale;
+
+	// if we are close to the left side or top side offset where in the window the pad origin would draw
 	if (plyrpad_x < paddingx)
 		shiftwin_x += paddingx - plyrpad_x * map_cols_scale;
-	if (plyrpad_x * map_cols_scale > ui_map_cols - paddingx)
-		shiftpad_x += paddingx + (plyrpad_x * map_cols_scale - ui_map_cols);
 	if (plyrpad_y < paddingy)
 		shiftwin_y += paddingy - plyrpad_y * map_rows_scale;
+
+	// if we are close to the right or bottom side offset the pad point origin
+	if (plyrpad_x * map_cols_scale > ui_map_cols - paddingx)
+		shiftpad_x += paddingx + (plyrpad_x * map_cols_scale - ui_map_cols);
 	if (plyrpad_y * map_rows_scale > ui_map_rows - paddingy)
 		shiftpad_y += paddingy + (plyrpad_y * map_rows_scale - ui_map_rows);
 
 	refresh(); // has to be called before prefresh for some reason?
 	prefresh(map_pad, 0 + shiftpad_y, 0 + shiftpad_x, 0 + shiftwin_y, 0 + shiftwin_x, ui_map_rows, ui_map_cols);
 
-	// lets save our map pad offsets for other uses
+	// lets save our map pad offsets for other uses (includes scaling)
 	map_padshift_x = shiftpad_x;
 	map_padshift_y = shiftpad_y;
 	map_winshift_x = shiftwin_x;
 	map_winshift_y = shiftwin_y;
+	dmlogii("sp", shiftpad_x, shiftpad_y);
+	dmlogii("sw", shiftwin_x, shiftwin_y);
 
 
 	// render pad
