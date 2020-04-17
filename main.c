@@ -23,6 +23,7 @@
 
 #define KEY_RETURN	10
 #define KEY_ESC		27
+#define KEY_SPACE	32
 
 #define KEY_a		97
 #define KEY_b		98
@@ -398,7 +399,12 @@ char logs[LOG_COUNT][LOG_LENGTH];
 
 void ui_box(WINDOW* win)
 {
-	box(win, ACS_VLINE, ACS_HLINE);
+	//box(win, ACS_VLINE, ACS_HLINE);
+	//box(win, ':', '-');
+	//wborder(win, '|', '|', '-', '-', '+', '+', '+', '+');
+	wattrset(win, COLOR_PAIR(TCOLOR_PURPLE));
+	wborder(win, '|', '|', '=', '=', '@', '@', '@', '@');
+	wattrset(win, COLOR_PAIR(TCOLOR_NORMAL));
 }
 
 // helper to write to a row in a panel we boxed
@@ -524,78 +530,117 @@ void ai_player_input(struct wld_mob* player)
 	bool listen = true;
 	trigger_world = false;
 	while (listen) {
-		listen = false;
-		switch (getch()) {
+		int key = getch();
+		switch (player->target_mode) {
+		case TMODE_NONE:
+			switch (key) {
+			// Player movement
+			case KEY_ESC:
+				play_state = PS_MENU;
+				listen = false;
+				break;
+			case KEY_w:
+				wld_queuemobmove(player, 0, -1);
+				trigger_world = true;
+				listen = false;
+				break;
+			case KEY_s:
+				wld_queuemobmove(player, 0, 1);
+				trigger_world = true;
+				listen = false;
+				break;
+			case KEY_a:
+				wld_queuemobmove(player, -1, 0);
+				trigger_world = true;
+				listen = false;
+				break;
+			case KEY_d:
+				wld_queuemobmove(player, 1, 0);
+				trigger_world = true;
+				listen = false;
+				break;
+			case KEY_q:
+				wld_queuemobmove(player, -1, -1);
+				trigger_world = true;
+				listen = false;
+				break;
+			case KEY_e:
+				wld_queuemobmove(player, 1, -1);
+				trigger_world = true;
+				listen = false;
+				break;
+			case KEY_z:
+				wld_queuemobmove(player, -1, 1);
+				trigger_world = true;
+				listen = false;
+				break;
+			case KEY_x:
+				wld_queuemobmove(player, 1, 1);
+				trigger_world = true;
+				listen = false;
+				break;
+			// Player attack
+			case KEY_y:
+				// enter targeting mode for active weapon
+				// TODO this is hardcoded to melee but needs to use equipped weapon's activation target
+				player->target_mode = TMODE_MELEE;
+				ui_loginfo("melee mode");
+				listen = false;
+				break;
+			}
+			break;
+		case TMODE_MELEE:
+			switch (key) {
+			case KEY_SPACE:
+				trigger_world = ai_player_attack_melee(player);
+				listen = false;
+				break;
+			case KEY_y:
+			case KEY_ESC:
+				player->target_mode = TMODE_NONE;
+				ui_loginfo("leave melee");
+				listen = false;
+				break;
+			}
+			break;
+		} // eo target mode switch
+		// always active
+		switch (key) {
 		// Cursor movement
 		case KEY_8: // up
 			wld_movecursor(current_map, 0, -1);
+			listen = false;
 			break;
 		case KEY_2: // down
 			wld_movecursor(current_map, 0, 1);
+			listen = false;
 			break;
 		case KEY_4: // left
 			wld_movecursor(current_map, -1, 0);
+			listen = false;
 			break;
 		case KEY_6: // right
 			wld_movecursor(current_map, 1, 0);
+			listen = false;
 			break;
 		case KEY_7: // upleft
 			wld_movecursor(current_map, -1, -1);
+			listen = false;
 			break;
 		case KEY_9: // upright
 			wld_movecursor(current_map, 1, -1);
+			listen = false;
 			break;
 		case KEY_1: // downleft
 			wld_movecursor(current_map, -1, 1);
+			listen = false;
 			break;
 		case KEY_3: // downright
 			wld_movecursor(current_map, 1, 1);
+			listen = false;
 			break;
-		// Player movement
-		case KEY_ESC:
-			play_state = PS_MENU;
-			break;
-		case KEY_w:
-			wld_queuemobmove(player, 0, -1);
-			trigger_world = true;
-			break;
-		case KEY_s:
-			wld_queuemobmove(player, 0, 1);
-			trigger_world = true;
-			break;
-		case KEY_a:
-			wld_queuemobmove(player, -1, 0);
-			trigger_world = true;
-			break;
-		case KEY_d:
-			wld_queuemobmove(player, 1, 0);
-			trigger_world = true;
-			break;
-		case KEY_q:
-			wld_queuemobmove(player, -1, -1);
-			trigger_world = true;
-			break;
-		case KEY_e:
-			wld_queuemobmove(player, 1, -1);
-			trigger_world = true;
-			break;
-		case KEY_z:
-			wld_queuemobmove(player, -1, 1);
-			trigger_world = true;
-			break;
-		case KEY_x:
-			wld_queuemobmove(player, 1, 1);
-			trigger_world = true;
-			break;
-		// Player attack
-		case KEY_t:
-			trigger_world = ai_player_attack_melee(player);
-			break;
-		default:
-			listen = true;
-			break;
-		}
-	}
+		} // eo switch always
+	} // eo while listen
 	escapedelay(true);
 	nodelay(stdscr, false);
 }
@@ -647,13 +692,17 @@ void ps_layout_ui()
 	// TODO make this fit the right side
 	// TODO scrollable?
 	int mobpanel_cols = 30;
-	int mobpanel_rows = sy - logpanel_rows + 1;
+	int mobpanel_rows = sy - logpanel_rows;
 	ui_anchor_ur(mobpanel, mobpanel_rows, mobpanel_cols);
 	ui_box(mobpanel);
 
 	// make map the leftover width up to the mob panel
 	ui_map_cols = sx - mobpanel_cols;
 	ui_map_rows = sy - logpanel_rows;
+
+	// mode bar on the bottom
+	ui_anchor_bl(cursorpanel, 3, sx - logpanel_cols);
+	ui_box(cursorpanel);
 }
 // this is called when window resize event happens
 void ps_reset_ui()
@@ -724,6 +773,7 @@ void ps_play_draw()
 	// do not clear, it causes awful redraw
 	//clear();
 	//wclear(map_pad);
+
 	// Draw tiles within the vision of the player
 	wld_mobvision(current_map->player, ps_play_draw_onvisible);
 

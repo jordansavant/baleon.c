@@ -53,6 +53,15 @@ enum WLD_MOB_STATE {
 	MS_SLEEP,
 	MS_HUNT,
 };
+enum TARGET_MODE_STATE {
+	TMODE_NONE,
+	TMODE_SELF,
+	TMODE_MELEE,
+	TMODE_RANGED_LOS,
+	TMODE_RANGED_TEL,
+	TMODE_RANGED_LOS_AOE,
+	TMODE_RANGED_TEL_AOE,
+};
 struct wld_mobtype {
 	int type;
 	unsigned long sprite;
@@ -75,6 +84,7 @@ struct wld_mob {
 	int health, maxhealth;
 	bool is_player, is_dead;
 	int cursor_target; // map index
+	enum TARGET_MODE_STATE target_mode;
 };
 
 

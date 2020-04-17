@@ -520,6 +520,7 @@ void wld_genmobs(struct wld_map *map)
 		mob->ai_decide_combat = NULL;
 		mob->ai_player_input = NULL;
 		mob->cursor_target = -1;
+		mob->target_mode = TMODE_NONE;
 
 		// first mob is player
 		if (i == 0) {
