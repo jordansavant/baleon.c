@@ -243,10 +243,8 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely)
 		mob->map_y = newy;
 	}
 }
-void wld_movecursor(struct wld_map *map, int relx, int rely)
+void wld_placecursor(struct wld_map *map, int newx, int newy)
 {
-	int newx = map->cursor->x + relx;
-	int newy = map->cursor->y + rely;
 	if (newx >= 0 && newx < map->cols && newy >= 0 && newy < map->rows)
 	{
 		map->cursor->x = newx;
@@ -257,6 +255,12 @@ void wld_movecursor(struct wld_map *map, int relx, int rely)
 		// if I am on top of a mob set them as the target
 		map->player->cursor_target = map->cursor->index;
 	}
+}
+void wld_movecursor(struct wld_map *map, int relx, int rely)
+{
+	int newx = map->cursor->x + relx;
+	int newy = map->cursor->y + rely;
+	wld_placecursor(map, newx, newy);
 }
 struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y)
 {

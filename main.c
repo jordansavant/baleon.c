@@ -113,6 +113,7 @@ enum GAME_STATE
 };
 enum GAME_STATE game_state = GS_START;
 bool trigger_world = false;
+bool mouse_available;
 
 bool term_resized = false;
 void on_term_resize(int dummy)
@@ -138,6 +139,9 @@ bool g_setup()
 	curs_set(0); // hide cursor
 	noecho();
 	keypad(stdscr, true); // turn on F key listening
+
+	mouse_available = NCURSES_MOUSE_VERSION > 0 && mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
+	printf("\033[?1003h\n"); // Makes the terminal report mouse movement events
 
 	// colors ID			FG		BG
 	init_pair(SCOLOR_NORMAL,	COLOR_WHITE,	COLOR_BLACK);
@@ -169,6 +173,7 @@ void g_teardown()
 	wld_teardown();
 
 	// teardown ncurses
+	printf("\033[?1003l\n"); // Disable mouse movement events, as l = low
 	keypad(stdscr,FALSE);
 	curs_set(1);
 	echo();
@@ -397,6 +402,10 @@ struct wld_map *current_map;
 int ui_map_cols;
 int ui_map_rows;
 int ui_map_padding = 15;
+int map_padshift_x = 0;
+int map_padshift_y = 0;
+int map_winshift_x = 0;
+int map_winshift_y = 0;
 
 // PLAY UI PANELS
 WINDOW* cursorpanel;
@@ -405,6 +414,16 @@ WINDOW* mobpanel;
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
 char logs[LOG_COUNT][LOG_LENGTH];
+
+#define translate_screenxy_mapxy(sx, sy, x, y) (x = translate_screenx_mapx(sx), y = translate_screeny_mapy(sy))
+int translate_screeny_mapy(int sy)
+{
+	return sy + map_padshift_y;
+}
+int translate_screenx_mapx(int sx)
+{
+	return sx + map_padshift_x;
+}
 
 void ui_box(WINDOW* win)
 {
@@ -561,6 +580,16 @@ void ai_player_input(struct wld_mob* player)
 		case KEY_3: // downright
 			wld_movecursor(current_map, 1, 1);
 			break;
+		case KEY_MOUSE: { // mouse
+				MEVENT event;
+				if (getmouse(&event) == OK) {
+					int map_x, map_y;
+					translate_screenxy_mapxy(event.x / map_cols_scale, event.y / map_rows_scale, map_x, map_y);
+					dmlogii("MOUSE",map_x,map_y);
+					wld_placecursor(current_map, map_x, map_y);
+				}
+			}
+			break;
 		// Player movement
 		case KEY_ESC:
 			play_state = PS_MENU;
@@ -692,12 +721,6 @@ void ps_destroy_ui()
 	delwin(logpanel);
 	delwin(cursorpanel);
 }
-// TODO function on translating a screen item to the pad item
-//void translate_screenyx_mapyx(int sy, int, sx)
-//{
-//	// get difference between pad top,left and screen top,left
-//	// subtract that from screen y,x to get pad y,x
-//}
 void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
 {
 	// get the map tile at this position and draw it
@@ -789,6 +812,13 @@ void ps_play_draw()
 
 	refresh(); // has to be called before prefresh for some reason?
 	prefresh(map_pad, 0 + shiftpad_y, 0 + shiftpad_x, 0 + shiftwin_y, 0 + shiftwin_x, ui_map_rows, ui_map_cols);
+
+	// lets save our map pad offsets for other uses
+	map_padshift_x = shiftpad_x;
+	map_padshift_y = shiftpad_y;
+	map_winshift_x = shiftwin_x;
+	map_winshift_y = shiftwin_y;
+
 
 	// render pad
 	// prefresh(pad, pminrow, pmincol, sminrow, smincol, smaxrow, smaxcol)
