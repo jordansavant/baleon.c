@@ -112,6 +112,7 @@ struct wld_map {
 
 	// function pointers game subscribes to for events
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
+	void (*on_playermove)(struct wld_map*, struct wld_mob *, int x, int y, int index);
 	void (*on_mob_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_mob_attack_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_mob_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);

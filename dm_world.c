@@ -243,7 +243,7 @@ void ai_default_wander(struct wld_mob *mob)
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
 	// TODO
-	return !mob->map->player->is_dead;
+	return false && !mob->map->player->is_dead;
 }
 void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee attack
 {
@@ -618,11 +618,11 @@ void wld_setup()
 	// copy tiletypes into malloc
 	struct wld_tiletype tts[] = {
 		{ TILE_VOID,            ' ', 0, 0, ' ', 0, 0, false, "" }, // 0
-		{ TILE_GRASS,           '"', 0, 1, '"', 0, 0, false, "A small tuft of grass" }, // 1
-		{ TILE_WATER,           ' ', 4, 2, ' ', 0, 0, false, "A pool of water glistens" }, // 2
-		{ TILE_TREE,            'T', 0, 1, 'T', 0, 0, true,  "A large tree" }, // 3
-		{ TILE_STONEWALL,       '#', 2, 2, '#', 5, 5, true,  "A stone wall" }, // 4
-		{ TILE_STONEFLOOR,      '.', 0, 2, '.', 0, 5, false, "Stone floor" }, // 5
+		{ TILE_GRASS,           '"', 0, 1, '"', 0, 0, false, "a small tuft of grass" }, // 1
+		{ TILE_WATER,           ' ', 4, 2, ' ', 0, 0, false, "a pool of water glistens" }, // 2
+		{ TILE_TREE,            'T', 0, 1, 'T', 0, 0, true,  "a large tree" }, // 3
+		{ TILE_STONEWALL,       '#', 2, 2, '#', 0, 4, true,  "rough stone wall" }, // 4
+		{ TILE_STONEFLOOR,      '.', 0, 2, '.', 0, 4, false, "rough stone floor" }, // 5
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
@@ -640,8 +640,8 @@ void wld_setup()
 	// copy mob types into malloc
 	struct wld_mobtype mts [] = {
 		{ MOB_VOID,	' ', 0, ' ', 0, "" },
-		{ MOB_PLAYER,	'@', 7, '@', 2, "You" },
-		{ MOB_BUGBEAR,	'b', 3, 'b', 2, "A bugbear" },
+		{ MOB_PLAYER,	'@', 7, '@', 2, "yourself" },
+		{ MOB_BUGBEAR,	'b', 3, 'b', 2, "a small bugbear" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {

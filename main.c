@@ -20,6 +20,7 @@
 #define SCOLOR_CURSOR   8
 #define TCOLOR_PURPLE   9
 #define SCOLOR_BLOOD    10
+#define SCOLOR_ALLBLACK 11
 
 #define KEY_RETURN	10
 #define KEY_ESC		27
@@ -141,6 +142,7 @@ bool g_setup()
 	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_MAGENTA);
 	init_pair(TCOLOR_PURPLE,	COLOR_MAGENTA,	COLOR_BLACK);
 	init_pair(SCOLOR_BLOOD,		COLOR_BLACK,	COLOR_RED);
+	init_pair(SCOLOR_ALLBLACK,	COLOR_BLACK,	COLOR_BLACK);
 
 	// setup world colors
 	wld_setup();
@@ -393,6 +395,7 @@ int ui_map_padding = 15;
 WINDOW* cursorpanel;
 WINDOW* logpanel;
 WINDOW* mobpanel;
+#define CURSOR_INFO_LENGTH 45
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
 char logs[LOG_COUNT][LOG_LENGTH];
@@ -440,7 +443,34 @@ void ui_anchor_bl(WINDOW *win, int rows, int cols)
 
 void ui_cursorinfo(char *msg)
 {
-	ui_write(cursorpanel, 0, msg);
+	if (msg[0] != '\0') {
+		char full[CURSOR_INFO_LENGTH] = "ghost: ";
+		ui_write(cursorpanel, 0, strncat(full, msg, CURSOR_INFO_LENGTH - 7));
+	} else {
+		ui_write(cursorpanel, 0, "--");
+	}
+	ui_box(cursorpanel);
+	wrefresh(cursorpanel);
+}
+void ui_positioninfo(char *msg)
+{
+	if (msg[0] != '\0') {
+		char full[CURSOR_INFO_LENGTH] = "@: ";
+		ui_write(cursorpanel, 1, strncat(full, msg, CURSOR_INFO_LENGTH - 7));
+	} else {
+		ui_write(cursorpanel, 1, "--");
+	}
+	ui_box(cursorpanel);
+	wrefresh(cursorpanel);
+}
+void ui_modeinfo(char *msg)
+{
+	if (msg[0] != '\0') {
+		char full[CURSOR_INFO_LENGTH] = "Y: ";
+		ui_write(cursorpanel, 2, strncat(full, msg, CURSOR_INFO_LENGTH - 6));
+	} else {
+		ui_write(cursorpanel, 2, "");
+	}
 	ui_box(cursorpanel);
 	wrefresh(cursorpanel);
 }
@@ -476,6 +506,18 @@ void ui_update_cursorinfo(struct wld_map *map)
 		ui_cursorinfo("");
 	}
 }
+void ui_update_positioninfo(struct wld_map *map)
+{
+	int x = map->player->map_x;
+	int y = map->player->map_y;
+	// Get details about the tile they are on
+	struct wld_tile *t = wld_gettileat(map, x, y);
+	struct wld_tiletype *tt = wld_get_tiletype(t->type);
+	if (t->is_visible)
+		ui_positioninfo(tt->short_desc);
+	else
+		ui_positioninfo("");
+}
 void ui_update_logpanel(struct wld_map *map)
 {
 	for (int i=0; i < LOG_COUNT; i++) {
@@ -500,6 +542,11 @@ void ui_update_mobpanel(struct wld_map *map)
 void map_on_cursormove(struct wld_map *map, int x, int y, int index)
 {
 	ui_update_cursorinfo(map);
+}
+
+void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y, int index)
+{
+	ui_update_positioninfo(map);
 }
 
 void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
@@ -584,7 +631,8 @@ void ai_player_input(struct wld_mob* player)
 				// enter targeting mode for active weapon
 				// TODO this is hardcoded to melee but needs to use equipped weapon's activation target
 				player->target_mode = TMODE_MELEE;
-				ui_loginfo("melee mode");
+				ui_loginfo("You draw your weapon for melee, range of 1.");
+				ui_modeinfo("melee");
 				listen = false;
 				break;
 			}
@@ -598,7 +646,8 @@ void ai_player_input(struct wld_mob* player)
 			case KEY_y:
 			case KEY_ESC:
 				player->target_mode = TMODE_NONE;
-				ui_loginfo("leave melee");
+				ui_loginfo("You sheath your weapon.");
+				ui_modeinfo("");
 				listen = false;
 				break;
 			}
@@ -657,6 +706,7 @@ void ps_build_world()
 	current_map = wld_newmap(1);
 	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
 	current_map->on_cursormove = map_on_cursormove;
+	current_map->on_playermove = map_on_playermove;
 	current_map->on_mob_attack_player = map_on_mob_attack_player;
 	current_map->on_mob_kill_player = map_on_mob_kill_player;
 	current_map->player->ai_player_input = ai_player_input;
@@ -677,11 +727,6 @@ void ps_layout_ui()
 	int sx, sy;
 	getmaxyx(stdscr,sy,sx);
 
-	int cursorpanel_cols = 50;
-	int cursorpanel_rows = 3;
-	ui_anchor_bl(cursorpanel, cursorpanel_rows, cursorpanel_cols);
-	ui_box(cursorpanel);
-
 	// info panel is at bottom
 	int logpanel_cols = LOG_LENGTH + 2;
 	int logpanel_rows = LOG_COUNT + 2;
@@ -697,11 +742,11 @@ void ps_layout_ui()
 	ui_box(mobpanel);
 
 	// make map the leftover width up to the mob panel
-	ui_map_cols = sx - mobpanel_cols;
-	ui_map_rows = sy - logpanel_rows;
+	ui_map_cols = sx - mobpanel_cols - 1;
+	ui_map_rows = sy - logpanel_rows - 1;
 
 	// mode bar on the bottom
-	ui_anchor_bl(cursorpanel, 3, sx - logpanel_cols);
+	ui_anchor_bl(cursorpanel, logpanel_rows, sx - logpanel_cols - 1);
 	ui_box(cursorpanel);
 }
 // this is called when window resize event happens
@@ -803,7 +848,6 @@ void ps_play_draw()
 		}
 	}
 
-
 	// Draw cursor
 	wmove(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale);
 	wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
@@ -827,6 +871,16 @@ void ps_play_draw()
 	if (plyrpad_y * map_rows_scale > ui_map_rows - paddingy)
 		shiftpad_y += paddingy + (plyrpad_y * map_rows_scale - ui_map_rows);
 
+
+	// any of the pad excess needs to be blacked out
+	//attrset(COLOR_PAIR(SCOLOR_ALLBLACK));
+	//dmlogii("sp", shiftpad_x, shiftpad_y);
+	//dmlogii("sw", shiftwin_x, shiftwin_y);
+	//for (int r=0; r<current_map->rows; r++) {
+	//	wmove(map_pad, r, 0);
+	//	waddch(map_pad, ' ');
+	//}
+
 	refresh(); // has to be called before prefresh for some reason?
 	prefresh(map_pad, 0 + shiftpad_y, 0 + shiftpad_x, 0 + shiftwin_y, 0 + shiftwin_x, ui_map_rows, ui_map_cols);
 
@@ -842,6 +896,7 @@ void ps_play_draw()
 	ui_update_logpanel(current_map);
 	ui_update_mobpanel(current_map);
 	ui_update_cursorinfo(current_map);
+	ui_update_positioninfo(current_map);
 
 	wrefresh(cursorpanel);
 	wrefresh(mobpanel);
