@@ -8,11 +8,40 @@ CORE MECHANIC:
 	- with many aberrations comes highly unique combinations of characters
 
 
-monster->attack_method = melee();
-monster->attack_method = spell();
 
 
 TODO:
+- cursor defines context of interactions
+	- if cursor on mob
+		- we can inspect them
+	- if cursor on living, adjacent mob
+		- we can have inputs to melee them
+	- if cursor on living, distant visible enemy
+		- we can have inputs to range them
+- OR we can enter contexts based on inputs (THIS)
+	- targeting modes: self, melee, ranged los, ranged teleport, ranged los aoe, ranged teleport aoe
+	- if we press melee input we go into melee targeting mode
+		- this could highlight melee range?
+		- press melee again (or activate) will attack melee on cursor (if not in melee then pull vector?)
+	- if we press ranged input we go into ranged targeting mode
+		- draws line to cursor
+		- press ranged again (or activate) it launches ranged attack along path (can be blocked by other things?)
+	- if we press inventory we get list of items
+		- items have targeting modes
+		- selecting item activates related targeting mode
+		- activating in that mode activates that item for that target location
+		- ?equipped melee/equipped ranged are just more items being activated?
+		- ?spells in spell book are just items as well?
+		- ?maybe an item has an "activateable"? spells have activateables? powers have an activateable?
+	- TODO
+		- FSM targeting modes
+			- y = equipped weapon targeting mode (if self it applies immediately)
+			- i = inventory panel, items listed with shortcut keys
+				- locks out movement inputs
+				- pressing button runs targeting mode (if self it applies immediately)
+				- [esc] escapes that mode
+			- j = magic panel, spells listed with shortcut keys
+				- see inventory FSM
 - ui:
 	- mob panel
 		- lists visible mobs and things
