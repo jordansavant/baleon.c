@@ -563,23 +563,31 @@ void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y
 
 void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
-	ui_loginfo("mob attacked player");
+	ui_loginfo("mob attacked you");
 }
 
 void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
-	ui_loginfo("mob killed player");
+	ui_loginfo("mob killed you");
 	play_state = PS_GAMEOVER;
 }
 
 void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
-	ui_loginfo("player attacked mob");
+	ui_loginfo("you attacked mob");
 }
 
 void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
-	ui_loginfo("player killed mob");
+	ui_loginfo("you killed mob");
+}
+void map_on_player_pickup_item(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
+{
+	ui_loginfo("you picked up item");
+}
+void map_on_player_pickup_item_fail(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
+{
+	ui_loginfo("Wnable to pickup item; inventory is full.");
 }
 // this runs in the player update loop and should take an input that triggers world updates
 void ai_player_input(struct wld_mob* player)
@@ -730,6 +738,8 @@ void ps_build_world()
 	current_map->player->ai_player_input = ai_player_input;
 	current_map->on_player_attack_mob = map_on_player_attack_mob;
 	current_map->on_player_kill_mob = map_on_player_kill_mob;
+	current_map->on_player_pickup_item = map_on_player_pickup_item;
+	current_map->on_player_pickup_item_fail = map_on_player_pickup_item_fail;
 }
 void ps_destroy_world()
 {

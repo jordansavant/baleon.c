@@ -156,6 +156,8 @@ struct wld_map {
 	void (*on_mob_kill_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_player_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_player_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_player_pickup_item)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
+	void (*on_player_pickup_item_fail)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
 };
 struct draw_struct {
 	int colorpair;
@@ -188,8 +190,9 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y);
 bool wld_is_mob_nextto_mob(struct wld_mob* ma, struct wld_mob* mb);
+int wld_get_open_inventory_slot(struct wld_mob *mob);
 bool wld_has_inventory(struct wld_mob*);
-void wld_pickup_item(struct wld_mob*, struct wld_item*);
+bool wld_pickup_item(struct wld_mob*, struct wld_item*);
 
 
 ///////////////////////////

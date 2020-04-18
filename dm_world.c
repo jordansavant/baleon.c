@@ -6,7 +6,7 @@
 #include "dm_world.h"
 #include <ncurses.h>
 
-#define INVENTORY_SIZE 10
+#define INVENTORY_SIZE 3
 
 ///////////////////////////
 // RAW DATA
@@ -280,33 +280,45 @@ bool wld_is_mob_nextto_mob(struct wld_mob *ma, struct wld_mob *mb)
 	int diffy = abs(ma->map_y - mb->map_y);
 	return diffx <= 1 && diffy <= 1;
 }
-bool wld_get_open_inventory_slot(struct wld_mob *mob)
+int wld_get_open_inventory_slot(struct wld_mob *mob)
 {
 	// slot 0 reserved for weapon
 	// slot 1 reserved for armor/robes
-	for (int i=2; i<INVENTORY_SIZE; i++) {
-	}
+	for (int i=2; i<INVENTORY_SIZE; i++)
+		if (mob->inventory[i] == NULL)
+			return i;
+	return -1;
 }
 bool wld_has_inventory(struct wld_mob *mob)
 {
-	// TODO
-	return true;
+	int slot = wld_get_open_inventory_slot(mob);
+	if (slot != -1)
+		return true;
+	return false;
 }
-void wld_pickup_item(struct wld_mob *m, struct wld_item *i)
+bool wld_pickup_item(struct wld_mob *m, struct wld_item *i)
 {
-	m->map->item_map[i->map_index] = -1;
-	m->map->items[i->id] = NULL;
+	int slot = wld_get_open_inventory_slot(m);
+	dmlogi("slot", slot);
+	if (slot != -1) {
+		// set item copy in world to nonexist
+		// move item from world to mob inventory
+		m->map->item_map[i->map_index] = -1;
+		m->map->items[i->id] = NULL;
 
-	// copy item to mob inventory
-	// TODO hardcoded to first slot will cause splosions
-	i->id = -1;
-	i->map_index = -1;
-	i->map_x = -1;
-	i->map_y = -1;
-	m->inventory[0] = i;
+		// copy item to mob inventory
+		i->id = -1;
+		i->map_index = -1;
+		i->map_x = -1;
+		i->map_y = -1;
+		m->inventory[slot] = i;
 
-	// set item copy in world to nonexist
-	// move item from world to mob inventory
+		if (m->is_player && m->map->on_player_pickup_item)
+			m->map->on_player_pickup_item(m->map, m, i);
+	} else {
+		if (m->is_player && m->map->on_player_pickup_item_fail)
+			m->map->on_player_pickup_item_fail(m->map, m, i);
+	}
 }
 
 
@@ -442,12 +454,9 @@ bool ai_get(struct wld_mob *mob, int relx, int rely)
 	int posindex = wld_calcindex(posx, posy, mob->map->cols);
 	struct wld_item *i = wld_getitemat(mob->map, posx, posy);
 
-	if (i != NULL) {
-		if (wld_has_inventory(mob)) {
-			wld_pickup_item(mob, i);
+	if (i != NULL)
+		if (wld_pickup_item(mob, i))
 			return true;
-		}
-	}
 	return false;
 }
 bool ai_rest(struct wld_mob *mob)
@@ -772,6 +781,8 @@ struct wld_map* wld_newmap(int depth)
 	map->on_mob_kill_player = NULL;
 	map->on_player_attack_mob = NULL;
 	map->on_player_kill_mob = NULL;
+	map->on_player_pickup_item = NULL;
+	map->on_player_pickup_item_fail = NULL;
 
 	// populate tiles
 	wld_gentiles(map);
