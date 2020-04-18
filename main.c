@@ -12,10 +12,10 @@
 
 #define SCOLOR_NORMAL	1
 #define TCOLOR_NORMAL	2
-#define TCOLOR_OMINOUS	3
+#define TCOLOR_RED	3
 #define TCOLOR_BLACK	4
-#define TCOLOR_SKY	5
-#define TCOLOR_DAWN	6
+#define TCOLOR_CYAN	5
+#define TCOLOR_YELLOW	6
 #define SCOLOR_ALLWHITE 7
 #define SCOLOR_CURSOR   8
 #define TCOLOR_PURPLE   9
@@ -132,15 +132,16 @@ bool g_setup()
 	keypad(stdscr, true); // turn on F key listening
 
 	// colors ID			FG		BG
-	init_pair(SCOLOR_NORMAL,	COLOR_WHITE,	COLOR_BLACK);
 	init_pair(TCOLOR_NORMAL,	COLOR_WHITE,	COLOR_BLACK);
-	init_pair(TCOLOR_OMINOUS,	COLOR_RED,	COLOR_BLACK);
+	init_pair(TCOLOR_RED,	COLOR_RED,	COLOR_BLACK);
 	init_pair(TCOLOR_BLACK,		COLOR_BLACK,	COLOR_BLACK);
-	init_pair(TCOLOR_SKY,		COLOR_CYAN,	COLOR_BLACK);
-	init_pair(TCOLOR_DAWN,		COLOR_YELLOW,	COLOR_BLACK);
+	init_pair(TCOLOR_CYAN,		COLOR_CYAN,	COLOR_BLACK);
+	init_pair(TCOLOR_YELLOW,	COLOR_YELLOW,	COLOR_BLACK);
+	init_pair(TCOLOR_PURPLE,	COLOR_MAGENTA,	COLOR_BLACK);
+
+	init_pair(SCOLOR_NORMAL,	COLOR_WHITE,	COLOR_BLACK);
 	init_pair(SCOLOR_ALLWHITE,	COLOR_WHITE,	COLOR_WHITE);
 	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_MAGENTA);
-	init_pair(TCOLOR_PURPLE,	COLOR_MAGENTA,	COLOR_BLACK);
 	init_pair(SCOLOR_BLOOD,		COLOR_BLACK,	COLOR_RED);
 	init_pair(SCOLOR_ALLBLACK,	COLOR_BLACK,	COLOR_BLACK);
 
@@ -190,7 +191,7 @@ void g_intro()
 	struct reel reels[] = {
 		{3, "It was an age of light.", TCOLOR_NORMAL, 2, .25},
 		{4, "It was an age of hope.", TCOLOR_NORMAL, 2.5, .25},
-		{6, "And then he came...", TCOLOR_OMINOUS, 2, .25}
+		{6, "And then he came...", TCOLOR_RED, 2, .25}
 	};
 
 	// roll in title but allow for escaping
@@ -283,16 +284,16 @@ void g_title()
 
 	g_title_done = false;
 
-	dm_center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
-	dm_center( 2, "   +:+:    :+:   :+: :+:   :+:        :+:      : :+:    :+: :+:+:   :+:+ ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
-	dm_center( 3, "    +:+    +:+  +:+   +:+  +:+        +:+        +:+    +:+ :+:+:+  +:+  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
-	dm_center( 4, "    +#++:++#+  +#++:++#++: +#+        +#++:+#    +#+    +:+ +#+ +:+ +#+  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
-	dm_center( 5, "    +#+    +#+ +#+     +#+ +#+     +# +#+     +# +#+    +#+ +#+  +#+#+#  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
-	dm_center( 6, "    #+#    #+# #+#     #+# ########## ##########  +#+  +#+  #+#   #+#+#  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
-	dm_center( 7, "    ###+  +###  ##     ##                           ###     ###    ####  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
-	dm_center( 8, "   ##########                                               ##       ##  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, 0);
-	dm_center( 9, "  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #         #  ", TCOLOR_OMINOUS, TCOLOR_NORMAL, -1);
-	dm_center(10, "    ~~ Aberrati@ns in The Dark ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_DAWN, TCOLOR_NORMAL, 0);
+	dm_center( 1, "  ...........      ...      ....      ..........  ........ .....    .....", TCOLOR_RED, TCOLOR_NORMAL, 0);
+	dm_center( 2, "   +:+:    :+:   :+: :+:   :+:        :+:      : :+:    :+: :+:+:   :+:+ ", TCOLOR_RED, TCOLOR_NORMAL, 0);
+	dm_center( 3, "    +:+    +:+  +:+   +:+  +:+        +:+        +:+    +:+ :+:+:+  +:+  ", TCOLOR_RED, TCOLOR_NORMAL, 0);
+	dm_center( 4, "    +#++:++#+  +#++:++#++: +#+        +#++:+#    +#+    +:+ +#+ +:+ +#+  ", TCOLOR_RED, TCOLOR_NORMAL, 0);
+	dm_center( 5, "    +#+    +#+ +#+     +#+ +#+     +# +#+     +# +#+    +#+ +#+  +#+#+#  ", TCOLOR_RED, TCOLOR_NORMAL, 0);
+	dm_center( 6, "    #+#    #+# #+#     #+# ########## ##########  +#+  +#+  #+#   #+#+#  ", TCOLOR_RED, TCOLOR_NORMAL, 0);
+	dm_center( 7, "    ###+  +###  ##     ##                           ###     ###    ####  ", TCOLOR_RED, TCOLOR_NORMAL, 0);
+	dm_center( 8, "   ##########                                               ##       ##  ", TCOLOR_RED, TCOLOR_NORMAL, 0);
+	dm_center( 9, "  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #         #  ", TCOLOR_RED, TCOLOR_NORMAL, -1);
+	dm_center(10, "    ~~ Aberrati@ns in The Dark ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_YELLOW, TCOLOR_NORMAL, 0);
 
 	refresh();
 
@@ -401,14 +402,18 @@ WINDOW* inventorypanel;
 #define LOG_LENGTH 60
 char logs[LOG_COUNT][LOG_LENGTH];
 
-void ui_box(WINDOW* win)
+void ui_box_color(WINDOW* win, int colorpair)
 {
 	//box(win, ACS_VLINE, ACS_HLINE);
 	//box(win, ':', '-');
 	//wborder(win, '|', '|', '-', '-', '+', '+', '+', '+');
-	wattrset(win, COLOR_PAIR(TCOLOR_PURPLE));
+	wattrset(win, COLOR_PAIR(colorpair));
 	wborder(win, '|', '|', '=', '=', '@', '@', '@', '@');
 	wattrset(win, COLOR_PAIR(TCOLOR_NORMAL));
+}
+void ui_box(WINDOW* win)
+{
+	ui_box_color(win, TCOLOR_PURPLE);
 }
 
 // helper to write to a row in a panel we boxed
@@ -565,7 +570,7 @@ void ui_update_inventorypanel(struct wld_map *map)
 	if (map->player->mode == MODE_INVENTORY) {
 		// probably just need to do a shadowcast event each turn to get mobs in vision
 		ui_write(inventorypanel, 0, "------- Inventory --------");
-		ui_box(inventorypanel);
+		ui_box_color(inventorypanel, TCOLOR_YELLOW);
 		wrefresh(inventorypanel);
 	}
 }
