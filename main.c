@@ -371,8 +371,7 @@ void g_title()
 ///////////////////////////
 // PLAY STATE
 
-enum PLAY_STATE
-{
+enum PLAY_STATE {
 	PS_START,
 	PS_PLAY,
 	PS_MENU,
@@ -398,10 +397,20 @@ WINDOW* logpanel;
 WINDOW* mobpanel;
 WINDOW* inventorypanel;
 WINDOW* usepanel;
+enum USE_TYPE {
+	USE_NONE,
+	USE_ITEM,
+	USE_SPELL, // TBD
+};
+enum USE_TYPE use_type = USE_NONE;
+struct wld_item *use_item = NULL;
+int use_item_slot = -1;
+
 #define CURSOR_INFO_LENGTH 45
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
 #define INV_ITEM_LENGTH 45
+#define USE_LENGTH 55
 char logs[LOG_COUNT][LOG_LENGTH];
 
 void ui_box_color(WINDOW* win, int colorpair)
@@ -599,7 +608,9 @@ void ui_update_inventorypanel(struct wld_map *map)
 		struct wld_item *w = map->player->inventory[0];
 		if (w != NULL) {
 			struct wld_itemtype *it = wld_get_itemtype(w->type);
-			ui_write(inventorypanel, 2, it->title);
+			char buffer[LOG_LENGTH];
+			sprintf(buffer, "w: %s", it->title);
+			ui_write_rc(inventorypanel, 2, 1, buffer);
 		}
 		else
 			ui_write_rc(inventorypanel, 2, 1, "-- none --");
@@ -608,7 +619,9 @@ void ui_update_inventorypanel(struct wld_map *map)
 		struct wld_item *a = map->player->inventory[1];
 		if (a != NULL) {
 			struct wld_itemtype *it = wld_get_itemtype(a->type);
-			ui_write(inventorypanel, 4, it->title);
+			char buffer[LOG_LENGTH];
+			sprintf(buffer, "a: %s", it->title);
+			ui_write_rc(inventorypanel, 4, 1, buffer);
 		}
 		else
 			ui_write_rc(inventorypanel, 4, 1, "-- none --");
@@ -653,9 +666,48 @@ void ui_update_usepanel(struct wld_map *map)
 {
 	// probably just need to do a shadowcast event each turn to get mobs in vision
 	if (map->player->mode == MODE_USE) {
-		ui_write(usepanel, 0, "USE PANEL");
+		switch (use_type) {
+		case USE_ITEM: {
+				// intro item
+				struct wld_itemtype *it = wld_get_itemtype(use_item->type);
+				char buffer[USE_LENGTH];
+				sprintf(buffer,  "You prepare to use %s.", it->short_desc);
+				ui_write(usepanel, 0, buffer);
+				ui_write(usepanel, 2, it->use_text_1);
+				ui_write(usepanel, 3, it->use_text_2);
+
+				// give options
+				bool equippable = it->is_weq || it->is_aeq;
+				if (equippable) {
+					ui_write(usepanel, 5, "e: equip");
+				}
+			}
+			break;
+		}
 		ui_box(usepanel);
 		wrefresh(usepanel);
+	}
+}
+void ui_unset_use()
+{
+	use_type = USE_NONE;
+	use_item = NULL;
+	use_item_slot = -1;
+}
+void ui_set_use_item(struct wld_item* item, int item_slot)
+{
+	use_type = USE_ITEM;
+	use_item = item;
+	use_item_slot = item_slot;
+}
+void ui_use_item_select(struct wld_mob* player, int item_slot)
+{
+	ui_clear_win(inventorypanel);
+	struct wld_item *item = wld_get_item_in_slot(player, item_slot);
+	if (item != NULL) {
+		ui_set_use_item(item, item_slot);
+		player->mode = MODE_USE;
+		dmlog("inv > use");
 	}
 }
 
@@ -850,19 +902,25 @@ void ai_player_input(struct wld_mob* player)
 			// If in Inventory Mode show inventory and listen to inventory commands
 			case MODE_INVENTORY:
 				switch (key) {
+				case KEY_ESC:
 				case KEY_i:
 					dmlog("inventory > play");
 					ui_clear_win(inventorypanel);
 					player->mode = MODE_PLAY;
 					listen = false;
 					break;
-				case KEY_1:
-					// get item at position 1 and open use panel
-					dmlog("inventory 1");
-					player->mode = MODE_USE;
-					ui_clear_win(inventorypanel);
-					listen = false;
-					break;
+				case KEY_w: ui_use_item_select(player,  0); listen = false; break;
+				case KEY_a: ui_use_item_select(player,  1); listen = false; break;
+				case KEY_1: ui_use_item_select(player,  2); listen = false; break;
+				case KEY_2: ui_use_item_select(player,  3); listen = false; break;
+				case KEY_3: ui_use_item_select(player,  4); listen = false; break;
+				case KEY_4: ui_use_item_select(player,  5); listen = false; break;
+				case KEY_5: ui_use_item_select(player,  6); listen = false; break;
+				case KEY_6: ui_use_item_select(player,  7); listen = false; break;
+				case KEY_7: ui_use_item_select(player,  8); listen = false; break;
+				case KEY_8: ui_use_item_select(player,  9); listen = false; break;
+				case KEY_9: ui_use_item_select(player, 10); listen = false; break;
+				case KEY_0: ui_use_item_select(player, 11); listen = false; break;
 				}
 				break; // eo MODE INVENTORY
 			case MODE_USE:
@@ -870,8 +928,14 @@ void ai_player_input(struct wld_mob* player)
 				case KEY_ESC:
 				case KEY_x:
 					dmlog("use > inventory");
+					ui_unset_use();
 					ui_clear_win(usepanel);
 					player->mode = MODE_INVENTORY;
+					listen = false;
+					break;
+				case KEY_e:
+					dmlog("equip");
+					wld_mob_equip(player, use_item_slot);
 					listen = false;
 					break;
 				}

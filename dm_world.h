@@ -130,6 +130,8 @@ struct wld_itemtype {
 	char *title;
 	void (*on_use)(struct wld_item*, struct wld_mob*);
 	void (*on_fire)(struct wld_item*, struct wld_mob*, int, int);
+	char *use_text_1;
+	char *use_text_2;
 };
 
 
@@ -201,9 +203,11 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y);
 bool wld_is_mob_nextto_mob(struct wld_mob* ma, struct wld_mob* mb);
+struct wld_item* wld_get_item_in_slot(struct wld_mob *mob, int slot);
 int wld_get_open_inventory_slot(struct wld_mob *mob);
 bool wld_has_inventory(struct wld_mob*);
 bool wld_pickup_item(struct wld_mob*, struct wld_item*);
+bool wld_mob_equip(struct wld_mob*, int);
 
 
 ///////////////////////////

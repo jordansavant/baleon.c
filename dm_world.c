@@ -278,6 +278,11 @@ bool wld_is_mob_nextto_mob(struct wld_mob *ma, struct wld_mob *mb)
 	int diffy = abs(ma->map_y - mb->map_y);
 	return diffx <= 1 && diffy <= 1;
 }
+struct wld_item* wld_get_item_in_slot(struct wld_mob *mob, int slot)
+{
+	struct wld_item *item = mob->inventory[slot];
+	return item;
+}
 int wld_get_open_inventory_slot(struct wld_mob *mob)
 {
 	// slot 0 reserved for weapon
@@ -297,7 +302,6 @@ bool wld_has_inventory(struct wld_mob *mob)
 bool wld_pickup_item(struct wld_mob *m, struct wld_item *i)
 {
 	int slot = wld_get_open_inventory_slot(m);
-	dmlogi("slot", slot);
 	if (slot != -1) {
 		// set item copy in world to nonexist
 		// move item from world to mob inventory
@@ -317,6 +321,31 @@ bool wld_pickup_item(struct wld_mob *m, struct wld_item *i)
 		if (m->is_player && m->map->on_player_pickup_item_fail)
 			m->map->on_player_pickup_item_fail(m->map, m, i);
 	}
+}
+void wld_swap_item(struct wld_mob* mob, int slot_a, int slot_b)
+{
+	struct wld_item *a = wld_get_item_in_slot(mob, slot_a);
+	struct wld_item *b = wld_get_item_in_slot(mob, slot_b);
+	mob->inventory[slot_b] = a;
+	mob->inventory[slot_a] = b;
+}
+bool wld_mob_equip(struct wld_mob* mob, int itemslot)
+{
+	struct wld_item *i = wld_get_item_in_slot(mob, itemslot);
+	if (i != NULL) {
+		struct wld_itemtype *it = wld_get_itemtype(i->type);
+		// weapon
+		if (it->is_weq && wld_get_item_in_slot(mob, 0) == NULL) {
+			wld_swap_item(mob, itemslot, 0);
+			return true;
+		}
+		// armor
+		if (it->is_aeq && wld_get_item_in_slot(mob, 1) == NULL) {
+			wld_swap_item(mob, itemslot, 1);
+			return true;
+		}
+	}
+	return false;
 }
 
 
@@ -725,7 +754,7 @@ void wld_genmobs(struct wld_map *map)
 void wld_genitems(struct wld_map *map)
 {
 	// items are malloc'd pointers, not structs in map memory because they need to be moved
-	int item_count = 2;
+	int item_count = 3;
 	map->items = (struct wld_item**)malloc(item_count * sizeof(struct wld_item*));
 	map->items_length = item_count;
 
@@ -742,6 +771,11 @@ void wld_genitems(struct wld_map *map)
 			item->map_y = map->rows / 2 + 2;
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
 			item->type = ITEM_WEAPON_SHORTSWORD;
+		} else if (i == 1) {
+			item->map_x = map->cols / 2 + 6;
+			item->map_y = map->rows / 2 + 2;
+			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+			item->type = ITEM_WEAPON_SHORTBOW;
 		} else {
 			item->map_x = map->cols / 2 + 7;
 			item->map_y = map->rows / 2 + -1;
@@ -871,23 +905,28 @@ void wld_setup()
 	}
 
 	// copy item types into malloc
-	struct wld_itemtype its [] = {
-		{ ITEM_VOID,			' ', CLX_BLACK,		TARGET_PASSIVE, false, false, "", "", NULL, NULL },
-		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	TARGET_SELF, false, false, "a potion of minor healing", "minor healing potion", NULL, NULL },
-	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	TARGET_MELEE, true, false, "a shortsword", "shortsword", itm_on_use_melee, itm_on_fire_melee },
-		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	TARGET_RANGED_LOS, true, false, "a shortbow", "shortbow", NULL, NULL },
-		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	TARGET_RANGED_LOS_AOE, false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL },
-		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	TARGET_PASSIVE, false, true, "a set of leather armor", "leather armor", NULL, NULL },
+	struct wld_itemtype its [] = {																	/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
+		{ ITEM_VOID,			' ', CLX_BLACK,		TARGET_PASSIVE, false, false, "", "", NULL, NULL, ""},
+		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	TARGET_SELF, false, false, "a potion of minor healing", "minor healing potion", NULL, NULL,	"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
+	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	TARGET_MELEE, true, false, "a shortsword", "shortsword", itm_on_use_melee, itm_on_fire_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
+		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	TARGET_RANGED_LOS, true, false, "a shortbow", "shortbow", NULL, NULL,				"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
+		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	TARGET_RANGED_LOS_AOE, false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL,	"Runic art covers the parchment surface showing a",		"large swathe of fire." },
+		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	TARGET_PASSIVE, false, true, "a set of leather armor", "leather armor", NULL, NULL,		"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
 	};
 	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));
 	for (int i=0; i<ARRAY_SIZE(its); i++) {
 		wld_itemtypes[i].type = its[i].type;
 		wld_itemtypes[i].sprite = its[i].sprite;
 		wld_itemtypes[i].fg_color = its[i].fg_color;
+		wld_itemtypes[i].target_type = its[i].target_type;
+		wld_itemtypes[i].is_weq = its[i].is_weq;
+		wld_itemtypes[i].is_aeq = its[i].is_aeq;
 		wld_itemtypes[i].short_desc = its[i].short_desc;
 		wld_itemtypes[i].title = its[i].title;
 		wld_itemtypes[i].on_use = its[i].on_use;
 		wld_itemtypes[i].on_fire = its[i].on_fire;
+		wld_itemtypes[i].use_text_1 = its[i].use_text_1;
+		wld_itemtypes[i].use_text_2 = its[i].use_text_2;
 	}
 }
 void wld_teardown()
