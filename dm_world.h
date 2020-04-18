@@ -3,7 +3,6 @@
 
 #include "dm_defines.h"
 
-
 ///////////////////////////
 // TILE STRUCTS
 
@@ -36,6 +35,7 @@ struct wld_tile {
 	// on_enter, on_leave events
 };
 
+
 ///////////////////////////
 // MOB STRUCTS
 
@@ -67,6 +67,7 @@ struct wld_mobtype {
 	int fg_color;
 	char *short_desc;
 };
+struct wld_item;
 struct wld_mob {
 	int id; // positin in maps mob list
 	int map_x, map_y, map_index; // position in map geo and index
@@ -82,6 +83,7 @@ struct wld_mob {
 	bool is_player, is_dead;
 	int cursor_target; // map index
 	enum TARGET_MODE_STATE target_mode;
+	struct wld_item **inventory;
 };
 
 
@@ -140,7 +142,7 @@ struct wld_map {
 	struct wld_mob *mobs;
 	unsigned int mobs_length;
 	int *item_map;
-	struct wld_item *items;
+	struct wld_item **items;
 	unsigned int items_length;
 	struct wld_mob *player;
 	struct wld_cursor *cursor;

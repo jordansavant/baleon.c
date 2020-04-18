@@ -6,6 +6,7 @@
 #include "dm_world.h"
 #include <ncurses.h>
 
+#define INVENTORY_SIZE 10
 
 ///////////////////////////
 // RAW DATA
@@ -206,14 +207,14 @@ struct wld_item* wld_getitemat(struct wld_map *map, int x, int y)
 	int index = wld_calcindex(x, y, map->cols);
 	int id = map->item_map[index];
 	if (id > -1)
-		return &map->items[id];
+		return map->items[id]; // pointers
 	return NULL;
 }
 struct wld_item* wld_getitemat_index(struct wld_map *map, int index)
 {
 	int id = map->item_map[index];
 	if (id > -1)
-		return &map->items[id];
+		return map->items[id]; // pointers
 	return NULL;
 }
 void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double))
@@ -279,6 +280,13 @@ bool wld_is_mob_nextto_mob(struct wld_mob *ma, struct wld_mob *mb)
 	int diffy = abs(ma->map_y - mb->map_y);
 	return diffx <= 1 && diffy <= 1;
 }
+bool wld_get_open_inventory_slot(struct wld_mob *mob)
+{
+	// slot 0 reserved for weapon
+	// slot 1 reserved for armor/robes
+	for (int i=2; i<INVENTORY_SIZE; i++) {
+	}
+}
 bool wld_has_inventory(struct wld_mob *mob)
 {
 	// TODO
@@ -286,7 +294,19 @@ bool wld_has_inventory(struct wld_mob *mob)
 }
 void wld_pickup_item(struct wld_mob *m, struct wld_item *i)
 {
-	// TODO
+	m->map->item_map[i->map_index] = -1;
+	m->map->items[i->id] = NULL;
+
+	// copy item to mob inventory
+	// TODO hardcoded to first slot will cause splosions
+	i->id = -1;
+	i->map_index = -1;
+	i->map_x = -1;
+	i->map_y = -1;
+	m->inventory[0] = i;
+
+	// set item copy in world to nonexist
+	// move item from world to mob inventory
 }
 
 
@@ -656,6 +676,12 @@ void wld_genmobs(struct wld_map *map)
 		mob->target_mode = TMODE_NONE;
 		mob->is_dead = false;
 
+		// create inventory (pointers to malloc items)
+		mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
+		for (int j=0; j < INVENTORY_SIZE; j++) {
+			mob->inventory[j] = NULL;
+		}
+
 		// first mob is player
 		if (i == 0) {
 			// hardcoded to center of map until we get a heuristic for map entrance
@@ -690,15 +716,16 @@ void wld_genmobs(struct wld_map *map)
 }
 void wld_genitems(struct wld_map *map)
 {
+	// items are malloc'd pointers, not structs in map memory because they need to be moved
 	int item_count = 2;
-	map->items = (struct wld_item*)malloc(item_count * sizeof(struct wld_item));
+	map->items = (struct wld_item**)malloc(item_count * sizeof(struct wld_item*));
 	map->items_length = item_count;
 
 	// TODO we need to work on assigning items to players, mobs etc
 	// setup items in item map
 	for (int i=0; i < item_count; i++) {
 		// create item
-		struct wld_item *item = &map->items[i];
+		struct wld_item *item = (struct wld_item*)malloc(sizeof(struct wld_item));// &map->items[i];
 		// create reference to parent map
 		item->id = i;
 		if (i == 0) {
@@ -715,6 +742,7 @@ void wld_genitems(struct wld_map *map)
 		}
 
 		map->item_map[item->map_index] = i;
+		map->items[i] = item;
 	}
 }
 struct wld_map* wld_newmap(int depth)
@@ -759,8 +787,22 @@ struct wld_map* wld_newmap(int depth)
 void wld_delmap(struct wld_map *map)
 {
 	free(map->cursor);
+
+	for (int i=0; i<map->items_length; i++)
+		if (map->items[i] != NULL)
+			free(map->items[i]);
+	free(map->items);
+	free(map->item_map);
+
+	for (int i=0; i<map->mobs_length; i++) {
+		for (int j=0; j<INVENTORY_SIZE; j++)
+			if (map->mobs[i].inventory[j] != NULL)
+				free(map->mobs[i].inventory[j]);
+		free(map->mobs[i].inventory);
+	}
 	free(map->mobs);
 	free(map->mob_map);
+
 	free(map->tiles);
 	free(map->tile_map);
 	free(map);
