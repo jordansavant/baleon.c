@@ -160,6 +160,7 @@ bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
 bool ai_player_attack_melee(struct wld_mob* player);
 bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
+bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
 void wld_update_mob(struct wld_mob *mob);
 
 ///////////////////////////

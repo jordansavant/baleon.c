@@ -587,35 +587,40 @@ void ai_player_input(struct wld_mob* player)
 				listen = false;
 				break;
 			case KEY_w:
-				trigger_world = ai_queuemobmove(player, 0, -1);
+				// attempt move up, if blocked determine what is blocking me and attempt
+				// to "interact" with it, if its an enemy mob, attack with melee?
+				// if its a tile attempt to search it or activate it, "on touch" it?
+				// if its empty tile move into it
+				// if its a transitional tile interrupt confirm? call back into transition?
+				trigger_world = ai_act_upon(player, 0, -1);
 				listen = false;
 				break;
 			case KEY_s:
-				trigger_world = ai_queuemobmove(player, 0, 1);
+				trigger_world = ai_act_upon(player, 0, 1);
 				listen = false;
 				break;
 			case KEY_a:
-				trigger_world = ai_queuemobmove(player, -1, 0);
+				trigger_world = ai_act_upon(player, -1, 0);
 				listen = false;
 				break;
 			case KEY_d:
-				trigger_world = ai_queuemobmove(player, 1, 0);
+				trigger_world = ai_act_upon(player, 1, 0);
 				listen = false;
 				break;
 			case KEY_q:
-				trigger_world = ai_queuemobmove(player, -1, -1);
+				trigger_world = ai_act_upon(player, -1, -1);
 				listen = false;
 				break;
 			case KEY_e:
-				trigger_world = ai_queuemobmove(player, 1, -1);
+				trigger_world = ai_act_upon(player, 1, -1);
 				listen = false;
 				break;
 			case KEY_z:
-				trigger_world = ai_queuemobmove(player, -1, 1);
+				trigger_world = ai_act_upon(player, -1, 1);
 				listen = false;
 				break;
 			case KEY_x:
-				trigger_world = ai_queuemobmove(player, 1, 1);
+				trigger_world = ai_act_upon(player, 1, 1);
 				listen = false;
 				break;
 			// Player attack

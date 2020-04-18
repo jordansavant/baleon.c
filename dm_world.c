@@ -187,7 +187,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 	{
 		on_see(mob, x, y, radius);
 	}
-	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 40, wld_ss_isblocked, wld_ss_onvisible);
+	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 20, wld_ss_isblocked, wld_ss_onvisible);
 }
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 {
@@ -238,7 +238,7 @@ void ai_default_wander(struct wld_mob *mob)
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
 	// TODO
-	return !mob->map->player->is_dead;
+	return false && !mob->map->player->is_dead;
 }
 void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee attack
 {
@@ -321,6 +321,34 @@ bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely)
 		mob->queue_x += relx;
 		mob->queue_y += rely;
 		return true;
+	}
+	return false;
+}
+bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
+{
+	// inspect objects at position, if tile thats traversable queue walking on to it
+	// if it has a mob then and they are living, melee it (or use active weapon on it)
+	// if it has a mob that is dead, search it
+	// if it is a tile that is a transition (exit) confirm then descend
+	int newx = mob->map_x + relx;
+	int newy = mob->map_y + rely;
+
+	struct wld_tile *tile = wld_gettileat(mob->map, newx, newy);
+	struct wld_mob *mob2 = wld_getmobat(mob->map, newx, newy);
+	if (mob2 != NULL) {
+		if (!mob2->is_dead) {
+			ai_mob_attack_mob(mob, mob2, 34);
+			return true;
+		} else {
+			// ai_search_mob TODO
+			return false;
+		}
+	} else {
+		// TODO is transition, confi
+		if (wld_canmoveto(mob->map, newx, newy)) {
+			return ai_queuemobmove(mob, relx, rely);
+		}
+		return false;
 	}
 	return false;
 }
@@ -520,6 +548,7 @@ void wld_genmobs(struct wld_map *map)
 		mob->queue_x = 0;
 		mob->queue_y = 0;
 		mob->queue_target = -1;
+		mob->health = 100;
 		mob->maxhealth = 100; // TODO define based on things
 		mob->ai_wander = NULL;
 		mob->ai_detect_combat = NULL;
@@ -527,6 +556,7 @@ void wld_genmobs(struct wld_map *map)
 		mob->ai_player_input = NULL;
 		mob->cursor_target = -1;
 		mob->target_mode = TMODE_NONE;
+		mob->is_dead = false;
 
 		// first mob is player
 		if (i == 0) {
@@ -624,9 +654,9 @@ void wld_setup()
 	// copy tiletypes into malloc
 	struct wld_tiletype tts[] = {
 		{ TILE_VOID,            ' ', 0, 0, ' ', 0, 0, false, "" }, // 0
-		{ TILE_GRASS,           '"', 0, 1, '"', 0, 0, false, "a small tuft of grass" }, // 1
+		{ TILE_GRASS,           '"', 0, 1, '"', 0, 4, false, "a small tuft of grass" }, // 1
 		{ TILE_WATER,           ' ', 4, 2, ' ', 0, 0, false, "a pool of water glistens" }, // 2
-		{ TILE_TREE,            'T', 0, 1, 'T', 0, 0, true,  "a large tree" }, // 3
+		{ TILE_TREE,            'T', 0, 1, 'T', 0, 4, true,  "a large tree" }, // 3
 		{ TILE_STONEWALL,       '#', 2, 2, '#', 0, 4, true,  "rough stone wall" }, // 4
 		{ TILE_STONEFLOOR,      '.', 0, 2, '.', 0, 4, false, "rough stone floor" }, // 5
 	};
