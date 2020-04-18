@@ -484,6 +484,12 @@ void ui_loginfo(char *msg)
 	strcpy(logs[LOG_COUNT - 1], msg);
 	dmlog(msg);
 }
+void ui_loginfo_s(char *msg, char *msg2)
+{
+	char buffer [LOG_LENGTH];
+	int n = sprintf(buffer, msg, msg2);
+	ui_loginfo(buffer);
+}
 
 void ui_update_cursorinfo(struct wld_map *map)
 {
@@ -563,27 +569,32 @@ void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y
 
 void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
-	ui_loginfo("mob attacked you");
+	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
+	ui_loginfo_s("You were attacked by %s.", mt->short_desc);
 }
 
 void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
-	ui_loginfo("mob killed you");
+	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
+	ui_loginfo_s("You were killed by %s.", mt->short_desc);
 	play_state = PS_GAMEOVER;
 }
 
-void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
+void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender)
 {
-	ui_loginfo("you attacked mob");
+	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
+	ui_loginfo_s("You attacked %s.", mt->short_desc);
 }
 
-void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
+void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender)
 {
-	ui_loginfo("you killed mob");
+	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
+	ui_loginfo_s("You killed %s.", mt->short_desc);
 }
 void map_on_player_pickup_item(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo("you picked up item");
+	struct wld_itemtype *it = wld_get_itemtype(item->type);
+	ui_loginfo_s("You picked up %s.", it->short_desc);
 }
 void map_on_player_pickup_item_fail(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
