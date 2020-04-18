@@ -3,6 +3,8 @@
 
 #include "dm_defines.h"
 
+#define INVENTORY_SIZE 12
+
 ///////////////////////////
 // TILE STRUCTS
 
@@ -70,6 +72,7 @@ struct wld_mobtype {
 	unsigned long sprite;
 	int fg_color;
 	char *short_desc;
+	char *title;
 };
 struct wld_item;
 struct wld_mob {
@@ -122,6 +125,7 @@ struct wld_itemtype {
 	int fg_color;
 	enum WLD_TARGETTYPE target_type;
 	char *short_desc;
+	char *title;
 	void (*on_use)(struct wld_item*, struct wld_mob*);
 	void (*on_fire)(struct wld_item*, struct wld_mob*, int, int);
 };

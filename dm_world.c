@@ -6,8 +6,6 @@
 #include "dm_world.h"
 #include <ncurses.h>
 
-#define INVENTORY_SIZE 3
-
 ///////////////////////////
 // RAW DATA
 
@@ -860,8 +858,8 @@ void wld_setup()
 	// copy mob types into malloc
 	struct wld_mobtype mts [] = {
 		{ MOB_VOID,	' ', 0, "" },
-		{ MOB_PLAYER,	'@', 7, "yourself" },
-		{ MOB_BUGBEAR,	'b', 3, "a small bugbear" },
+		{ MOB_PLAYER,	'@', 7, "yourself", "You"},
+		{ MOB_BUGBEAR,	'b', 3, "a small bugbear", "small bugbear" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
@@ -869,16 +867,17 @@ void wld_setup()
 		wld_mobtypes[i].sprite = mts[i].sprite;
 		wld_mobtypes[i].fg_color = mts[i].fg_color;
 		wld_mobtypes[i].short_desc = mts[i].short_desc;
+		wld_mobtypes[i].title = mts[i].title;
 	}
 
 	// copy item types into malloc
 	struct wld_itemtype its [] = {
-		{ ITEM_VOID,			' ', CLX_BLACK,			TARGET_PASSIVE, "", NULL, NULL },
-		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,		TARGET_SELF, "a potion of minor healing", NULL, NULL },
-	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,		TARGET_MELEE, "a shortsword", itm_on_use_melee, itm_on_fire_melee },
-		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,		TARGET_RANGED_LOS, "a shortbow", NULL, NULL },
-		{ ITEM_SCROLL_FIREBOMB,		ACS_LANTERN, CLX_YELLOW,	TARGET_RANGED_LOS_AOE, "a scroll of firebomb", NULL, NULL },
-		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,		TARGET_PASSIVE, "a set of leather armor", NULL, NULL },
+		{ ITEM_VOID,			' ', CLX_BLACK,			TARGET_PASSIVE, "", "", NULL, NULL },
+		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,		TARGET_SELF, "a potion of minor healing", "minor healing potion", NULL, NULL },
+	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,		TARGET_MELEE, "a shortsword", "shortsword", itm_on_use_melee, itm_on_fire_melee },
+		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,		TARGET_RANGED_LOS, "a shortbow", "shortbow", NULL, NULL },
+		{ ITEM_SCROLL_FIREBOMB,		ACS_LANTERN, CLX_YELLOW,	TARGET_RANGED_LOS_AOE, "a scroll of firebomb", "scroll of firebomb", NULL, NULL },
+		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,		TARGET_PASSIVE, "a set of leather armor", "leather armor", NULL, NULL },
 	};
 	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));
 	for (int i=0; i<ARRAY_SIZE(its); i++) {
@@ -886,6 +885,7 @@ void wld_setup()
 		wld_itemtypes[i].sprite = its[i].sprite;
 		wld_itemtypes[i].fg_color = its[i].fg_color;
 		wld_itemtypes[i].short_desc = its[i].short_desc;
+		wld_itemtypes[i].title = its[i].title;
 		wld_itemtypes[i].on_use = its[i].on_use;
 		wld_itemtypes[i].on_fire = its[i].on_fire;
 	}

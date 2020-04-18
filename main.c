@@ -400,6 +400,7 @@ WINDOW* inventorypanel;
 #define CURSOR_INFO_LENGTH 45
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
+#define INV_ITEM_LENGTH 45
 char logs[LOG_COUNT][LOG_LENGTH];
 
 void ui_box_color(WINDOW* win, int colorpair)
@@ -417,11 +418,15 @@ void ui_box(WINDOW* win)
 }
 
 // helper to write to a row in a panel we boxed
-void ui_write(WINDOW *win, int row, char *msg)
+void ui_write_rc(WINDOW *win, int row, int col, char *msg)
 {
 	dm_clear_row_in_win(win, row + 1);
-	wmove(win, row + 1, 2);
+	wmove(win, row + 1, col + 2);
 	waddstr(win, msg);
+}
+void ui_write(WINDOW *win, int row, char *msg)
+{
+	ui_write_rc(win, row, 0, msg);
 }
 
 //void ui_anchor_ur(WINDOW* win, float height, float width)
@@ -450,6 +455,14 @@ void ui_anchor_bl(WINDOW *win, int rows, int cols)
 	getmaxyx(stdscr, y, x);
 	wresize(win, rows, cols);
 	mvwin(win, y - rows, 0);
+}
+void ui_clear_win(WINDOW *win)
+{
+	for (int i=0; i<getmaxy(win); i++) {
+		wmove(win, i,0);
+		wclrtoeol(win);
+	}
+	wrefresh(win);
 }
 
 void ui_cursorinfo(char *msg)
@@ -569,7 +582,59 @@ void ui_update_inventorypanel(struct wld_map *map)
 {
 	if (map->player->mode == MODE_INVENTORY) {
 		// probably just need to do a shadowcast event each turn to get mobs in vision
-		ui_write(inventorypanel, 0, "------- Inventory --------");
+		ui_write(inventorypanel, 0, "----------------- Inventory ------------------");
+
+		// list the items in player possession
+		ui_write(inventorypanel, 1, "weapon:");
+		struct wld_item *w = map->player->inventory[0];
+		if (w != NULL) {
+			struct wld_itemtype *it = wld_get_itemtype(w->type);
+			ui_write(inventorypanel, 2, it->title);
+		}
+		else
+			ui_write_rc(inventorypanel, 2, 1, "-- none --");
+
+		ui_write(inventorypanel, 3, "armor:");
+		struct wld_item *a = map->player->inventory[1];
+		if (a != NULL) {
+			struct wld_itemtype *it = wld_get_itemtype(a->type);
+			ui_write(inventorypanel, 4, it->title);
+		}
+		else
+			ui_write_rc(inventorypanel, 4, 1, "-- none --");
+
+		ui_write(inventorypanel, 5, "pack:");
+		int row = 6;
+		for (int i=2; i<INVENTORY_SIZE; i++) {
+			// depending on position of item designate interation key
+			char key = ' ';
+			switch (i) {
+				case  2: key = '1'; break;
+				case  3: key = '2'; break;
+				case  4: key = '3'; break;
+				case  5: key = '4'; break;
+				case  6: key = '5'; break;
+				case  7: key = '6'; break;
+				case  8: key = '7'; break;
+				case  9: key = '8'; break;
+				case 10: key = '9'; break;
+				case 11: key = '0'; break;
+			}
+			char buffer[LOG_LENGTH];
+			char *desc;
+			struct wld_item *item = map->player->inventory[i];
+			if (item != NULL) {
+				struct wld_itemtype *it = wld_get_itemtype(item->type);
+				desc = it->title;
+			} else {
+				desc = "--";
+			}
+			int n = sprintf(buffer, "%c: %s", key, desc);
+			ui_write_rc(inventorypanel, row, 1, buffer);
+			row++;
+		}
+
+
 		ui_box_color(inventorypanel, TCOLOR_YELLOW);
 		wrefresh(inventorypanel);
 	}
@@ -701,6 +766,7 @@ void ai_player_input(struct wld_mob* player)
 					case KEY_i:
 						// enter inventory management mode
 						player->mode = MODE_INVENTORY;
+						ui_clear_win(mobpanel);
 						dmlog("play > inventory");
 						listen = false;
 						break;
@@ -723,7 +789,42 @@ void ai_player_input(struct wld_mob* player)
 					break;
 				} // eo target mode switch
 
-				// While in play mode always let them move the cursor
+				// always active should we move this to play mode?
+				switch (key) {
+				// Cursor movement
+				case KEY_8: // up
+					wld_movecursor(current_map, 0, -1);
+					listen = false;
+					break;
+				case KEY_2: // down
+					wld_movecursor(current_map, 0, 1);
+					listen = false;
+					break;
+				case KEY_4: // left
+					wld_movecursor(current_map, -1, 0);
+					listen = false;
+					break;
+				case KEY_6: // right
+					wld_movecursor(current_map, 1, 0);
+					listen = false;
+					break;
+				case KEY_7: // upleft
+					wld_movecursor(current_map, -1, -1);
+					listen = false;
+					break;
+				case KEY_9: // upright
+					wld_movecursor(current_map, 1, -1);
+					listen = false;
+					break;
+				case KEY_1: // downleft
+					wld_movecursor(current_map, -1, 1);
+					listen = false;
+					break;
+				case KEY_3: // downright
+					wld_movecursor(current_map, 1, 1);
+					listen = false;
+					break;
+				} // eo switch always
 
 				break; // eo MODE PLAY
 
@@ -732,49 +833,17 @@ void ai_player_input(struct wld_mob* player)
 				switch (key) {
 				case KEY_i:
 					dmlog("inventory > play");
+					ui_clear_win(inventorypanel);
 					player->mode = MODE_PLAY;
+					listen = false;
+					break;
+				case KEY_1:
+					dmlog("inventory 1");
 					listen = false;
 					break;
 				}
 				break; // eo MODE INVENTORY
 		}
-
-		// always active should we move this to play mode?
-		switch (key) {
-		// Cursor movement
-		case KEY_8: // up
-			wld_movecursor(current_map, 0, -1);
-			listen = false;
-			break;
-		case KEY_2: // down
-			wld_movecursor(current_map, 0, 1);
-			listen = false;
-			break;
-		case KEY_4: // left
-			wld_movecursor(current_map, -1, 0);
-			listen = false;
-			break;
-		case KEY_6: // right
-			wld_movecursor(current_map, 1, 0);
-			listen = false;
-			break;
-		case KEY_7: // upleft
-			wld_movecursor(current_map, -1, -1);
-			listen = false;
-			break;
-		case KEY_9: // upright
-			wld_movecursor(current_map, 1, -1);
-			listen = false;
-			break;
-		case KEY_1: // downleft
-			wld_movecursor(current_map, -1, 1);
-			listen = false;
-			break;
-		case KEY_3: // downright
-			wld_movecursor(current_map, 1, 1);
-			listen = false;
-			break;
-		} // eo switch always
 	} // eo while listen
 	escapedelay(true);
 	//nodelay(stdscr, false);
@@ -838,7 +907,9 @@ void ps_layout_ui()
 	ui_box(cursorpanel);
 
 	// inventory panel
-	ui_anchor_ur(inventorypanel, mobpanel_rows, mobpanel_cols);
+	int invpanel_cols = 50;
+	int invpanel_rows = sy - logpanel_rows;
+	ui_anchor_ur(inventorypanel, invpanel_rows, invpanel_cols);
 	ui_box(inventorypanel);
 }
 // this is called when window resize event happens
@@ -980,13 +1051,10 @@ void ps_play_draw()
 	addstr("y: draw/sheath   i: inventory   p: rest   g: get");
 
 	wrefresh(cursorpanel);
-	if (current_map->player->mode == MODE_PLAY) {
+	if (current_map->player->mode == MODE_PLAY)
 		ui_update_mobpanel(current_map);
-	}
-	if (current_map->player->mode == MODE_INVENTORY) {
-		dmlog("draw inv");
+	if (current_map->player->mode == MODE_INVENTORY)
 		ui_update_inventorypanel(current_map);
-	}
 }
 void ps_play_update()
 {
