@@ -332,7 +332,7 @@ void ai_default_wander(struct wld_mob *mob)
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
 	// TODO
-	return !mob->map->player->is_dead;
+	return false && !mob->map->player->is_dead;
 }
 void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee attack
 {
@@ -682,6 +682,7 @@ void wld_genmobs(struct wld_map *map)
 		mob->ai_decide_combat = NULL;
 		mob->ai_player_input = NULL;
 		mob->cursor_target = -1;
+		mob->mode = MODE_PLAY;
 		mob->target_mode = TMODE_NONE;
 		mob->is_dead = false;
 

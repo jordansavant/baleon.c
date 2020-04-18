@@ -395,6 +395,7 @@ int ui_map_padding = 15;
 WINDOW* cursorpanel;
 WINDOW* logpanel;
 WINDOW* mobpanel;
+WINDOW* inventorypanel;
 #define CURSOR_INFO_LENGTH 45
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
@@ -425,6 +426,11 @@ void ui_anchor_ur(WINDOW* win, int rows, int cols)
 	getmaxyx(stdscr, y, x);
 	wresize(win, rows, cols);
 	mvwin(win, 0, x - cols);
+}
+void ui_anchor_ul(WINDOW *win, int rows, int cols)
+{
+	wresize(win, rows, cols);
+	mvwin(win, 0, 0);
 }
 void ui_anchor_br(WINDOW *win, int rows, int cols)
 {
@@ -548,9 +554,20 @@ void ui_update_logpanel(struct wld_map *map)
 void ui_update_mobpanel(struct wld_map *map)
 {
 	// probably just need to do a shadowcast event each turn to get mobs in vision
-	ui_write(mobpanel, 0, "MOBS:");
-	ui_box(mobpanel);
-	wrefresh(mobpanel);
+	if (map->player->mode == MODE_PLAY) {
+		ui_write(mobpanel, 0, "-------- Visible ---------");
+		ui_box(mobpanel);
+		wrefresh(mobpanel);
+	}
+}
+void ui_update_inventorypanel(struct wld_map *map)
+{
+	if (map->player->mode == MODE_INVENTORY) {
+		// probably just need to do a shadowcast event each turn to get mobs in vision
+		ui_write(inventorypanel, 0, "------- Inventory --------");
+		ui_box(inventorypanel);
+		wrefresh(inventorypanel);
+	}
 }
 
 
@@ -598,7 +615,7 @@ void map_on_player_pickup_item(struct wld_map *map, struct wld_mob* player, stru
 }
 void map_on_player_pickup_item_fail(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo("Wnable to pickup item; inventory is full.");
+	ui_loginfo("Inventory is full.");
 }
 // this runs in the player update loop and should take an input that triggers world updates
 void ai_player_input(struct wld_mob* player)
@@ -609,88 +626,115 @@ void ai_player_input(struct wld_mob* player)
 	trigger_world = false;
 	while (listen) {
 		int key = getch();
-		switch (player->target_mode) {
-		case TMODE_NONE:
-			switch (key) {
-			// Player movement
-			case KEY_ESC:
-				play_state = PS_MENU;
-				listen = false;
-				break;
-			case KEY_w:
-				// attempt move up, if blocked determine what is blocking me and attempt
-				// to "interact" with it, if its an enemy mob, attack with melee?
-				// if its a tile attempt to search it or activate it, "on touch" it?
-				// if its empty tile move into it
-				// if its a transitional tile interrupt confirm? call back into transition?
-				trigger_world = ai_act_upon(player, 0, -1);
-				listen = false;
-				break;
-			case KEY_s:
-				trigger_world = ai_act_upon(player, 0, 1);
-				listen = false;
-				break;
-			case KEY_a:
-				trigger_world = ai_act_upon(player, -1, 0);
-				listen = false;
-				break;
-			case KEY_d:
-				trigger_world = ai_act_upon(player, 1, 0);
-				listen = false;
-				break;
-			case KEY_q:
-				trigger_world = ai_act_upon(player, -1, -1);
-				listen = false;
-				break;
-			case KEY_e:
-				trigger_world = ai_act_upon(player, 1, -1);
-				listen = false;
-				break;
-			case KEY_z:
-				trigger_world = ai_act_upon(player, -1, 1);
-				listen = false;
-				break;
-			case KEY_x:
-				trigger_world = ai_act_upon(player, 1, 1);
-				listen = false;
-				break;
-			case KEY_p:
-				trigger_world = ai_rest(player);
-				listen = false;
-				ui_loginfo("You rested.");
-				break;
-			case KEY_g:
-				trigger_world = ai_get(player, 0, 0);
-				listen = false;
-				break;
-			// Player attack
-			case KEY_y:
-				// enter targeting mode for active weapon
-				// TODO this is hardcoded to melee but needs to use equipped weapon's activation target
-				player->target_mode = TMODE_MELEE;
-				ui_loginfo("You draw your weapon for melee, range of 1.");
-				ui_modeinfo("melee range 1");
-				listen = false;
-				break;
-			}
-			break;
-		case TMODE_MELEE:
-			switch (key) {
-			case KEY_SPACE:
-				trigger_world = ai_player_attack_melee(player);
-				listen = false;
-				break;
-			case KEY_y:
-			case KEY_ESC:
-				player->target_mode = TMODE_NONE;
-				ui_loginfo("You sheath your weapon.");
-				ui_modeinfo("");
-				listen = false;
-				break;
-			}
-			break;
-		} // eo target mode switch
-		// always active
+		switch (player->mode) {
+			// while in play mode listen to targeting method commands if active
+			case MODE_PLAY:
+				switch (player->target_mode) {
+				// If not in a targeting mode then listen for interaction inputs
+				case TMODE_NONE:
+					switch (key) {
+					// Player movement
+					case KEY_BACKSPACE:
+						play_state = PS_MENU;
+						listen = false;
+						break;
+					case KEY_w:
+						// attempt move up, if blocked determine what is blocking me and attempt
+						// to "interact" with it, if its an enemy mob, attack with melee?
+						// if its a tile attempt to search it or activate it, "on touch" it?
+						// if its empty tile move into it
+						// if its a transitional tile interrupt confirm? call back into transition?
+						trigger_world = ai_act_upon(player, 0, -1);
+						listen = false;
+						break;
+					case KEY_s:
+						trigger_world = ai_act_upon(player, 0, 1);
+						listen = false;
+						break;
+					case KEY_a:
+						trigger_world = ai_act_upon(player, -1, 0);
+						listen = false;
+						break;
+					case KEY_d:
+						trigger_world = ai_act_upon(player, 1, 0);
+						listen = false;
+						break;
+					case KEY_q:
+						trigger_world = ai_act_upon(player, -1, -1);
+						listen = false;
+						break;
+					case KEY_e:
+						trigger_world = ai_act_upon(player, 1, -1);
+						listen = false;
+						break;
+					case KEY_z:
+						trigger_world = ai_act_upon(player, -1, 1);
+						listen = false;
+						break;
+					case KEY_x:
+						trigger_world = ai_act_upon(player, 1, 1);
+						listen = false;
+						break;
+					case KEY_p:
+						trigger_world = ai_rest(player);
+						listen = false;
+						ui_loginfo("You rested.");
+						break;
+					case KEY_g:
+						trigger_world = ai_get(player, 0, 0);
+						listen = false;
+						break;
+					// Player attack
+					case KEY_y:
+						// enter targeting mode for active weapon
+						// TODO this is hardcoded to melee but needs to use equipped weapon's activation target
+						player->target_mode = TMODE_MELEE;
+						ui_loginfo("You draw your weapon for melee, range of 1.");
+						ui_modeinfo("melee range 1");
+						listen = false;
+						break;
+					case KEY_i:
+						// enter inventory management mode
+						player->mode = MODE_INVENTORY;
+						dmlog("play > inventory");
+						listen = false;
+						break;
+					}
+					break;
+				case TMODE_MELEE:
+					switch (key) {
+					case KEY_SPACE:
+						trigger_world = ai_player_attack_melee(player);
+						listen = false;
+						break;
+					case KEY_y:
+					case KEY_ESC:
+						player->target_mode = TMODE_NONE;
+						ui_loginfo("You sheath your weapon.");
+						ui_modeinfo("");
+						listen = false;
+						break;
+					}
+					break;
+				} // eo target mode switch
+
+				// While in play mode always let them move the cursor
+
+				break; // eo MODE PLAY
+
+			// If in Inventory Mode show inventory and listen to inventory commands
+			case MODE_INVENTORY:
+				switch (key) {
+				case KEY_i:
+					dmlog("inventory > play");
+					player->mode = MODE_PLAY;
+					listen = false;
+					break;
+				}
+				break; // eo MODE INVENTORY
+		}
+
+		// always active should we move this to play mode?
 		switch (key) {
 		// Cursor movement
 		case KEY_8: // up
@@ -787,6 +831,10 @@ void ps_layout_ui()
 	// mode bar on the bottom
 	ui_anchor_bl(cursorpanel, logpanel_rows, sx - logpanel_cols - 1);
 	ui_box(cursorpanel);
+
+	// inventory panel
+	ui_anchor_ur(inventorypanel, mobpanel_rows, mobpanel_cols);
+	ui_box(inventorypanel);
 }
 // this is called when window resize event happens
 void ps_reset_ui()
@@ -804,6 +852,7 @@ void ps_build_ui()
 	cursorpanel = newwin(0, 0, 0, 0);
 	logpanel = newwin(0, 0, 0, 0);
 	mobpanel = newwin(0, 0, 0, 0);
+	inventorypanel = newwin(0, 0, 0, 0);
 
 	ps_layout_ui();
 
@@ -811,6 +860,7 @@ void ps_build_ui()
 }
 void ps_destroy_ui()
 {
+	delwin(inventorypanel);
 	delwin(mobpanel);
 	delwin(logpanel);
 	delwin(cursorpanel);
@@ -915,7 +965,6 @@ void ps_play_draw()
 
 	// UI constants (needs to be done in an event?)
 	ui_update_logpanel(current_map);
-	ui_update_mobpanel(current_map);
 	ui_update_cursorinfo(current_map);
 	ui_update_positioninfo(current_map);
 
@@ -926,7 +975,13 @@ void ps_play_draw()
 	addstr("y: draw/sheath   i: inventory   p: rest   g: get");
 
 	wrefresh(cursorpanel);
-	wrefresh(mobpanel);
+	if (current_map->player->mode == MODE_PLAY) {
+		ui_update_mobpanel(current_map);
+	}
+	if (current_map->player->mode == MODE_INVENTORY) {
+		dmlog("draw inv");
+		ui_update_inventorypanel(current_map);
+	}
 }
 void ps_play_update()
 {

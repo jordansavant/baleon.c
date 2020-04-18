@@ -52,7 +52,11 @@ enum WLD_MOB_STATE {
 	MS_SLEEP,
 	MS_HUNT,
 };
-enum TARGET_MODE_STATE {
+enum MODE {
+	MODE_PLAY,
+	MODE_INVENTORY,
+};
+enum TARGET_MODE {
 	TMODE_NONE,
 	TMODE_SELF,
 	TMODE_MELEE,
@@ -82,7 +86,8 @@ struct wld_mob {
 	int health, maxhealth;
 	bool is_player, is_dead;
 	int cursor_target; // map index
-	enum TARGET_MODE_STATE target_mode;
+	enum MODE mode;
+	enum TARGET_MODE target_mode;
 	struct wld_item **inventory;
 };
 
