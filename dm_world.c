@@ -273,11 +273,20 @@ struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y)
 	struct draw_struct ds = { colorpair, cha };
 	return ds;
 }
-bool wld_is_mob_nextto_mob(struct wld_mob* ma, struct wld_mob* mb)
+bool wld_is_mob_nextto_mob(struct wld_mob *ma, struct wld_mob *mb)
 {
 	int diffx = abs(ma->map_x - mb->map_x);
 	int diffy = abs(ma->map_y - mb->map_y);
 	return diffx <= 1 && diffy <= 1;
+}
+bool wld_has_inventory(struct wld_mob *mob)
+{
+	// TODO
+	return true;
+}
+void wld_pickup_item(struct wld_mob *m, struct wld_item *i)
+{
+	// TODO
 }
 
 
@@ -403,6 +412,21 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 			return ai_queuemobmove(mob, relx, rely);
 		}
 		return false;
+	}
+	return false;
+}
+bool ai_get(struct wld_mob *mob, int relx, int rely)
+{
+	int posx = mob->map_x + relx;
+	int posy = mob->map_y + rely;
+	int posindex = wld_calcindex(posx, posy, mob->map->cols);
+	struct wld_item *i = wld_getitemat(mob->map, posx, posy);
+
+	if (i != NULL) {
+		if (wld_has_inventory(mob)) {
+			wld_pickup_item(mob, i);
+			return true;
+		}
 	}
 	return false;
 }

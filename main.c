@@ -640,6 +640,10 @@ void ai_player_input(struct wld_mob* player)
 				listen = false;
 				ui_loginfo("You rested.");
 				break;
+			case KEY_g:
+				trigger_world = ai_get(player, 0, 0);
+				listen = false;
+				break;
 			// Player attack
 			case KEY_y:
 				// enter targeting mode for active weapon

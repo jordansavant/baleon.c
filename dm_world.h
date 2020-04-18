@@ -186,6 +186,8 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y);
 bool wld_is_mob_nextto_mob(struct wld_mob* ma, struct wld_mob* mb);
+bool wld_has_inventory(struct wld_mob*);
+void wld_pickup_item(struct wld_mob*, struct wld_item*);
 
 
 ///////////////////////////
@@ -201,6 +203,7 @@ bool ai_player_attack_melee(struct wld_mob* player);
 bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
 bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
 bool ai_rest(struct wld_mob *mob);
+bool ai_get(struct wld_mob *mob, int relx, int rely);
 void wld_update_mob(struct wld_mob *mob);
 
 
