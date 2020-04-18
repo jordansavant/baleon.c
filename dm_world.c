@@ -359,6 +359,10 @@ bool wld_mob_unequip(struct wld_mob* mob, int itemslot)
 	}
 	return false;
 }
+bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
+{
+	// TODO UH OH, HOW DO I RETURN AN ITEM TO THE MAP? LOOK FOR A NULL SLOT AND IF NOT REMALLOC?
+}
 
 
 ///////////////////////////

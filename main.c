@@ -466,12 +466,12 @@ void ui_anchor_bl(WINDOW *win, int rows, int cols)
 	wresize(win, rows, cols);
 	mvwin(win, y - rows, 0);
 }
-void ui_anchor_center(WINDOW *win, int rows, int cols)
+void ui_anchor_center(WINDOW *win, int rows, int cols, int yoff, int xoff)
 {
 	int y, x;
 	getmaxyx(stdscr, y, x);
-	int oy = (y - rows) / 2;
-	int ox = (x - cols) / 2;
+	int oy = (y - rows) / 2 + yoff;
+	int ox = (x - cols) / 2 + xoff;
 	wresize(win, rows, cols);
 	mvwin(win, oy, ox);
 }
@@ -958,6 +958,15 @@ void ai_player_input(struct wld_mob* player)
 					player->mode = MODE_INVENTORY;
 					listen = false;
 					break;
+				case KEY_d:
+					dmlog("drop item");
+					if (wld_mob_drop_item(player, use_item_slot))
+						ui_loginfo("Item dropped to floor.");
+					ui_unset_use();
+					ui_clear_win(usepanel);
+					player->mode = MODE_INVENTORY;
+					listen = false;
+					break;
 				}
 				break; // eo MODE USE
 		}
@@ -1032,7 +1041,7 @@ void ps_layout_ui()
 	// use panel
 	int usepanel_cols = 60;
 	int usepanel_rows = 16;
-	ui_anchor_center(usepanel, usepanel_rows, usepanel_cols);
+	ui_anchor_center(usepanel, usepanel_rows, usepanel_cols, -(logpanel_rows / 2), 0);
 	ui_box(usepanel);
 
 }
