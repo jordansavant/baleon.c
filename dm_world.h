@@ -137,7 +137,6 @@ int wld_calcindex(int x, int y, int cols);
 int wld_calcx(int index, int cols);
 int wld_calcy(int index, int cols);
 bool wld_canmoveto(struct wld_map *map, int x, int y);
-void wld_queuemobmove(struct wld_mob *mob, int relx, int rely);
 void wld_movemob(struct wld_mob *mob, int relx, int rely);
 void wld_movecursor(struct wld_map *map, int relx, int rely);
 struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y);
@@ -160,6 +159,7 @@ void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int 
 bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
 bool ai_player_attack_melee(struct wld_mob* player);
+bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
 void wld_update_mob(struct wld_mob *mob);
 
 ///////////////////////////

@@ -112,11 +112,6 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 
 	return true;
 }
-void wld_queuemobmove(struct wld_mob *mob, int relx, int rely)
-{
-	mob->queue_x += relx;
-	mob->queue_y += rely;
-}
 void wld_movemob(struct wld_mob *mob, int relx, int rely)
 {
 	// TODO speeds and things could come into play here
@@ -243,7 +238,7 @@ void ai_default_wander(struct wld_mob *mob)
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
 	// TODO
-	return false && !mob->map->player->is_dead;
+	return !mob->map->player->is_dead;
 }
 void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee attack
 {
@@ -315,6 +310,17 @@ bool ai_player_attack_melee(struct wld_mob* player)
 			ai_mob_melee_mob(player, target);
 			return true;
 		}
+	}
+	return false;
+}
+bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely)
+{
+	int newx = mob->map_x + relx;
+	int newy = mob->map_y + rely;
+	if (wld_canmoveto(mob->map, newx, newy)) {
+		mob->queue_x += relx;
+		mob->queue_y += rely;
+		return true;
 	}
 	return false;
 }
@@ -486,7 +492,7 @@ void wld_gentiles(struct wld_map *map)
 			tile->type = TILE_STONEWALL;
 			break;
 		case 3:
-			tile->type = TILE_WATER;
+			tile->type = TILE_GRASS;
 			break;
 		}
 

@@ -587,43 +587,35 @@ void ai_player_input(struct wld_mob* player)
 				listen = false;
 				break;
 			case KEY_w:
-				wld_queuemobmove(player, 0, -1);
-				trigger_world = true;
+				trigger_world = ai_queuemobmove(player, 0, -1);
 				listen = false;
 				break;
 			case KEY_s:
-				wld_queuemobmove(player, 0, 1);
-				trigger_world = true;
+				trigger_world = ai_queuemobmove(player, 0, 1);
 				listen = false;
 				break;
 			case KEY_a:
-				wld_queuemobmove(player, -1, 0);
-				trigger_world = true;
+				trigger_world = ai_queuemobmove(player, -1, 0);
 				listen = false;
 				break;
 			case KEY_d:
-				wld_queuemobmove(player, 1, 0);
-				trigger_world = true;
+				trigger_world = ai_queuemobmove(player, 1, 0);
 				listen = false;
 				break;
 			case KEY_q:
-				wld_queuemobmove(player, -1, -1);
-				trigger_world = true;
+				trigger_world = ai_queuemobmove(player, -1, -1);
 				listen = false;
 				break;
 			case KEY_e:
-				wld_queuemobmove(player, 1, -1);
-				trigger_world = true;
+				trigger_world = ai_queuemobmove(player, 1, -1);
 				listen = false;
 				break;
 			case KEY_z:
-				wld_queuemobmove(player, -1, 1);
-				trigger_world = true;
+				trigger_world = ai_queuemobmove(player, -1, 1);
 				listen = false;
 				break;
 			case KEY_x:
-				wld_queuemobmove(player, 1, 1);
-				trigger_world = true;
+				trigger_world = ai_queuemobmove(player, 1, 1);
 				listen = false;
 				break;
 			// Player attack
