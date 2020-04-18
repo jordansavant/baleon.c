@@ -57,6 +57,7 @@ enum WLD_MOB_STATE {
 enum MODE {
 	MODE_PLAY,
 	MODE_INVENTORY,
+	MODE_USE,
 };
 enum TARGET_MODE {
 	TMODE_NONE,
@@ -124,6 +125,7 @@ struct wld_itemtype {
 	unsigned long sprite;
 	int fg_color;
 	enum WLD_TARGETTYPE target_type;
+	bool is_weq, is_aeq;
 	char *short_desc;
 	char *title;
 	void (*on_use)(struct wld_item*, struct wld_mob*);

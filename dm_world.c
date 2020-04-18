@@ -872,12 +872,12 @@ void wld_setup()
 
 	// copy item types into malloc
 	struct wld_itemtype its [] = {
-		{ ITEM_VOID,			' ', CLX_BLACK,			TARGET_PASSIVE, "", "", NULL, NULL },
-		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,		TARGET_SELF, "a potion of minor healing", "minor healing potion", NULL, NULL },
-	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,		TARGET_MELEE, "a shortsword", "shortsword", itm_on_use_melee, itm_on_fire_melee },
-		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,		TARGET_RANGED_LOS, "a shortbow", "shortbow", NULL, NULL },
-		{ ITEM_SCROLL_FIREBOMB,		ACS_LANTERN, CLX_YELLOW,	TARGET_RANGED_LOS_AOE, "a scroll of firebomb", "scroll of firebomb", NULL, NULL },
-		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,		TARGET_PASSIVE, "a set of leather armor", "leather armor", NULL, NULL },
+		{ ITEM_VOID,			' ', CLX_BLACK,		TARGET_PASSIVE, false, false, "", "", NULL, NULL },
+		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	TARGET_SELF, false, false, "a potion of minor healing", "minor healing potion", NULL, NULL },
+	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	TARGET_MELEE, true, false, "a shortsword", "shortsword", itm_on_use_melee, itm_on_fire_melee },
+		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	TARGET_RANGED_LOS, true, false, "a shortbow", "shortbow", NULL, NULL },
+		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	TARGET_RANGED_LOS_AOE, false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL },
+		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	TARGET_PASSIVE, false, true, "a set of leather armor", "leather armor", NULL, NULL },
 	};
 	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));
 	for (int i=0; i<ARRAY_SIZE(its); i++) {

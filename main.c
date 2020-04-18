@@ -397,6 +397,7 @@ WINDOW* cursorpanel;
 WINDOW* logpanel;
 WINDOW* mobpanel;
 WINDOW* inventorypanel;
+WINDOW* usepanel;
 #define CURSOR_INFO_LENGTH 45
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
@@ -455,6 +456,15 @@ void ui_anchor_bl(WINDOW *win, int rows, int cols)
 	getmaxyx(stdscr, y, x);
 	wresize(win, rows, cols);
 	mvwin(win, y - rows, 0);
+}
+void ui_anchor_center(WINDOW *win, int rows, int cols)
+{
+	int y, x;
+	getmaxyx(stdscr, y, x);
+	int oy = (y - rows) / 2;
+	int ox = (x - cols) / 2;
+	wresize(win, rows, cols);
+	mvwin(win, oy, ox);
 }
 void ui_clear_win(WINDOW *win)
 {
@@ -637,6 +647,15 @@ void ui_update_inventorypanel(struct wld_map *map)
 
 		ui_box_color(inventorypanel, TCOLOR_YELLOW);
 		wrefresh(inventorypanel);
+	}
+}
+void ui_update_usepanel(struct wld_map *map)
+{
+	// probably just need to do a shadowcast event each turn to get mobs in vision
+	if (map->player->mode == MODE_USE) {
+		ui_write(usepanel, 0, "USE PANEL");
+		ui_box(usepanel);
+		wrefresh(usepanel);
 	}
 }
 
@@ -838,11 +857,25 @@ void ai_player_input(struct wld_mob* player)
 					listen = false;
 					break;
 				case KEY_1:
+					// get item at position 1 and open use panel
 					dmlog("inventory 1");
+					player->mode = MODE_USE;
+					ui_clear_win(inventorypanel);
 					listen = false;
 					break;
 				}
 				break; // eo MODE INVENTORY
+			case MODE_USE:
+				switch (key) {
+				case KEY_ESC:
+				case KEY_x:
+					dmlog("use > inventory");
+					ui_clear_win(usepanel);
+					player->mode = MODE_INVENTORY;
+					listen = false;
+					break;
+				}
+				break; // eo MODE USE
 		}
 	} // eo while listen
 	escapedelay(true);
@@ -911,6 +944,13 @@ void ps_layout_ui()
 	int invpanel_rows = sy - logpanel_rows;
 	ui_anchor_ur(inventorypanel, invpanel_rows, invpanel_cols);
 	ui_box(inventorypanel);
+
+	// use panel
+	int usepanel_cols = 60;
+	int usepanel_rows = 16;
+	ui_anchor_center(usepanel, usepanel_rows, usepanel_cols);
+	ui_box(usepanel);
+
 }
 // this is called when window resize event happens
 void ps_reset_ui()
@@ -929,6 +969,7 @@ void ps_build_ui()
 	logpanel = newwin(0, 0, 0, 0);
 	mobpanel = newwin(0, 0, 0, 0);
 	inventorypanel = newwin(0, 0, 0, 0);
+	usepanel = newwin(0, 0, 0, 0);
 
 	ps_layout_ui();
 
@@ -936,6 +977,7 @@ void ps_build_ui()
 }
 void ps_destroy_ui()
 {
+	delwin(usepanel);
 	delwin(inventorypanel);
 	delwin(mobpanel);
 	delwin(logpanel);
@@ -1055,6 +1097,8 @@ void ps_play_draw()
 		ui_update_mobpanel(current_map);
 	if (current_map->player->mode == MODE_INVENTORY)
 		ui_update_inventorypanel(current_map);
+	if (current_map->player->mode == MODE_USE)
+		ui_update_usepanel(current_map);
 }
 void ps_play_update()
 {
