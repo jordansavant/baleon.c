@@ -335,13 +335,25 @@ bool wld_mob_equip(struct wld_mob* mob, int itemslot)
 	if (i != NULL) {
 		struct wld_itemtype *it = wld_get_itemtype(i->type);
 		// weapon
-		if (it->is_weq && wld_get_item_in_slot(mob, 0) == NULL) {
+		if (it->is_weq) {
 			wld_swap_item(mob, itemslot, 0);
 			return true;
 		}
 		// armor
-		if (it->is_aeq && wld_get_item_in_slot(mob, 1) == NULL) {
+		if (it->is_aeq) {
 			wld_swap_item(mob, itemslot, 1);
+			return true;
+		}
+	}
+	return false;
+}
+bool wld_mob_unequip(struct wld_mob* mob, int itemslot)
+{
+	struct wld_item *i = wld_get_item_in_slot(mob, itemslot);
+	if (i != NULL) {
+		int open_slot = wld_get_open_inventory_slot(mob);
+		if (open_slot != -1) {
+			wld_swap_item(mob, itemslot, open_slot);
 			return true;
 		}
 	}

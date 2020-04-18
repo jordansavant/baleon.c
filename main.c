@@ -656,6 +656,7 @@ void ui_update_inventorypanel(struct wld_map *map)
 			ui_write_rc(inventorypanel, row, 1, buffer);
 			row++;
 		}
+		ui_write_rc(inventorypanel, row + 1, 1, "x: close");
 
 
 		ui_box_color(inventorypanel, TCOLOR_YELLOW);
@@ -677,10 +678,17 @@ void ui_update_usepanel(struct wld_map *map)
 				ui_write(usepanel, 3, it->use_text_2);
 
 				// give options
+				int offset = 5;
 				bool equippable = it->is_weq || it->is_aeq;
-				if (equippable) {
-					ui_write(usepanel, 5, "e: equip");
+				if (use_item_slot == 0 || use_item_slot == 1) {
+					ui_write(usepanel, offset, "e: unequip");
+					offset++;
+				} else if (equippable) {
+					ui_write(usepanel, offset, "e: equip");
+					offset++;
 				}
+				ui_write(usepanel, offset++, "d: drop");
+				ui_write(usepanel, offset + 1, "x: close");
 			}
 			break;
 		}
@@ -849,8 +857,9 @@ void ai_player_input(struct wld_mob* player)
 						trigger_world = ai_player_attack_melee(player);
 						listen = false;
 						break;
-					case KEY_y:
 					case KEY_ESC:
+					case KEY_y:
+					case KEY_x:
 						player->target_mode = TMODE_NONE;
 						ui_loginfo("You sheath your weapon.");
 						ui_modeinfo("");
@@ -903,6 +912,7 @@ void ai_player_input(struct wld_mob* player)
 			case MODE_INVENTORY:
 				switch (key) {
 				case KEY_ESC:
+				case KEY_x:
 				case KEY_i:
 					dmlog("inventory > play");
 					ui_clear_win(inventorypanel);
@@ -934,8 +944,18 @@ void ai_player_input(struct wld_mob* player)
 					listen = false;
 					break;
 				case KEY_e:
-					dmlog("equip");
-					wld_mob_equip(player, use_item_slot);
+					dmlogi("(un)equip", use_item_slot);
+					if (use_item_slot == 0 || use_item_slot == 1) {
+						if (!wld_mob_unequip(player, use_item_slot))
+							// switch to new slot?
+							ui_loginfo("Cannot unequip; inventory is full.");
+					} else {
+						if (wld_mob_equip(player, use_item_slot))
+							ui_loginfo("Item equipped.");
+					}
+					ui_unset_use();
+					ui_clear_win(usepanel);
+					player->mode = MODE_INVENTORY;
 					listen = false;
 					break;
 				}

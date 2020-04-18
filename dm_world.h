@@ -208,6 +208,7 @@ int wld_get_open_inventory_slot(struct wld_mob *mob);
 bool wld_has_inventory(struct wld_mob*);
 bool wld_pickup_item(struct wld_mob*, struct wld_item*);
 bool wld_mob_equip(struct wld_mob*, int);
+bool wld_mob_unequip(struct wld_mob*, int);
 
 
 ///////////////////////////
