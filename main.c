@@ -495,10 +495,14 @@ void ui_update_cursorinfo(struct wld_map *map)
 	struct wld_tiletype *tt = wld_get_tiletype(t->type);
 	if (t->is_visible) {
 		struct wld_mob *m = wld_getmobat(map, x, y);
+		struct wld_item *i = wld_getitemat(map, x, y);
 		if (m != NULL) {
 			// TODO get "what" the mob is doing
 			struct wld_mobtype *mt = wld_get_mobtype(m->type);
 			ui_cursorinfo(mt->short_desc);
+		} else if (i != NULL) {
+			struct wld_itemtype *it = wld_get_itemtype(i->type);
+			ui_cursorinfo(it->short_desc);
 		} else {
 			ui_cursorinfo(tt->short_desc);
 		}
@@ -513,10 +517,18 @@ void ui_update_positioninfo(struct wld_map *map)
 	// Get details about the tile they are on
 	struct wld_tile *t = wld_gettileat(map, x, y);
 	struct wld_tiletype *tt = wld_get_tiletype(t->type);
-	if (t->is_visible)
-		ui_positioninfo(tt->short_desc);
-	else
+
+	if (t->is_visible) {
+		struct wld_item *i = wld_getitemat(map, x, y);
+		if (i != NULL) {
+			struct wld_itemtype *it = wld_get_itemtype(i->type);
+			ui_positioninfo(it->short_desc);
+		} else {
+			ui_positioninfo(tt->short_desc);
+		}
+	} else {
 		ui_positioninfo("");
+	}
 }
 void ui_update_logpanel(struct wld_map *map)
 {

@@ -36,7 +36,6 @@ struct wld_tile {
 	// on_enter, on_leave events
 };
 
-
 ///////////////////////////
 // MOB STRUCTS
 
@@ -66,8 +65,6 @@ struct wld_mobtype {
 	int type;
 	unsigned long sprite;
 	int fg_color;
-	unsigned long memory_sprite;
-	int memory_fg_color;
 	char *short_desc;
 };
 struct wld_mob {
@@ -85,6 +82,41 @@ struct wld_mob {
 	bool is_player, is_dead;
 	int cursor_target; // map index
 	enum TARGET_MODE_STATE target_mode;
+};
+
+
+///////////////////////////
+// ITEM STRUCTS
+enum WLD_ITEMTYPE {
+	ITEM_VOID,
+	ITEM_POTION_MINOR_HEAL,
+	ITEM_WEAPON_SHORTSWORD,
+	ITEM_WEAPON_SHORTBOW,
+	ITEM_SCROLL_FIREBOMB,
+	ITEM_ARMOR_LEATHER,
+};
+enum WLD_TARGETTYPE {
+	TARGET_PASSIVE,
+	TARGET_SELF,
+	TARGET_MELEE,
+	TARGET_RANGED_LOS,
+	TARGET_RANGED_TEL,
+	TARGET_RANGED_LOS_AOE,
+	TARGET_RANGED_TEL_AOE,
+};
+struct wld_item {
+	int id;
+	int map_x, map_y, map_index;
+	enum WLD_ITEMTYPE type;
+};
+struct wld_itemtype {
+	enum WLD_ITEMTYPE type;
+	unsigned long sprite;
+	int fg_color;
+	enum WLD_TARGETTYPE target_type;
+	char *short_desc;
+	void (*on_use)(struct wld_item*, struct wld_mob*);
+	void (*on_fire)(struct wld_item*, struct wld_mob*, int, int);
 };
 
 
@@ -107,6 +139,9 @@ struct wld_map {
 	int *mob_map; // array of mob ids in mob listing
 	struct wld_mob *mobs;
 	unsigned int mobs_length;
+	int *item_map;
+	struct wld_item *items;
+	unsigned int items_length;
 	struct wld_mob *player;
 	struct wld_cursor *cursor;
 
@@ -130,7 +165,9 @@ struct draw_struct {
 // UTILITY METHODS
 struct wld_tiletype* wld_get_tiletype(int id);
 struct wld_mobtype* wld_get_mobtype(int id);
-int wld_cpair(int tiletype, int mobtype);
+struct wld_itemtype* wld_get_itemtype(int id);
+int wld_cpair_tm(int tiletype, int mobtype);
+int wld_cpair_ti(int tiletype, int itemtype);
 int wld_cpairmem(int tiletype);
 int wld_cpair_bg(int tiletype);
 int wld_calcindex(int x, int y, int cols);
@@ -143,6 +180,8 @@ struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y);
 struct wld_tile* wld_gettileat_index(struct wld_map *map, int index);
 struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y);
 struct wld_mob* wld_getmobat_index(struct wld_map *map, int index);
+struct wld_item* wld_getitemat(struct wld_map *map, int x, int y);
+struct wld_item* wld_getitemat_index(struct wld_map *map, int index);
 void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double));
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y);
@@ -163,10 +202,18 @@ bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
 bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
 void wld_update_mob(struct wld_mob *mob);
 
+
+///////////////////////////
+// ITEM ACTIONS
+void itm_on_user_melee(struct wld_item *item, struct wld_mob *user);
+void itm_on_fire_melee(struct wld_item *item, struct wld_mob *user, int mapx, int mapy);
+
+
 ///////////////////////////
 // MAP INITIALIZATION
 void wld_gentiles(struct wld_map *map);
 void wld_genmobs(struct wld_map *map);
+void wld_genitems(struct wld_map *map);
 struct wld_map* wld_newmap(int depth);
 void wld_delmap(struct wld_map *map);
 

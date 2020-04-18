@@ -11,13 +11,17 @@ CORE MECHANIC:
 
 
 TODO:
-- cursor defines context of interactions
-	- if cursor on mob
-		- we can inspect them
-	- if cursor on living, adjacent mob
-		- we can have inputs to melee them
-	- if cursor on living, distant visible enemy
-		- we can have inputs to range them
+
+- items
+	- can be owned by a mob
+	- can exist on a tile (multiple items on one tile?)
+	- can be picked up into inventory
+	- inventory list can let you move weapon (types?) into equipment slots (armors?)
+	- activating an item uses a target mode (see below)
+		- target mode self should auto activate
+	- items have
+		- sprite, color (standard yellow?), name, short description, target method, on_activate closure, on_do closure
+
 - OR we can enter contexts based on inputs (THIS)
 	- targeting modes: self, melee, ranged los, ranged teleport, ranged los aoe, ranged teleport aoe
 	- if we press melee input we go into melee targeting mode

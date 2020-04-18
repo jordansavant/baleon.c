@@ -10,6 +10,17 @@
 ///////////////////////////
 // RAW DATA
 
+enum COLOR_INDEX {
+	CLX_BLACK,  // 0 void
+	CLX_GREEN,  // 1 grass
+	CLX_WHITE,  // 2 snow
+	CLX_RED,    // 3 fire
+	CLX_BLUE,   // 4 water
+	CLX_CYAN,   // 5
+	CLX_YELLOW, // 6
+	CLX_MAGENTA, // 7
+};
+
 int bg_colors[] = {
 	COLOR_BLACK,  // 0 void
 	COLOR_GREEN,  // 1 grass
@@ -46,6 +57,11 @@ struct wld_mobtype *wld_mobtypes;
 
 
 ///////////////////////////
+// ITEM STRUCTS
+struct wld_itemtype *wld_itemtypes;
+
+
+///////////////////////////
 // WORLD STRUCTS
 
 
@@ -60,13 +76,25 @@ struct wld_mobtype* wld_get_mobtype(int id)
 {
 	return &wld_mobtypes[id];
 }
-int wld_cpair(int tiletype, int mobtype)
+struct wld_itemtype* wld_get_itemtype(int id)
+{
+	return &wld_itemtypes[id];
+}
+int wld_cpair_tm(int tiletype, int mobtype)
 {
 	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
 	if (mobtype == 0)
 		return color_base + (tt->fg_color * fg_size + tt->bg_color);
 	struct wld_mobtype *mt = wld_get_mobtype(mobtype);
 	return color_base + (mt->fg_color * fg_size + tt->bg_color);
+}
+int wld_cpair_ti(int tiletype, int itemtype)
+{
+	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
+	if (itemtype == 0)
+		return color_base + (tt->fg_color * fg_size + tt->bg_color);
+	struct wld_itemtype *it = wld_get_itemtype(itemtype);
+	return color_base + (it->fg_color * fg_size + tt->bg_color);
 }
 int wld_cpairmem(int tiletype)
 {
@@ -173,6 +201,21 @@ struct wld_mob* wld_getmobat_index(struct wld_map *map, int index)
 		return &map->mobs[id];
 	return NULL;
 }
+struct wld_item* wld_getitemat(struct wld_map *map, int x, int y)
+{
+	int index = wld_calcindex(x, y, map->cols);
+	int id = map->item_map[index];
+	if (id > -1)
+		return &map->items[id];
+	return NULL;
+}
+struct wld_item* wld_getitemat_index(struct wld_map *map, int index)
+{
+	int id = map->item_map[index];
+	if (id > -1)
+		return &map->items[id];
+	return NULL;
+}
 void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double))
 {
 	// todo get radius of mobs vision?
@@ -195,15 +238,25 @@ struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 	struct wld_tiletype *tt = wld_get_tiletype(t->type);
 	unsigned long cha = tt->sprite;
 	int mob_id = map->mob_map[t->map_index];
+	int item_id = map->item_map[t->map_index];
+
 	int colorpair;
 	if (mob_id > -1) {
+		// if mob use its fg sprite and fg color
 		struct wld_mob *m = wld_getmobat(map, x, y);
 		struct wld_mobtype *mt = wld_get_mobtype(m->type);
 		if (mt->sprite != ' ')
 			cha = mt->sprite;
-		colorpair = wld_cpair(t->type, m->type);
+		colorpair = wld_cpair_tm(t->type, m->type);
+	} else if(item_id > -1) {
+		// if item  use its fg sprite and fg color
+		struct wld_item *i = wld_getitemat(map, x, y);
+		struct wld_itemtype *it = wld_get_itemtype(i->type);
+		if (it->sprite != ' ')
+			cha = it->sprite;
+		colorpair = wld_cpair_ti(t->type, i->type);
 	} else {
-		colorpair = wld_cpair(t->type, 0);
+		colorpair = wld_cpair_tm(t->type, 0);
 	}
 
 	struct draw_struct ds = { colorpair, cha };
@@ -341,10 +394,11 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 			return true;
 		} else {
 			// ai_search_mob TODO
+			// ai_abberation_mob
 			return false;
 		}
 	} else {
-		// TODO is transition, confi
+		// TODO is transition
 		if (wld_canmoveto(mob->map, newx, newy)) {
 			return ai_queuemobmove(mob, relx, rely);
 		}
@@ -413,6 +467,18 @@ ai_rerun:
 	}
 	mob->queue_target = -1;
 }
+
+
+///////////////////////////
+// ITEM ACTIONS
+void itm_on_use_melee(struct wld_item *item, struct wld_mob *user)
+{
+}
+void itm_on_fire_melee(struct wld_item *item, struct wld_mob *user, int mapx, int mapy)
+{
+}
+
+
 
 ///////////////////////////
 // MAP INITIALIZATION
@@ -494,6 +560,7 @@ void wld_gentiles(struct wld_map *map)
 {
 	int *tile_map_array = (int*)malloc(map->length * sizeof(int));
 	int *mob_map_array = (int*)malloc(map->length * sizeof(int));
+	int *item_map_array = (int*)malloc(map->length * sizeof(int));
 
 	map->tiles = (struct wld_tile*)malloc(map->length * sizeof(struct wld_tile));
 	map->tiles_length = map->length;
@@ -526,9 +593,11 @@ void wld_gentiles(struct wld_map *map)
 
 		tile_map_array[i] = i; // set tile map to this tile id
 		mob_map_array[i] = -1; // initialize to -1 for "no mob"
+		item_map_array[i] = -1; // no item
 	}
 	map->tile_map = tile_map_array;
 	map->mob_map = mob_map_array;
+	map->item_map = item_map_array;
 }
 void wld_genmobs(struct wld_map *map)
 {
@@ -590,6 +659,35 @@ void wld_genmobs(struct wld_map *map)
 		map->mob_map[mob->map_index] = i;
 	}
 }
+void wld_genitems(struct wld_map *map)
+{
+	int item_count = 2;
+	map->items = (struct wld_item*)malloc(item_count * sizeof(struct wld_item));
+	map->items_length = item_count;
+
+	// TODO we need to work on assigning items to players, mobs etc
+	// setup items in item map
+	for (int i=0; i < item_count; i++) {
+		// create item
+		struct wld_item *item = &map->items[i];
+		// create reference to parent map
+		item->id = i;
+		if (i == 0) {
+			// put item near player
+			item->map_x = map->cols / 2 + 4;
+			item->map_y = map->rows / 2 + 2;
+			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+			item->type = ITEM_WEAPON_SHORTSWORD;
+		} else {
+			item->map_x = map->cols / 2 + 7;
+			item->map_y = map->rows / 2 + -1;
+			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+			item->type = ITEM_ARMOR_LEATHER;
+		}
+
+		map->item_map[item->map_index] = i;
+	}
+}
 struct wld_map* wld_newmap(int depth)
 {
 	struct wld_map *map = (struct wld_map*)malloc(sizeof(struct wld_map));
@@ -623,6 +721,9 @@ struct wld_map* wld_newmap(int depth)
 
 	// build an populate map with mobs
 	wld_genmobs(map);
+
+	// build items
+	wld_genitems(map);
 
 	return map;
 }
@@ -675,9 +776,9 @@ void wld_setup()
 
 	// copy mob types into malloc
 	struct wld_mobtype mts [] = {
-		{ MOB_VOID,	' ', 0, ' ', 0, "" },
-		{ MOB_PLAYER,	'@', 7, '@', 2, "yourself" },
-		{ MOB_BUGBEAR,	'b', 3, 'b', 2, "a small bugbear" },
+		{ MOB_VOID,	' ', 0, "" },
+		{ MOB_PLAYER,	'@', 7, "yourself" },
+		{ MOB_BUGBEAR,	'b', 3, "a small bugbear" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
@@ -686,9 +787,29 @@ void wld_setup()
 		wld_mobtypes[i].fg_color = mts[i].fg_color;
 		wld_mobtypes[i].short_desc = mts[i].short_desc;
 	}
+
+	// copy item types into malloc
+	struct wld_itemtype its [] = {
+		{ ITEM_VOID,			' ', CLX_BLACK,			TARGET_PASSIVE, "", NULL, NULL },
+		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,		TARGET_SELF, "a potion of minor healing", NULL, NULL },
+	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,		TARGET_MELEE, "a shortsword", itm_on_use_melee, itm_on_fire_melee },
+		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,		TARGET_RANGED_LOS, "a shortbow", NULL, NULL },
+		{ ITEM_SCROLL_FIREBOMB,		ACS_LANTERN, CLX_YELLOW,	TARGET_RANGED_LOS_AOE, "a scroll of firebomb", NULL, NULL },
+		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,		TARGET_PASSIVE, "a set of leather armor", NULL, NULL },
+	};
+	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));
+	for (int i=0; i<ARRAY_SIZE(its); i++) {
+		wld_itemtypes[i].type = its[i].type;
+		wld_itemtypes[i].sprite = its[i].sprite;
+		wld_itemtypes[i].fg_color = its[i].fg_color;
+		wld_itemtypes[i].short_desc = its[i].short_desc;
+		wld_itemtypes[i].on_use = its[i].on_use;
+		wld_itemtypes[i].on_fire = its[i].on_fire;
+	}
 }
 void wld_teardown()
 {
+	free(wld_itemtypes);
 	free(wld_mobtypes);
 	free(wld_tiletypes);
 }
