@@ -406,6 +406,11 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 	}
 	return false;
 }
+bool ai_rest(struct wld_mob *mob)
+{
+	// TODO heal or let heal be natural at beginning of turn?
+	return true;
+}
 void wld_update_mob(struct wld_mob *mob)
 {
 	// setup

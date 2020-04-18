@@ -635,6 +635,11 @@ void ai_player_input(struct wld_mob* player)
 				trigger_world = ai_act_upon(player, 1, 1);
 				listen = false;
 				break;
+			case KEY_p:
+				trigger_world = ai_rest(player);
+				listen = false;
+				ui_loginfo("You rested.");
+				break;
 			// Player attack
 			case KEY_y:
 				// enter targeting mode for active weapon
@@ -893,7 +898,7 @@ void ps_play_draw()
 	int y, x;
 	getmaxyx(stdscr, y, x);
 	move(ui_map_rows, 2);
-	addstr("y: draw/sheath   i: inventory   z: rest   p: pickup");
+	addstr("y: draw/sheath   i: inventory   p: rest   g: get");
 
 	wrefresh(cursorpanel);
 	wrefresh(mobpanel);
