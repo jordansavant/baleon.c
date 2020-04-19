@@ -232,6 +232,12 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely)
 		mob->map_index = new_index;
 		mob->map_x = newx;
 		mob->map_y = newy;
+
+		// if player, collect items he walks over
+		struct wld_item *item = wld_getitemat(mob->map, mob->map_x, mob->map_y);
+		if (mob->is_player && item != NULL && wld_has_inventory(mob)) {
+			wld_pickup_item(mob, item);
+		}
 	}
 }
 void wld_movecursor(struct wld_map *map, int relx, int rely)
