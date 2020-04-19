@@ -1287,6 +1287,11 @@ void ps_play_draw()
 			int start_y = current_map->player->map_y;
 			int end_x = current_map->cursor->x;
 			int end_y = current_map->cursor->y;
+			bool is_blocked(int x, int y) {
+				struct wld_tile *t = wld_gettileat(current_map, x, y);
+				struct wld_tiletype *tt = wld_get_tiletype(t->type);
+				return tt->is_block || !t->is_visible;
+			}
 			void on_visible(int x, int y) {
 				if ((x == start_x && y == start_y) || (x == end_x && y == end_y))
 					return;
@@ -1297,7 +1302,7 @@ void ps_play_draw()
 					ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
 				}
 			}
-			dm_bresenham(start_x, start_y, end_x, end_y, on_visible);
+			dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
 		}
 		break;
 	}
