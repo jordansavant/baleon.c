@@ -62,6 +62,42 @@ struct wld_itemtype *wld_itemtypes;
 
 ///////////////////////////
 // WORLD STRUCTS
+//void wld_new_mob_at(struct wld_map* map, struct wld_mob* mob, int x, int y, int id)
+//{
+//	int index = wld_calcindex(x, y, map->cols);
+//	maps->mobs[id] = mob;
+//	maps->mob_map[index] = id;
+//}
+//void wld_new_mob(struct wld_map* map, struct wld_mob* mob, int x, int y)
+//{
+//	// TODO NEEDS TO BUILD MOBHERE
+//	// add a mob instance to this world
+//	int index = wld_calcindex(x, y, map->cols);
+//
+//	// see if I have a null spot
+//	for (int i=0; i<map->mobs_length; i++) {
+//		if (map->mobs[i] == NULL) {
+//			wld_new_mob_at(map, mob, i);
+//			return;
+//		}
+//	}
+//
+//	// nope, time to expand the list
+//	struct wld_mob* new_mobs = (struct wld_mob*)malloc(map->mobs_length + MALLOC_MOB_SIZE * sizeof(struct wld_mob));
+//	for (int i=0; i<map->mobs_length + MALLOC_MOB_SIZE; i++) {
+//		if (i < map->mobs_length) {
+//			new_mobs[i] = map->mobs[i]; // copied mob TODO MAKE THESE MALLOCD INSTANCES?
+//		} else if (i ==	map->mobs_length) {
+//			wld_new_mob_at(map, mob, i);
+//		}
+//		// else we leav it unitialized garbOGE
+//	}
+//	free(map->mobs);
+//	map->mobs = new_mobs;
+//	map->mobs_length += MALLOC_MOB_SIZE;
+//	// done?
+//	//
+//}
 
 
 ///////////////////////////
@@ -190,14 +226,14 @@ struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y)
 	int index = wld_calcindex(x, y, map->cols);
 	int id = map->mob_map[index];
 	if (id > -1)
-		return &map->mobs[id];
+		return map->mobs[id];
 	return NULL;
 }
 struct wld_mob* wld_getmobat_index(struct wld_map *map, int index)
 {
 	int id = map->mob_map[index];
 	if (id > -1)
-		return &map->mobs[id];
+		return map->mobs[id];
 	return NULL;
 }
 struct wld_item* wld_getitemat(struct wld_map *map, int x, int y)
@@ -704,13 +740,13 @@ void wld_genmobs(struct wld_map *map)
 {
 	// hardcoded to 3 mobs for now
 	int mob_count = 2;
-	map->mobs = (struct wld_mob*)malloc(mob_count * sizeof(struct wld_mob));
+	map->mobs = (struct wld_mob**)malloc(mob_count * sizeof(struct wld_mob));
 	map->mobs_length = mob_count;
 
 	// setup mobs in mob map
 	for (int i=0; i < mob_count; i++) {
 		// create mob
-		struct wld_mob *mob = &map->mobs[i];
+		struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
 		// create reference to parent map
 		mob->id = i;
 		mob->map = map;
@@ -765,6 +801,7 @@ void wld_genmobs(struct wld_map *map)
 
 		// set mob's id into the mob map
 		map->mob_map[mob->map_index] = i;
+		map->mobs[i] = mob;
 	}
 }
 void wld_genitems(struct wld_map *map)
@@ -856,10 +893,13 @@ void wld_delmap(struct wld_map *map)
 
 	for (int i=0; i<map->mobs_length; i++) {
 		for (int j=0; j<INVENTORY_SIZE; j++)
-			if (map->mobs[i].inventory[j] != NULL)
-				free(map->mobs[i].inventory[j]);
-		free(map->mobs[i].inventory);
+			if (map->mobs[i]->inventory[j] != NULL)
+				free(map->mobs[i]->inventory[j]);
+		free(map->mobs[i]->inventory);
 	}
+	for (int i=0; i<map->mobs_length; i++)
+		if (map->mobs[i] != NULL)
+			free(map->mobs[i]);
 	free(map->mobs);
 	free(map->mob_map);
 

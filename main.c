@@ -1199,7 +1199,7 @@ void ps_play_update()
 
 	// loop over map mobs and run their update routines
 	for (int i=0; i < current_map->mobs_length; i++) {
-		struct wld_mob *m = &current_map->mobs[i];
+		struct wld_mob *m = current_map->mobs[i];
 		if (m->is_player)
 			wld_update_mob(m);
 		else if (trigger_world)

@@ -152,7 +152,7 @@ struct wld_map {
 	struct wld_tile *tiles;
 	unsigned int tiles_length;
 	int *mob_map; // array of mob ids in mob listing
-	struct wld_mob *mobs;
+	struct wld_mob **mobs;
 	unsigned int mobs_length;
 	int *item_map;
 	struct wld_item **items;
@@ -176,6 +176,7 @@ struct draw_struct {
 	int colorpair;
 	unsigned long sprite;
 };
+void wld_new_mob(struct wld_map* map, struct wld_mob* mob, int x, int y);
 
 
 ///////////////////////////
