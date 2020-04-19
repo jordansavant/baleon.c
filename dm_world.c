@@ -476,7 +476,7 @@ int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
 }
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender)
 {
-	return .75;
+	return .66;
 }
 
 
@@ -493,7 +493,7 @@ void ai_default_wander(struct wld_mob *mob)
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
 	// TODO
-	return false && !mob->map->player->is_dead;
+	return !mob->map->player->is_dead;
 }
 void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee attack
 {
@@ -501,7 +501,6 @@ void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee atta
 	if (wld_is_mob_nextto_mob(mob, mob->map->player)) {
 		// attack target
 		ai_mob_melee_mob(mob, mob->map->player);
-		//mob->queue_target = mob->map->player->map_index;
 	} else {
 		int x = mob->map->player->map_x;
 		int y = mob->map->player->map_y;
@@ -516,33 +515,33 @@ void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee atta
 			mob->queue_y += 1;
 	}
 }
-void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender)
+void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item)
 {
 	defender->state = MS_DEAD;
 	defender->health = 0;
 	defender->is_dead = true;
 	// notify event
 	if (!defender->is_player && aggressor->map->on_mob_kill_mob)
-		aggressor->map->on_mob_kill_mob(aggressor->map, aggressor, defender);
+		aggressor->map->on_mob_kill_mob(aggressor->map, aggressor, defender, item);
 	if (defender->is_player && aggressor->map->on_mob_kill_player)
-		aggressor->map->on_mob_kill_player(aggressor->map, aggressor, defender);
+		aggressor->map->on_mob_kill_player(aggressor->map, aggressor, defender, item);
 	if (aggressor->is_player && aggressor->map->on_player_kill_mob)
-		aggressor->map->on_player_kill_mob(aggressor->map, aggressor, defender);
+		aggressor->map->on_player_kill_mob(aggressor->map, aggressor, defender, item);
 }
-void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt)
+void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item *item)
 {
 	defender->health -= amt;
 
 	// TODO pass damage amount, attack type, etc
 	if (!defender->is_player && aggressor->map->on_mob_attack_mob)
-		aggressor->map->on_mob_attack_mob(aggressor->map, aggressor, defender);
+		aggressor->map->on_mob_attack_mob(aggressor->map, aggressor, defender, amt, item);
 	if (defender->is_player && aggressor->map->on_mob_attack_player)
-		aggressor->map->on_mob_attack_player(aggressor->map, aggressor, defender);
+		aggressor->map->on_mob_attack_player(aggressor->map, aggressor, defender, amt, item);
 	if (aggressor->is_player && aggressor->map->on_player_attack_mob)
-		aggressor->map->on_player_attack_mob(aggressor->map, aggressor, defender);
+		aggressor->map->on_player_attack_mob(aggressor->map, aggressor, defender, amt, item);
 
 	if (defender->health <= 0)
-		ai_mob_kill_mob(aggressor, defender);
+		ai_mob_kill_mob(aggressor, defender, item);
 
 }
 // triggered from inputs that request attack
@@ -551,14 +550,14 @@ bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender)
 {
 	return !defender->is_dead && wld_is_mob_nextto_mob(aggressor, defender);
 }
-void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender)
+void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item)
 {
 	if (!defender->is_player && aggressor->map->on_mob_whiff_mob)
-		aggressor->map->on_mob_whiff_mob(aggressor->map, aggressor, defender);
+		aggressor->map->on_mob_whiff_mob(aggressor->map, aggressor, defender, item);
 	if (defender->is_player && aggressor->map->on_mob_whiff_player)
-		aggressor->map->on_mob_whiff_player(aggressor->map, aggressor, defender);
+		aggressor->map->on_mob_whiff_player(aggressor->map, aggressor, defender, item);
 	if (aggressor->is_player && aggressor->map->on_player_whiff_mob)
-		aggressor->map->on_player_whiff_mob(aggressor->map, aggressor, defender);
+		aggressor->map->on_player_whiff_mob(aggressor->map, aggressor, defender, item);
 }
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 {
@@ -570,22 +569,21 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 			double chance = rpg_calc_melee_coh(aggressor, defender);
 			if (dm_randf() < chance) {
 				int dmg = rpg_calc_melee_dmg(aggressor, defender);
-				ai_mob_attack_mob(aggressor, defender, dmg);
+				ai_mob_attack_mob(aggressor, defender, dmg, weapon);
 				return;
 			}
 		}
 	} else {
 		// not a melee weapon (use fists)
 		double chance = rpg_calc_melee_coh(aggressor, defender);
-		dmlogf("chance", chance);
 		if (dm_randf() < chance) {
 			int dmg = rpg_calc_melee_dmg(aggressor, defender);
-			ai_mob_attack_mob(aggressor, defender, dmg);
+			ai_mob_attack_mob(aggressor, defender, dmg, NULL);
 			return;
 		}
 	}
 	// whiff event
-	ai_mob_whiff_mob(aggressor, defender);
+	ai_mob_whiff_mob(aggressor, defender, weapon);
 }
 bool ai_player_attack_melee(struct wld_mob* player)
 {

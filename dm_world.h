@@ -164,16 +164,16 @@ struct wld_map {
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
 	void (*on_playermove)(struct wld_map*, struct wld_mob *, int x, int y, int index);
 
-	void (*on_mob_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
-	void (*on_mob_attack_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
-	void (*on_mob_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
-	void (*on_mob_whiff_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
-	void (*on_mob_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
-	void (*on_mob_kill_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_mob_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, int dmg, struct wld_item* item);
+	void (*on_mob_attack_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, int dmg, struct wld_item* item);
+	void (*on_mob_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
+	void (*on_mob_whiff_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
+	void (*on_mob_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
+	void (*on_mob_kill_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
 
-	void (*on_player_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
-	void (*on_player_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
-	void (*on_player_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_player_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, int dmg, struct wld_item* item);
+	void (*on_player_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
+	void (*on_player_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
 	void (*on_player_pickup_item)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
 	void (*on_player_pickup_item_fail)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
 	void (*on_player_drop_item)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
@@ -231,8 +231,8 @@ double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender);
 void ai_default_wander(struct wld_mob *mob);
 bool ai_default_detect_combat(struct wld_mob *mob);
 void ai_default_decide_combat(struct wld_mob *mob);
-void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender);
-void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt);
+void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
+void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item* item);
 bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
 bool ai_player_attack_melee(struct wld_mob* player);

@@ -1,3 +1,6 @@
+#ifndef MT_RAND
+#define MT_RAND
+
 /* A C-program for MT19937: Integer version (1999/10/28)          */
 /*  genrand() generates one pseudorandom unsigned integer (32bit) */
 /* which is uniformly distributed among 0 to 2^32-1  for each     */
@@ -47,5 +50,7 @@ double genrandf_nonzero();
 // 0 - 1 but without 0 or 1
 double genrand_exclusive();
 
+// 0 - max unsigned long
 unsigned long genrand();
 
+#endif

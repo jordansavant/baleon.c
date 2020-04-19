@@ -6,6 +6,7 @@
 
 #include "dm_defines.h"
 #include "dm_debug.h"
+#include "dm_algorithm.h"
 #include "dm_gametime.h"
 #include "dm_draw.h"
 #include "dm_world.h"
@@ -533,6 +534,18 @@ void ui_loginfo_s(char *msg, char *msg2)
 	int n = sprintf(buffer, msg, msg2);
 	ui_loginfo(buffer);
 }
+void ui_loginfo_is(char *msg, int i, char *msg2)
+{
+	char buffer [LOG_LENGTH];
+	int n = sprintf(buffer, msg, i, msg2);
+	ui_loginfo(buffer);
+}
+void ui_loginfo_si(char *msg, char *msg2, int i)
+{
+	char buffer [LOG_LENGTH];
+	int n = sprintf(buffer, msg, msg2, i);
+	ui_loginfo(buffer);
+}
 
 void ui_update_cursorinfo(struct wld_map *map)
 {
@@ -734,17 +747,17 @@ void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y
 }
 
 
-void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
+void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, int dmg, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
-	ui_loginfo_s("You were attacked by %s.", mt->short_desc);
+	ui_loginfo_is("You were attacked for %d by %s.", dmg, mt->short_desc);
 }
-void map_on_mob_whiff_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
+void map_on_mob_whiff_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
 	ui_loginfo_s("Attack from %s misses.", mt->short_desc);
 }
-void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
+void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
 	ui_loginfo_s("You were killed by %s.", mt->short_desc);
@@ -752,17 +765,17 @@ void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, stru
 }
 
 
-void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender)
+void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, int dmg, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
-	ui_loginfo_s("You attacked %s.", mt->short_desc);
+	ui_loginfo_si("You attacked %s for %d.", mt->short_desc, dmg);
 }
-void map_on_player_whiff_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender)
+void map_on_player_whiff_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
 	ui_loginfo_s("You attacked and missed %s.", mt->short_desc);
 }
-void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender)
+void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
 	ui_loginfo_s("You killed %s.", mt->short_desc);
@@ -1004,6 +1017,9 @@ void ai_player_input(struct wld_mob* player)
 void ps_build_world()
 {
 	clear();
+
+	// set RNG seed (TODO move this to a menu operation?)
+	dm_seed(123);
 
 	// World is large indexed map to start
 	current_map = wld_newmap(1);

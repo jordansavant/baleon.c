@@ -1,9 +1,9 @@
 # http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
 CC=gcc
 CFLAGS=-I.
-BUILD = main.c dm_gametime.c dm_draw.c dm_world.c dm_debug.c
+BUILD = main.c dm_gametime.c dm_draw.c dm_world.c dm_debug.c dm_algorithm.c mt_rand.c
 LIBS = -lncurses -lmenu
-DEPS = dm_gametime.h dm_draw.h dm_world.h dm_debug.h
+DEPS = dm_gametime.h dm_draw.h dm_world.h dm_debug.h dm_algorithm.h mt_rand.h
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
