@@ -86,4 +86,9 @@ void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (
 	}
 }
 
+double dm_randf()
+{
+	return .8;
+}
+
 #endif

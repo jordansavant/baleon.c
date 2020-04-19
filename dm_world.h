@@ -163,11 +163,16 @@ struct wld_map {
 	// function pointers game subscribes to for events
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
 	void (*on_playermove)(struct wld_map*, struct wld_mob *, int x, int y, int index);
+
 	void (*on_mob_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_mob_attack_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_mob_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_mob_whiff_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_mob_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_mob_kill_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+
 	void (*on_player_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
+	void (*on_player_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_player_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_player_pickup_item)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
 	void (*on_player_pickup_item_fail)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
@@ -213,6 +218,12 @@ bool wld_pickup_item(struct wld_mob*, struct wld_item*);
 bool wld_mob_equip(struct wld_mob*, int);
 bool wld_mob_unequip(struct wld_mob*, int);
 bool wld_mob_drop_item(struct wld_mob*, int);
+
+
+///////////////////////////
+// RPG CALCULATIONS
+int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender);
+double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender);
 
 
 ///////////////////////////

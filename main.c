@@ -733,12 +733,17 @@ void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y
 	ui_update_positioninfo(map);
 }
 
+
 void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
 	ui_loginfo_s("You were attacked by %s.", mt->short_desc);
 }
-
+void map_on_mob_whiff_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
+{
+	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
+	ui_loginfo_s("Attack from %s misses.", mt->short_desc);
+}
 void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
@@ -746,12 +751,17 @@ void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, stru
 	play_state = PS_GAMEOVER;
 }
 
+
 void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
 	ui_loginfo_s("You attacked %s.", mt->short_desc);
 }
-
+void map_on_player_whiff_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender)
+{
+	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
+	ui_loginfo_s("You attacked and missed %s.", mt->short_desc);
+}
 void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
@@ -775,6 +785,8 @@ void map_on_player_drop_item_fail(struct wld_map *map, struct wld_mob* player, s
 {
 	ui_loginfo("Unable to drop; floor is occupied by another item.");
 }
+
+
 // this runs in the player update loop and should take an input that triggers world updates
 void ai_player_input(struct wld_mob* player)
 {
@@ -996,17 +1008,23 @@ void ps_build_world()
 	// World is large indexed map to start
 	current_map = wld_newmap(1);
 	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
+
 	current_map->on_cursormove = map_on_cursormove;
 	current_map->on_playermove = map_on_playermove;
+
 	current_map->on_mob_attack_player = map_on_mob_attack_player;
+	current_map->on_mob_whiff_player = map_on_mob_whiff_player;
 	current_map->on_mob_kill_player = map_on_mob_kill_player;
-	current_map->player->ai_player_input = ai_player_input;
+
 	current_map->on_player_attack_mob = map_on_player_attack_mob;
+	current_map->on_player_whiff_mob = map_on_player_whiff_mob;
 	current_map->on_player_kill_mob = map_on_player_kill_mob;
 	current_map->on_player_pickup_item = map_on_player_pickup_item;
 	current_map->on_player_pickup_item_fail = map_on_player_pickup_item_fail;
 	current_map->on_player_drop_item = map_on_player_drop_item;
 	current_map->on_player_drop_item_fail = map_on_player_drop_item_fail;
+
+	current_map->player->ai_player_input = ai_player_input;
 }
 void ps_destroy_world()
 {
