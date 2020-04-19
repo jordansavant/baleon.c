@@ -1209,20 +1209,19 @@ void wld_setup()
 	}
 
 	// copy item types into malloc
-	struct wld_itemtype its [] = {																			/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
-		{ ITEM_VOID,			' ', CLX_BLACK,		TARGET_PASSIVE, false, false, "", "", NULL, NULL, NULL, ""},
-		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	TARGET_SELF, false, false, "a potion of minor healing", "minor healing potion", NULL, NULL, NULL,		"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
-	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	TARGET_MELEE, true, false, "a shortsword", "shortsword", itm_target_melee, itm_can_use_melee, itm_use_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
-		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	TARGET_RANGED_LOS, true, false, "a shortbow", "shortbow", itm_target_ranged_los, NULL, NULL,			"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
-		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	TARGET_RANGED_LOS_AOE, false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL, NULL,		"Runic art covers the parchment surface showing a",		"large swathe of fire." },
-		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	TARGET_PASSIVE, false, true, "a set of leather armor", "leather armor", NULL, NULL, NULL,			"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
+	struct wld_itemtype its [] = {																	/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
+		{ ITEM_VOID,			' ', CLX_BLACK,		false, false, "", "", NULL, NULL, NULL, ""},
+		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	false, false, "a potion of minor healing", "minor healing potion", NULL, NULL, NULL,		"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
+	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	true, false, "a shortsword", "shortsword", itm_target_melee, itm_can_use_melee, itm_use_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
+		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	true, false, "a shortbow", "shortbow", itm_target_ranged_los, NULL, NULL,			"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
+		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL, NULL,			"Runic art covers the parchment surface showing a",		"large swathe of fire." },
+		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	false, true, "a set of leather armor", "leather armor", NULL, NULL, NULL,			"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
 	};
 	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));
 	for (int i=0; i<ARRAY_SIZE(its); i++) {
 		wld_itemtypes[i].type = its[i].type;
 		wld_itemtypes[i].sprite = its[i].sprite;
 		wld_itemtypes[i].fg_color = its[i].fg_color;
-		wld_itemtypes[i].target_type = its[i].target_type;
 		wld_itemtypes[i].is_weq = its[i].is_weq;
 		wld_itemtypes[i].is_aeq = its[i].is_aeq;
 		wld_itemtypes[i].short_desc = its[i].short_desc;

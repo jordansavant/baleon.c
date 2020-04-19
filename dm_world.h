@@ -70,16 +70,6 @@ enum TARGET_MODE {
 	TMODE_RANGED_LOS_AOE,
 	TMODE_RANGED_TEL_AOE,
 };
-enum WLD_TARGETTYPE {
-	TARGET_NONE,
-	TARGET_PASSIVE,
-	TARGET_SELF,
-	TARGET_MELEE,
-	TARGET_RANGED_LOS,
-	TARGET_RANGED_TEL,
-	TARGET_RANGED_LOS_AOE,
-	TARGET_RANGED_TEL_AOE,
-};
 struct wld_mobtype {
 	int type;
 	unsigned long sprite;
@@ -129,7 +119,6 @@ struct wld_itemtype {
 	enum WLD_ITEMTYPE type;
 	unsigned long sprite;
 	int fg_color;
-	enum WLD_TARGETTYPE target_type;
 	bool is_weq, is_aeq;
 	char *short_desc;
 	char *title;
