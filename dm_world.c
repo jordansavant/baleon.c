@@ -688,6 +688,15 @@ bool ai_player_draw_weapon(struct wld_mob* player)
 	player->active_item = NULL;
 	return false;
 }
+// this is synomous with sheathing your active weapon
+// but it also will nullify active item if it was not primary weapon
+bool ai_player_leave_targeting(struct wld_mob* player)
+{
+	// unarmed
+	player->target_mode2 = TMODE_NONE;
+	player->active_item = NULL;
+	return true;
+}
 bool ai_player_sheath_weapon(struct wld_mob* player)
 {
 	// unarmed

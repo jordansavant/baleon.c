@@ -940,15 +940,16 @@ void ai_player_input(struct wld_mob* player)
 							ui_loginfo("Unable to attack such a target.");
 						listen = false;
 						break;
+					// exiting target mode
 					case KEY_ESC:
-					case KEY_y:
 					case KEY_x:
+						ai_player_leave_targeting(player);
+						listen = false;
+						break;
+					case KEY_y:
 						// escape targeting mode
-						ui_loginfo("Leaving target mode");
-						// TODO ai_player_untrigger_target(player) sheath?
-						if (ai_player_sheath_weapon(player)) {
-						}
-						player->target_mode2 = TMODE_NONE;
+						ai_player_sheath_weapon(player);
+						ui_loginfo("You sheath your weapon.");
 						listen = false;
 						break;
 					}
