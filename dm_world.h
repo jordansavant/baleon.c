@@ -241,6 +241,7 @@ bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
 bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile* cursor_tile);
 bool ai_player_use_active_item(struct wld_mob* player);
+bool ai_player_trigger_target(struct wld_mob* player);
 bool ai_player_draw_weapon(struct wld_mob* player);
 bool ai_player_sheath_weapon(struct wld_mob* player);
 bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);

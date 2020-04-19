@@ -600,14 +600,11 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 	// determine melee damage from weapon (or unarmed?)
 	struct wld_item* weapon = wld_get_item_in_slot(aggressor, 0);
 	if (weapon != NULL) {
+		struct wld_tile *tile = wld_gettileat_index(defender->map, defender->map_index);
 		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
-		if (it->target_type == TARGET_MELEE) {
-			double chance = rpg_calc_melee_coh(aggressor, defender);
-			if (dm_randf() < chance) {
-				int dmg = rpg_calc_melee_dmg(aggressor, defender);
-				ai_mob_attack_mob(aggressor, defender, dmg, weapon);
-				return;
-			}
+		if (it->target_type == TARGET_MELEE && it->can_use(weapon, aggressor, tile)) {
+			it->use(weapon, aggressor, tile);
+			return;
 		}
 	} else {
 		// not a melee weapon (use fists)
@@ -643,6 +640,23 @@ bool ai_player_use_active_item(struct wld_mob* player)
 		return false;
 
 	return ai_mob_use_item(player, player->active_item, tile);
+}
+bool ai_player_trigger_target(struct wld_mob* player)
+{
+	// this is run whenever in a target mode
+	// Melee can be here without an active item
+	if (player->active_item != NULL)
+		return ai_player_use_active_item(player);
+
+	// do a fist attack
+	if (player->target_mode == TARGET_MELEE) {
+		struct wld_mob *target = wld_getmobat_index(player->map, player->cursor_target_index);
+		if (target != NULL && ai_can_melee(player, target)) {
+			ai_mob_melee_mob(player, target);
+			return true;
+		}
+	}
+	return false;
 }
 bool ai_player_draw_weapon(struct wld_mob* player)
 {

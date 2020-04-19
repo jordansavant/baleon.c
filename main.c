@@ -933,7 +933,7 @@ void ai_player_input(struct wld_mob* player)
 				case TARGET_RANGED_LOS:
 					switch (key) {
 					case KEY_SPACE:
-						trigger_world = ai_player_use_active_item(player);
+						trigger_world = ai_player_trigger_target(player);
 						if (!trigger_world)
 							ui_loginfo("Unable to attack such a target.");
 						listen = false;
