@@ -481,7 +481,6 @@ void wld_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 	// if we have an item we are using, target with it
 	if (mob->active_item) {
 		struct wld_itemtype *it = wld_get_itemtype(mob->active_item->type);
-		dmlogi("inspect", mob->active_item->type);
 		if (it->fn_target != NULL) {
 			it->fn_target(mob->active_item, mob, inspect);
 			return;
@@ -503,6 +502,14 @@ int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
 	return 34;
 }
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender)
+{
+	return .66;
+}
+int rpg_calc_ranged_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
+{
+	return 34;
+}
+double rpg_calc_ranged_coh(struct wld_mob *aggressor, struct wld_mob *defender)
 {
 	return .66;
 }
@@ -594,8 +601,8 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 	if (weapon != NULL) {
 		struct wld_tile *tile = wld_gettileat_index(defender->map, defender->map_index);
 		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
-		if (it->can_use(weapon, aggressor, tile)) {
-			it->use(weapon, aggressor, tile);
+		if (it->fn_can_use(weapon, aggressor, tile)) {
+			it->fn_use(weapon, aggressor, tile);
 			return;
 		}
 	} else {
@@ -612,17 +619,15 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 }
 bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile* cursor_tile)
 {
-	dmlog("ai_mob_use_item");
 	struct wld_itemtype *it = wld_get_itemtype(item->type);
-	if (it->can_use(item, mob, cursor_tile)) {
-		it->use(item, mob, cursor_tile);
+	if (it->fn_can_use(item, mob, cursor_tile)) {
+		it->fn_use(item, mob, cursor_tile);
 		return true;
 	}
 	return false;
 }
 bool ai_player_use_active_item(struct wld_mob* player)
 {
-	dmlog("ai_player_use_active_item");
 	// this is run with the active item (which is drawn from sheath or used from inventory)
 	if (player->active_item == NULL)
 		return false;
@@ -793,15 +798,15 @@ ai_rerun:
 
 ///////////////////////////
 // ITEM ACTIONS
+
+// MELEE
 void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
 {
-	dmlog("itm_target_melee");
 	// spiral
 	wld_inspect_melee(user, inspect);
 }
 bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
-	dmlog("itm_can_use_melee");
 	struct wld_mob *target = wld_getmobat_index(user->map, cursor_tile->map_index);
 	if (target != NULL && ai_can_melee(user, target))
 		return true;
@@ -809,11 +814,16 @@ bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_t
 }
 void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
-	dmlog("itm_use_melee");
-	// TODO make this do a melee attack with the item's damage etc
+	// Using a standard melee item just fires on the targeted tile without any calculation
+	struct wld_itemtype *it = wld_get_itemtype(weapon->type);
 	struct wld_mob *target = wld_getmobat_index(user->map, cursor_tile->map_index);
-
-	// determine melee damage from weapon (or unarmed?)
+	if (target != NULL)
+		it->fn_hit(weapon, user, cursor_tile);
+}
+void itm_hit_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* tile)
+{
+	// TODO make this do a melee attack with the item's damage etc
+	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
 	struct wld_itemtype *it = wld_get_itemtype(weapon->type);
 	double chance = rpg_calc_melee_coh(user, target);
 	if (dm_randf() < chance) {
@@ -825,9 +835,9 @@ void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_til
 	}
 }
 
+// RANGED LOS
 void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
 {
-	dmlog("itm_target_ranged_los");
 	// highlight a line from player to cursor, if something blocks the path then kill the line
 	int start_x = user->map->player->map_x;
 	int start_y = user->map->player->map_y;
@@ -844,6 +854,51 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 		inspect(x, y);
 	}
 	dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
+}
+// I can fire a ranged los weapon at any position I want
+// the projectile should "hit" any mob or blocked wall in between
+// valid positions are the same as targeting los
+bool itm_can_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
+{
+	// given that we will allow them to target any tile that is visible without regard for
+	// blocked obstacles or mobs in between
+	return cursor_tile->is_visible;
+}
+void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
+{
+	// draw a bresenham line if I run into a living mob, then hit it
+	int start_x = user->map->player->map_x;
+	int start_y = user->map->player->map_y;
+	int end_x = cursor_tile->map_x;
+	int end_y = cursor_tile->map_y;
+	bool is_blocked(int x, int y) {
+		// check and make sure we do not shoot ourself
+		if (x == start_x && y == start_y)
+			return false;
+
+		struct wld_mob *mob = wld_getmobat(user->map, x, y);
+		if (mob != NULL && !mob->is_dead) {
+			struct wld_itemtype *it = wld_get_itemtype(item->type);
+			it->fn_hit(item, user, wld_gettileat(user->map, x, y));
+			return true; // stop inspection
+		}
+		return false;
+	}
+	dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, NULL);
+}
+void itm_hit_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
+{
+	// when this standard ranged attack hits its first target it will do ranged weapon damage
+	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
+	struct wld_itemtype *it = wld_get_itemtype(item->type);
+	double chance = rpg_calc_ranged_coh(user, target);
+	if (dm_randf() < chance) {
+		int dmg = rpg_calc_ranged_dmg(user, target);
+		ai_mob_attack_mob(user, target, dmg, item);
+	} else {
+		// whiff event
+		ai_mob_whiff_mob(user, target, item);
+	}
 }
 
 
@@ -1209,13 +1264,13 @@ void wld_setup()
 	}
 
 	// copy item types into malloc
-	struct wld_itemtype its [] = {																	/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
-		{ ITEM_VOID,			' ', CLX_BLACK,		false, false, "", "", NULL, NULL, NULL, ""},
-		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	false, false, "a potion of minor healing", "minor healing potion", NULL, NULL, NULL,		"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
-	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	true, false, "a shortsword", "shortsword", itm_target_melee, itm_can_use_melee, itm_use_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
-		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	true, false, "a shortbow", "shortbow", itm_target_ranged_los, NULL, NULL,			"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
-		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL, NULL,			"Runic art covers the parchment surface showing a",		"large swathe of fire." },
-		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	false, true, "a set of leather armor", "leather armor", NULL, NULL, NULL,			"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
+	struct wld_itemtype its [] = {																			/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
+		{ ITEM_VOID,			' ', CLX_BLACK,		false, false, "", "", NULL, NULL, NULL, NULL, "", ""},
+		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	false, false, "a potion of minor healing", "minor healing potion", NULL, NULL, NULL, NULL,			"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
+		{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	true, false, "a shortsword", "shortsword", itm_target_melee, itm_can_use_melee, itm_use_melee, itm_hit_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
+		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	true, false, "a shortbow", "shortbow", itm_target_ranged_los, itm_can_use_ranged_los, itm_use_ranged_los, itm_hit_ranged_los,					"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
+		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL, NULL, NULL,				"Runic art covers the parchment surface showing a",		"large swathe of fire." },
+		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	false, true, "a set of leather armor", "leather armor", NULL, NULL, NULL, NULL,					"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
 	};
 	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));
 	for (int i=0; i<ARRAY_SIZE(its); i++) {
@@ -1227,8 +1282,9 @@ void wld_setup()
 		wld_itemtypes[i].short_desc = its[i].short_desc;
 		wld_itemtypes[i].title = its[i].title;
 		wld_itemtypes[i].fn_target = its[i].fn_target;
-		wld_itemtypes[i].can_use = its[i].can_use;
-		wld_itemtypes[i].use = its[i].use;
+		wld_itemtypes[i].fn_can_use = its[i].fn_can_use;
+		wld_itemtypes[i].fn_use = its[i].fn_use;
+		wld_itemtypes[i].fn_hit = its[i].fn_hit;
 		wld_itemtypes[i].use_text_1 = its[i].use_text_1;
 		wld_itemtypes[i].use_text_2 = its[i].use_text_2;
 	}

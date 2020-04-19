@@ -123,8 +123,9 @@ struct wld_itemtype {
 	char *short_desc;
 	char *title;
 	void (*fn_target)(struct wld_item*, struct wld_mob*, void (*inspect)(int,int));
-	bool (*can_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
-	void (*use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
+	bool (*fn_can_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
+	void (*fn_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
+	void (*fn_hit)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	char *use_text_1;
 	char *use_text_2;
 };
@@ -220,7 +221,9 @@ void wld_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 ///////////////////////////
 // RPG CALCULATIONS
 int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender);
+int rpg_calc_ranged_dmg(struct wld_mob *aggressor, struct wld_mob *defender);
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender);
+double rpg_calc_ranged_coh(struct wld_mob *aggressor, struct wld_mob *defender);
 
 
 ///////////////////////////

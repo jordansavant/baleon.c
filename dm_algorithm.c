@@ -151,7 +151,7 @@ bool dm_spiralnext(struct dm_spiral *s)
 // http://roguebasin.roguelikedevelopment.org/index.php?title=Bresenham%27s_Line_Algorithm - Rogue Code
 void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), void (*on_visible)(int, int))
 {
-    if (is_blocked(x1, y1))
+    if (is_blocked != NULL && is_blocked(x1, y1))
 	    return;
 
     int delta_x = x2 - x1;
@@ -164,7 +164,8 @@ void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), 
     signed char const iy = (delta_y > 0) - (delta_y < 0);
     delta_y = abs(delta_y) << 1;
 
-    on_visible(x1, y1);
+    if (on_visible != NULL)
+	    on_visible(x1, y1);
 
     if (delta_x >= delta_y) {
         // error may go below zero
@@ -179,10 +180,11 @@ void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), 
             error += delta_y;
             x1 += ix;
 
-	    if (is_blocked(x1, y1))
+	    if (is_blocked != NULL && is_blocked(x1, y1))
 		    return;
 
-	    on_visible(x1, y1);
+	    if (on_visible != NULL)
+		    on_visible(x1, y1);
         }
     } else {
         // error may go below zero
@@ -197,10 +199,11 @@ void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), 
             error += delta_x;
             y1 += iy;
 
-	    if (is_blocked(x1, y1))
+	    if (is_blocked != NULL && is_blocked(x1, y1))
 		    return;
 
-	    on_visible(x1, y1);
+	    if (on_visible != NULL)
+		    on_visible(x1, y1);
         }
     }
 }
