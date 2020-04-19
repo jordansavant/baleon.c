@@ -948,7 +948,7 @@ void ai_player_input(struct wld_mob* player)
 						break;
 					case KEY_y:
 						// escape targeting mode
-						ai_player_sheath_weapon(player);
+						if (ai_player_sheath_weapon(player))
 						ui_loginfo("You sheath your weapon.");
 						listen = false;
 						break;

@@ -464,6 +464,18 @@ bool wld_mob_unequip(struct wld_mob* mob, int itemslot)
 	}
 	return false;
 }
+void wld_inspect_melee(struct wld_mob* mob, void (*inspect)(int,int))
+{
+	struct dm_spiral sp = dm_spiral(1);
+	while (dm_spiralnext(&sp)) {
+		int spx = mob->map_x + sp.x;
+		int spy = mob->map_y + sp.y;
+		struct wld_tile *t = wld_gettileat(mob->map, spx, spy);
+		if (t->is_visible) {
+			inspect(spx, spy);
+		}
+	}
+}
 void wld_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 {
 	// if we have an item we are using, target with it
@@ -475,42 +487,43 @@ void wld_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 	}
 
 	// else target as melee
+	wld_inspect_melee(mob, inspect);
 	// TODO
 
 	return;
-	switch (mob->target_mode) {
-	case TARGET_MELEE: {
-			struct dm_spiral sp = dm_spiral(1);
-			while (dm_spiralnext(&sp)) {
-				int spx = mob->map_x + sp.x;
-				int spy = mob->map_y + sp.y;
-				struct wld_tile *t = wld_gettileat(mob->map, spx, spy);
-				if (t->is_visible) {
-					inspect(spx, spy);
-				}
-			}
-		}
-		break;
-	case TARGET_RANGED_LOS: {
-			// highlight a line from player to cursor, if something blocks the path then kill the line
-			int start_x = mob->map->player->map_x;
-			int start_y = mob->map->player->map_y;
-			int end_x = mob->map->cursor->x;
-			int end_y = mob->map->cursor->y;
-			bool is_blocked(int x, int y) {
-				struct wld_tile *t = wld_gettileat(mob->map, x, y);
-				struct wld_tiletype *tt = wld_get_tiletype(t->type);
-				return tt->is_block || !t->is_visible;
-			}
-			void on_visible(int x, int y) {
-				if (x == start_x && y == start_y)
-					return;
-				inspect(x, y);
-			}
-			dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
-		}
-		break;
-	}
+	//switch (mob->target_mode) {
+	//case TARGET_MELEE: {
+	//		struct dm_spiral sp = dm_spiral(1);
+	//		while (dm_spiralnext(&sp)) {
+	//			int spx = mob->map_x + sp.x;
+	//			int spy = mob->map_y + sp.y;
+	//			struct wld_tile *t = wld_gettileat(mob->map, spx, spy);
+	//			if (t->is_visible) {
+	//				inspect(spx, spy);
+	//			}
+	//		}
+	//	}
+	//	break;
+	//case TARGET_RANGED_LOS: {
+	//		// highlight a line from player to cursor, if something blocks the path then kill the line
+	//		int start_x = mob->map->player->map_x;
+	//		int start_y = mob->map->player->map_y;
+	//		int end_x = mob->map->cursor->x;
+	//		int end_y = mob->map->cursor->y;
+	//		bool is_blocked(int x, int y) {
+	//			struct wld_tile *t = wld_gettileat(mob->map, x, y);
+	//			struct wld_tiletype *tt = wld_get_tiletype(t->type);
+	//			return tt->is_block || !t->is_visible;
+	//		}
+	//		void on_visible(int x, int y) {
+	//			if (x == start_x && y == start_y)
+	//				return;
+	//			inspect(x, y);
+	//		}
+	//		dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
+	//	}
+	//	break;
+	//}
 }
 
 
@@ -661,15 +674,12 @@ bool ai_player_trigger_target(struct wld_mob* player)
 		return ai_player_use_active_item(player);
 
 	// else do a fist attack
-
-	// do a fist attack
-	if (player->target_mode == TARGET_MELEE) {
-		struct wld_mob *target = wld_getmobat_index(player->map, player->cursor_target_index);
-		if (target != NULL && ai_can_melee(player, target)) {
-			ai_mob_melee_mob(player, target);
-			return true;
-		}
+	struct wld_mob *target = wld_getmobat_index(player->map, player->cursor_target_index);
+	if (target != NULL && ai_can_melee(player, target)) {
+		ai_mob_melee_mob(player, target);
+		return true;
 	}
+
 	return false;
 }
 bool ai_player_draw_weapon(struct wld_mob* player)
@@ -677,13 +687,11 @@ bool ai_player_draw_weapon(struct wld_mob* player)
 	struct wld_item *weapon = wld_get_item_in_slot(player, 0);
 	if (weapon) {
 		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
-		player->target_mode = it->target_type;
 		player->target_mode2 = TMODE_ACTIVE;
 		player->active_item = weapon;
 		return true;
 	}
 	// unarmed
-	player->target_mode = TARGET_MELEE;
 	player->target_mode2 = TMODE_ACTIVE;
 	player->active_item = NULL;
 	return false;
@@ -700,7 +708,6 @@ bool ai_player_leave_targeting(struct wld_mob* player)
 bool ai_player_sheath_weapon(struct wld_mob* player)
 {
 	// unarmed
-	player->target_mode = TARGET_MELEE;
 	player->target_mode2 = TMODE_NONE;
 	player->active_item = NULL;
 	return true;
@@ -823,15 +830,7 @@ void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect
 {
 	dmlog("itm_target_melee");
 	// spiral
-	struct dm_spiral sp = dm_spiral(1);
-	while (dm_spiralnext(&sp)) {
-		int spx = user->map_x + sp.x;
-		int spy = user->map_y + sp.y;
-		struct wld_tile *t = wld_gettileat(user->map, spx, spy);
-		if (t->is_visible) {
-			inspect(spx, spy);
-		}
-	}
+	wld_inspect_melee(user, inspect);
 }
 bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
@@ -1005,7 +1004,6 @@ void wld_genmobs(struct wld_map *map)
 		mob->ai_player_input = NULL;
 		mob->cursor_target_index = -1;
 		mob->mode = MODE_PLAY;
-		mob->target_mode = TARGET_NONE;
 		mob->target_mode2 = TMODE_NONE;
 		mob->is_dead = false;
 		mob->target_x = 0;

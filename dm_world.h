@@ -103,7 +103,6 @@ struct wld_mob {
 	bool is_player, is_dead;
 	int cursor_target_index; // map index
 	enum MODE mode;
-	enum WLD_TARGETTYPE target_mode;
 	enum TARGET_MODE target_mode2;
 	struct wld_item **inventory;
 	int target_x, target_y;
@@ -225,6 +224,7 @@ bool wld_pickup_item(struct wld_mob*, struct wld_item*);
 bool wld_mob_equip(struct wld_mob*, int);
 bool wld_mob_unequip(struct wld_mob*, int);
 bool wld_mob_drop_item(struct wld_mob*, int);
+void wld_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 
 
@@ -247,6 +247,7 @@ bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile
 bool ai_player_use_active_item(struct wld_mob* player);
 bool ai_player_trigger_target(struct wld_mob* player);
 bool ai_player_draw_weapon(struct wld_mob* player);
+bool ai_player_leave_targeting(struct wld_mob* player);
 bool ai_player_sheath_weapon(struct wld_mob* player);
 bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
 bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
