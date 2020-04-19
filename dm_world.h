@@ -61,6 +61,8 @@ enum MODE {
 };
 enum TARGET_MODE {
 	TMODE_NONE,
+	TMODE_ACTIVE,
+
 	TMODE_SELF,
 	TMODE_MELEE,
 	TMODE_RANGED_LOS,
@@ -102,6 +104,7 @@ struct wld_mob {
 	int cursor_target_index; // map index
 	enum MODE mode;
 	enum WLD_TARGETTYPE target_mode;
+	enum TARGET_MODE target_mode2;
 	struct wld_item **inventory;
 	int target_x, target_y;
 	struct wld_item *active_item;
@@ -131,6 +134,7 @@ struct wld_itemtype {
 	bool is_weq, is_aeq;
 	char *short_desc;
 	char *title;
+	void (*fn_target)(struct wld_item*, struct wld_mob*, void (*inspect)(int,int));
 	bool (*can_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	char *use_text_1;

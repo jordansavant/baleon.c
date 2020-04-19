@@ -847,9 +847,9 @@ void ai_player_input(struct wld_mob* player)
 		switch (player->mode) {
 			// while in play mode listen to targeting method commands if active
 			case MODE_PLAY:
-				switch (player->target_mode) {
+				switch (player->target_mode2) {
 				// If not in a targeting mode then listen for interaction inputs
-				case TARGET_NONE:
+				case TMODE_NONE:
 					switch (key) {
 					// Player movement
 					case KEY_BACKSPACE:
@@ -906,16 +906,18 @@ void ai_player_input(struct wld_mob* player)
 					case KEY_y:
 						// enter targeting mode for active weapon
 						if (ai_player_draw_weapon(player)) {
+							// trigger targeting mode
+							ui_loginfo("Entering target mode");
 							ui_loginfo("You draw your weapon.");
-							switch (player->target_mode) {
-								//case TARGET_PASSIVE: ui_modeinfo("passive"); break; // not a thing for weapons
-								//case TARGET_SELF: ui_modeinfo("self"); break; // not a thing for weapons
-								case TARGET_MELEE: ui_modeinfo("melee"); break;
-								case TARGET_RANGED_LOS: ui_modeinfo("ranged los"); break;
-								case TARGET_RANGED_LOS_AOE: ui_modeinfo("los aoe"); break;
-								case TARGET_RANGED_TEL: ui_modeinfo("ranged instant"); break;
-								case TARGET_RANGED_TEL_AOE: ui_modeinfo("tele aoe"); break;
-							}
+							//switch (player->target_mode) {
+							//	//case TARGET_PASSIVE: ui_modeinfo("passive"); break; // not a thing for weapons
+							//	//case TARGET_SELF: ui_modeinfo("self"); break; // not a thing for weapons
+							//	case TARGET_MELEE: ui_modeinfo("melee"); break;
+							//	case TARGET_RANGED_LOS: ui_modeinfo("ranged los"); break;
+							//	case TARGET_RANGED_LOS_AOE: ui_modeinfo("los aoe"); break;
+							//	case TARGET_RANGED_TEL: ui_modeinfo("ranged instant"); break;
+							//	case TARGET_RANGED_TEL_AOE: ui_modeinfo("tele aoe"); break;
+							//}
 						} else {
 							ui_loginfo("You are unequipped and grasp at nothing.");
 						}
@@ -929,8 +931,8 @@ void ai_player_input(struct wld_mob* player)
 						break;
 					}
 					break;
-				case TARGET_MELEE:
-				case TARGET_RANGED_LOS:
+				case TMODE_ACTIVE:
+					// we are in targeting mode, be it an item, spell or whatever set us into this mode
 					switch (key) {
 					case KEY_SPACE:
 						trigger_world = ai_player_trigger_target(player);
@@ -941,17 +943,39 @@ void ai_player_input(struct wld_mob* player)
 					case KEY_ESC:
 					case KEY_y:
 					case KEY_x:
+						// escape targeting mode
+						ui_loginfo("Leaving target mode");
+						// TODO ai_player_untrigger_target(player) sheath?
 						if (ai_player_sheath_weapon(player)) {
-							ui_loginfo("You sheath your weapon.");
-							ui_modeinfo("");
-							player->target_mode = TARGET_NONE;
-						} else {
-							ui_loginfo("You are unable to sheath your weapon.");
 						}
+						player->target_mode2 = TMODE_NONE;
 						listen = false;
 						break;
 					}
 					break;
+				//case TARGET_MELEE:
+				//case TARGET_RANGED_LOS:
+				//	switch (key) {
+				//	case KEY_SPACE:
+				//		trigger_world = ai_player_trigger_target(player);
+				//		if (!trigger_world)
+				//			ui_loginfo("Unable to attack such a target.");
+				//		listen = false;
+				//		break;
+				//	case KEY_ESC:
+				//	case KEY_y:
+				//	case KEY_x:
+				//		if (ai_player_sheath_weapon(player)) {
+				//			ui_loginfo("You sheath your weapon.");
+				//			ui_modeinfo("");
+				//			player->target_mode = TARGET_NONE;
+				//		} else {
+				//			ui_loginfo("You are unable to sheath your weapon.");
+				//		}
+				//		listen = false;
+				//		break;
+				//	}
+				//	break;
 				} // eo target mode switch
 
 				// always active should we move this to play mode?
@@ -1249,7 +1273,7 @@ void ps_play_draw()
 	}
 
 	// Draw targeting mode
-	if (current_map->player->target_mode != TARGET_NONE) {
+	if (current_map->player->target_mode2 == TMODE_ACTIVE) {
 		// highlight the tiles in melee range of the player
 		int map_x = current_map->player->map_x;
 		int map_y = current_map->player->map_y;

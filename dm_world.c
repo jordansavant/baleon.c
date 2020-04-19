@@ -466,6 +466,18 @@ bool wld_mob_unequip(struct wld_mob* mob, int itemslot)
 }
 void wld_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 {
+	// if we have an item we are using, target with it
+	if (mob->active_item) {
+		struct wld_itemtype *it = wld_get_itemtype(mob->active_item->type);
+		dmlogi("inspect", mob->active_item->type);
+		if (it->fn_target != NULL)
+			it->fn_target(mob->active_item, mob, inspect);
+	}
+
+	// else target as melee
+	// TODO
+
+	return;
 	switch (mob->target_mode) {
 	case TARGET_MELEE: {
 			struct dm_spiral sp = dm_spiral(1);
@@ -648,6 +660,8 @@ bool ai_player_trigger_target(struct wld_mob* player)
 	if (player->active_item != NULL)
 		return ai_player_use_active_item(player);
 
+	// else do a fist attack
+
 	// do a fist attack
 	if (player->target_mode == TARGET_MELEE) {
 		struct wld_mob *target = wld_getmobat_index(player->map, player->cursor_target_index);
@@ -664,11 +678,13 @@ bool ai_player_draw_weapon(struct wld_mob* player)
 	if (weapon) {
 		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
 		player->target_mode = it->target_type;
+		player->target_mode2 = TMODE_ACTIVE;
 		player->active_item = weapon;
 		return true;
 	}
 	// unarmed
 	player->target_mode = TARGET_MELEE;
+	player->target_mode2 = TMODE_ACTIVE;
 	player->active_item = NULL;
 	return false;
 }
@@ -676,6 +692,7 @@ bool ai_player_sheath_weapon(struct wld_mob* player)
 {
 	// unarmed
 	player->target_mode = TARGET_MELEE;
+	player->target_mode2 = TMODE_NONE;
 	player->active_item = NULL;
 	return true;
 }
@@ -793,6 +810,20 @@ ai_rerun:
 
 ///////////////////////////
 // ITEM ACTIONS
+void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
+{
+	dmlog("itm_target_melee");
+	// spiral
+	struct dm_spiral sp = dm_spiral(1);
+	while (dm_spiralnext(&sp)) {
+		int spx = user->map_x + sp.x;
+		int spy = user->map_y + sp.y;
+		struct wld_tile *t = wld_gettileat(user->map, spx, spy);
+		if (t->is_visible) {
+			inspect(spx, spy);
+		}
+	}
+}
 bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
 	dmlog("itm_can_use_melee");
@@ -966,6 +997,7 @@ void wld_genmobs(struct wld_map *map)
 		mob->cursor_target_index = -1;
 		mob->mode = MODE_PLAY;
 		mob->target_mode = TARGET_NONE;
+		mob->target_mode2 = TMODE_NONE;
 		mob->is_dead = false;
 		mob->target_x = 0;
 		mob->target_y = 0;
@@ -1183,13 +1215,13 @@ void wld_setup()
 	}
 
 	// copy item types into malloc
-	struct wld_itemtype its [] = {																	/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
-		{ ITEM_VOID,			' ', CLX_BLACK,		TARGET_PASSIVE, false, false, "", "", NULL, NULL, ""},
-		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	TARGET_SELF, false, false, "a potion of minor healing", "minor healing potion", NULL, NULL,	"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
-	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	TARGET_MELEE, true, false, "a shortsword", "shortsword", itm_can_use_melee, itm_use_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
-		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	TARGET_RANGED_LOS, true, false, "a shortbow", "shortbow", NULL, NULL,				"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
-		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	TARGET_RANGED_LOS_AOE, false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL,	"Runic art covers the parchment surface showing a",		"large swathe of fire." },
-		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	TARGET_PASSIVE, false, true, "a set of leather armor", "leather armor", NULL, NULL,		"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
+	struct wld_itemtype its [] = {																			/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
+		{ ITEM_VOID,			' ', CLX_BLACK,		TARGET_PASSIVE, false, false, "", "", NULL, NULL, NULL, ""},
+		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	TARGET_SELF, false, false, "a potion of minor healing", "minor healing potion", NULL, NULL, NULL,		"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
+	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	TARGET_MELEE, true, false, "a shortsword", "shortsword", itm_target_melee, itm_can_use_melee, itm_use_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
+		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	TARGET_RANGED_LOS, true, false, "a shortbow", "shortbow", NULL, NULL, NULL,					"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
+		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	TARGET_RANGED_LOS_AOE, false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL, NULL,		"Runic art covers the parchment surface showing a",		"large swathe of fire." },
+		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	TARGET_PASSIVE, false, true, "a set of leather armor", "leather armor", NULL, NULL, NULL,			"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
 	};
 	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));
 	for (int i=0; i<ARRAY_SIZE(its); i++) {
@@ -1201,6 +1233,7 @@ void wld_setup()
 		wld_itemtypes[i].is_aeq = its[i].is_aeq;
 		wld_itemtypes[i].short_desc = its[i].short_desc;
 		wld_itemtypes[i].title = its[i].title;
+		wld_itemtypes[i].fn_target = its[i].fn_target;
 		wld_itemtypes[i].can_use = its[i].can_use;
 		wld_itemtypes[i].use = its[i].use;
 		wld_itemtypes[i].use_text_1 = its[i].use_text_1;
