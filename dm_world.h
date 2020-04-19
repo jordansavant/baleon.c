@@ -171,6 +171,8 @@ struct wld_map {
 	void (*on_player_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def);
 	void (*on_player_pickup_item)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
 	void (*on_player_pickup_item_fail)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
+	void (*on_player_drop_item)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
+	void (*on_player_drop_item_fail)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
 };
 struct draw_struct {
 	int colorpair;

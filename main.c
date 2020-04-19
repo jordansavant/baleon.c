@@ -766,6 +766,15 @@ void map_on_player_pickup_item_fail(struct wld_map *map, struct wld_mob* player,
 {
 	ui_loginfo("Inventory is full.");
 }
+void map_on_player_drop_item(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
+{
+	struct wld_itemtype *it = wld_get_itemtype(item->type);
+	ui_loginfo_s("You dropped %s to the floor.", it->short_desc);
+}
+void map_on_player_drop_item_fail(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
+{
+	ui_loginfo("Unable to drop; floor is occupied by another item.");
+}
 // this runs in the player update loop and should take an input that triggers world updates
 void ai_player_input(struct wld_mob* player)
 {
@@ -948,6 +957,7 @@ void ai_player_input(struct wld_mob* player)
 					if (use_item_slot == 0 || use_item_slot == 1) {
 						if (!wld_mob_unequip(player, use_item_slot))
 							// switch to new slot?
+							// TODO make callback events?
 							ui_loginfo("Cannot unequip; inventory is full.");
 					} else {
 						if (wld_mob_equip(player, use_item_slot))
@@ -959,14 +969,12 @@ void ai_player_input(struct wld_mob* player)
 					listen = false;
 					break;
 				case KEY_d:
-					dmlog("drop item");
 					if (wld_mob_drop_item(player, use_item_slot)) {
-						ui_loginfo("Item dropped to floor.");
 						ui_unset_use();
 						ui_clear_win(usepanel);
-						player->mode = MODE_INVENTORY;
-					} else
-						ui_loginfo("Unable to drop item on a cluttered floor.");
+						ui_clear_win(inventorypanel);
+						player->mode = MODE_PLAY;
+					}
 					listen = false;
 					break;
 				}
@@ -997,6 +1005,8 @@ void ps_build_world()
 	current_map->on_player_kill_mob = map_on_player_kill_mob;
 	current_map->on_player_pickup_item = map_on_player_pickup_item;
 	current_map->on_player_pickup_item_fail = map_on_player_pickup_item_fail;
+	current_map->on_player_drop_item = map_on_player_drop_item;
+	current_map->on_player_drop_item_fail = map_on_player_drop_item_fail;
 }
 void ps_destroy_world()
 {

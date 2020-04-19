@@ -390,10 +390,14 @@ bool wld_pickup_item(struct wld_mob *m, struct wld_item *i)
 
 		if (m->is_player && m->map->on_player_pickup_item)
 			m->map->on_player_pickup_item(m->map, m, i);
-	} else {
-		if (m->is_player && m->map->on_player_pickup_item_fail)
-			m->map->on_player_pickup_item_fail(m->map, m, i);
+
+		return true;
 	}
+
+	if (m->is_player && m->map->on_player_pickup_item_fail)
+		m->map->on_player_pickup_item_fail(m->map, m, i);
+
+	return false;
 }
 bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
 {
@@ -405,8 +409,16 @@ bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
 
 		// remove from inventory
 		mob->inventory[itemslot] = NULL;
+
+		if (mob->is_player && mob->map->on_player_pickup_item)
+			mob->map->on_player_drop_item(mob->map, mob, item);
+
 		return true;
 	}
+
+	if (mob->is_player && mob->map->on_player_pickup_item)
+		mob->map->on_player_drop_item_fail(mob->map, mob, item);
+
 	return false;
 }
 void wld_swap_item(struct wld_mob* mob, int slot_a, int slot_b)
@@ -924,6 +936,8 @@ struct wld_map* wld_newmap(int depth)
 	map->on_player_kill_mob = NULL;
 	map->on_player_pickup_item = NULL;
 	map->on_player_pickup_item_fail = NULL;
+	map->on_player_drop_item = NULL;
+	map->on_player_drop_item_fail = NULL;
 
 	// populate tiles
 	wld_gentiles(map);
