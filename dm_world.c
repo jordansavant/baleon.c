@@ -585,7 +585,7 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 	// whiff event
 	ai_mob_whiff_mob(aggressor, defender, weapon);
 }
-bool ai_player_attack_melee(struct wld_mob* player)
+bool ai_player_attack_target_melee(struct wld_mob* player)
 {
 	struct wld_tile *tile = wld_gettileat_index(player->map, player->cursor_target);
 	if (tile->is_visible) {
@@ -596,6 +596,31 @@ bool ai_player_attack_melee(struct wld_mob* player)
 			return true;
 		}
 	}
+	return false;
+}
+bool ai_player_attack_target_ranged_los(struct wld_mob* player)
+{
+	struct wld_tile *tile = wld_gettileat_index(player->map, player->cursor_target);
+	if (tile->is_visible) {
+		struct wld_mob *target = wld_getmobat_index(player->map, player->cursor_target);
+		// make sure its another valid mob
+		if (target != NULL) {// && ai_can_melee(player, target)) {
+			//ai_mob_melee_mob(player, target);
+			return true;
+		}
+	}
+	return false;
+}
+bool ai_player_draw_weapon(struct wld_mob* player)
+{
+	struct wld_item *weapon = wld_get_item_in_slot(player, 0);
+	if (weapon) {
+		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
+		player->target_mode = it->target_type;
+		return true;
+	}
+	// unarmed
+	player->target_mode = TARGET_MELEE;
 	return false;
 }
 bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely)
@@ -874,7 +899,7 @@ void wld_genmobs(struct wld_map *map)
 		mob->ai_player_input = NULL;
 		mob->cursor_target = -1;
 		mob->mode = MODE_PLAY;
-		mob->target_mode = TMODE_NONE;
+		mob->target_mode = TARGET_NONE;
 		mob->is_dead = false;
 
 		// create inventory (pointers to malloc items)

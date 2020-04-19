@@ -2,6 +2,7 @@
 #include "dm_defines.h"
 #include "mt_rand.h"
 #include "dm_algorithm.h"
+#include "dm_debug.h"
 
 
 ///////////////////////////
@@ -88,6 +89,59 @@ void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (
 	for (int i = 0; i < 8; i++) {
 		dm_shadowcast_r(x, y, xmax, ymax, radius, is_blocked, on_visible, i, 1, 1.0, 0.0, shadow_multiples[0][i], shadow_multiples[1][i], shadow_multiples[2][i], shadow_multiples[3][i]);
 	}
+}
+
+
+
+///////////////////////////
+// SPIRAL
+struct dm_spiral dm_spiral(int maxlayers)
+{
+	struct dm_spiral s = {
+		0, 0, 0, 1, maxlayers
+	};
+	return s;
+}
+// this process steps right, down, left, up (and then right again)
+// to form a spiral to the layer specified
+// "leg" is what direction it is going
+// it follows its leg until it hits the next layer edge
+// "layer" is how expanded the legs will run
+bool dm_spiralnext(struct dm_spiral *s)
+{
+	switch (s->leg) {
+	// Step right
+	case 0:
+		++s->x;
+		// since stepping right finishes a layers circle we break if it has finished
+		if (s->x > s->maxlayers)
+			return false;
+		if (s->x == s->layer)
+			++s->leg;
+		break;
+	// Step down
+	case 1:
+		++s->y;
+		if (s->y == s->layer)
+			++s->leg;
+		break;
+	// Step left
+	case 2:
+		--s->x;
+		if (-s->x == s->layer)
+			++s->leg;
+		break;
+	// Step up
+	case 3:
+		--s->y;
+		if (-s->y == s->layer) {
+			s->leg = 0;
+			++s->layer;
+		}
+		break;
+	}
+
+	return true;
 }
 
 

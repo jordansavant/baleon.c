@@ -22,6 +22,7 @@
 #define TCOLOR_PURPLE   9
 #define SCOLOR_BLOOD    10
 #define SCOLOR_ALLBLACK 11
+#define SCOLOR_TARGET   12
 
 #define KEY_RETURN	10
 #define KEY_ESC		27
@@ -143,6 +144,7 @@ bool g_setup()
 	init_pair(SCOLOR_NORMAL,	COLOR_WHITE,	COLOR_BLACK);
 	init_pair(SCOLOR_ALLWHITE,	COLOR_WHITE,	COLOR_WHITE);
 	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_MAGENTA);
+	init_pair(SCOLOR_TARGET,	COLOR_BLACK,	COLOR_RED);
 	init_pair(SCOLOR_BLOOD,		COLOR_BLACK,	COLOR_RED);
 	init_pair(SCOLOR_ALLBLACK,	COLOR_BLACK,	COLOR_BLACK);
 
@@ -754,7 +756,6 @@ void ui_use_item_select(struct wld_mob* player, int item_slot)
 	if (item != NULL) {
 		ui_set_use_item(item, item_slot);
 		player->mode = MODE_USE;
-		dmlog("inv > use");
 	}
 }
 
@@ -848,7 +849,7 @@ void ai_player_input(struct wld_mob* player)
 			case MODE_PLAY:
 				switch (player->target_mode) {
 				// If not in a targeting mode then listen for interaction inputs
-				case TMODE_NONE:
+				case TARGET_NONE:
 					switch (key) {
 					// Player movement
 					case KEY_BACKSPACE:
@@ -904,31 +905,60 @@ void ai_player_input(struct wld_mob* player)
 					// Player attack
 					case KEY_y:
 						// enter targeting mode for active weapon
-						// TODO this is hardcoded to melee but needs to use equipped weapon's activation target
-						player->target_mode = TMODE_MELEE;
-						ui_loginfo("You draw your weapon for melee, range of 1.");
-						ui_modeinfo("melee range 1");
+						if (ai_player_draw_weapon(player)) {
+							ui_loginfo("You draw your weapon.");
+							switch (player->target_mode) {
+								//case TARGET_PASSIVE: ui_modeinfo("passive"); break; // not a thing for weapons
+								//case TARGET_SELF: ui_modeinfo("self"); break; // not a thing for weapons
+								case TARGET_MELEE: ui_modeinfo("melee"); break;
+								case TARGET_RANGED_LOS: ui_modeinfo("ranged los"); break;
+								case TARGET_RANGED_LOS_AOE: ui_modeinfo("los aoe"); break;
+								case TARGET_RANGED_TEL: ui_modeinfo("ranged instant"); break;
+								case TARGET_RANGED_TEL_AOE: ui_modeinfo("tele aoe"); break;
+							}
+						} else {
+							ui_loginfo("You are unequipped and grasp at nothing.");
+						}
 						listen = false;
 						break;
 					case KEY_i:
 						// enter inventory management mode
 						player->mode = MODE_INVENTORY;
 						ui_clear_win(mobpanel);
-						dmlog("play > inventory");
 						listen = false;
 						break;
 					}
 					break;
-				case TMODE_MELEE:
+				case TARGET_MELEE:
 					switch (key) {
 					case KEY_SPACE:
-						trigger_world = ai_player_attack_melee(player);
+						trigger_world = ai_player_attack_target_melee(player);
+						if (!trigger_world)
+							ui_loginfo("Unable to attack such a target.");
 						listen = false;
 						break;
 					case KEY_ESC:
 					case KEY_y:
 					case KEY_x:
-						player->target_mode = TMODE_NONE;
+						player->target_mode = TARGET_NONE;
+						ui_loginfo("You sheath your weapon.");
+						ui_modeinfo("");
+						listen = false;
+						break;
+					}
+					break;
+				case TARGET_RANGED_LOS:
+					switch (key) {
+					case KEY_SPACE:
+						trigger_world = ai_player_attack_target_ranged_los(player);
+						if (!trigger_world)
+							ui_loginfo("Unable to attack such a target.");
+						listen = false;
+						break;
+					case KEY_ESC:
+					case KEY_y:
+					case KEY_x:
+						player->target_mode = TARGET_NONE;
 						ui_loginfo("You sheath your weapon.");
 						ui_modeinfo("");
 						listen = false;
@@ -940,18 +970,22 @@ void ai_player_input(struct wld_mob* player)
 				// always active should we move this to play mode?
 				switch (key) {
 				// Cursor movement
+				case KEY_UP:
 				case KEY_8: // up
 					wld_movecursor(current_map, 0, -1);
 					listen = false;
 					break;
+				case KEY_DOWN:
 				case KEY_2: // down
 					wld_movecursor(current_map, 0, 1);
 					listen = false;
 					break;
+				case KEY_LEFT:
 				case KEY_4: // left
 					wld_movecursor(current_map, -1, 0);
 					listen = false;
 					break;
+				case KEY_RIGHT:
 				case KEY_6: // right
 					wld_movecursor(current_map, 1, 0);
 					listen = false;
@@ -1012,7 +1046,6 @@ void ai_player_input(struct wld_mob* player)
 					listen = false;
 					break;
 				case KEY_e:
-					dmlogi("(un)equip", use_item_slot);
 					if (use_item_slot == 0 || use_item_slot == 1) {
 						if (!wld_mob_unequip(player, use_item_slot))
 							// switch to new slot?
@@ -1225,6 +1258,29 @@ void ps_play_draw()
 
 				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
 			}
+		}
+	}
+
+	// Draw targeting mode
+	switch (current_map->player->target_mode) {
+	case TARGET_MELEE: {
+			// highlight the tiles in melee range of the player
+			int map_x = current_map->player->map_x;
+			int map_y = current_map->player->map_y;
+			struct dm_spiral sp = dm_spiral(1);
+			while (dm_spiralnext(&sp)) {
+				int spx = map_x + sp.x;
+				int spy = map_y + sp.y;
+
+				struct wld_tile *t = wld_gettileat(current_map, spx, spy);
+				struct wld_tiletype *tt = wld_get_tiletype(t->type);
+				if (t->is_visible) {
+					struct draw_struct ds = wld_get_drawstruct(current_map, spx, spy);
+					ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
+				}
+			}
+
+			break;
 		}
 	}
 

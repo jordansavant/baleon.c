@@ -68,6 +68,16 @@ enum TARGET_MODE {
 	TMODE_RANGED_LOS_AOE,
 	TMODE_RANGED_TEL_AOE,
 };
+enum WLD_TARGETTYPE {
+	TARGET_NONE,
+	TARGET_PASSIVE,
+	TARGET_SELF,
+	TARGET_MELEE,
+	TARGET_RANGED_LOS,
+	TARGET_RANGED_TEL,
+	TARGET_RANGED_LOS_AOE,
+	TARGET_RANGED_TEL_AOE,
+};
 struct wld_mobtype {
 	int type;
 	unsigned long sprite;
@@ -91,7 +101,7 @@ struct wld_mob {
 	bool is_player, is_dead;
 	int cursor_target; // map index
 	enum MODE mode;
-	enum TARGET_MODE target_mode;
+	enum WLD_TARGETTYPE target_mode;
 	struct wld_item **inventory;
 };
 
@@ -105,15 +115,6 @@ enum WLD_ITEMTYPE {
 	ITEM_WEAPON_SHORTBOW,
 	ITEM_SCROLL_FIREBOMB,
 	ITEM_ARMOR_LEATHER,
-};
-enum WLD_TARGETTYPE {
-	TARGET_PASSIVE,
-	TARGET_SELF,
-	TARGET_MELEE,
-	TARGET_RANGED_LOS,
-	TARGET_RANGED_TEL,
-	TARGET_RANGED_LOS_AOE,
-	TARGET_RANGED_TEL_AOE,
 };
 struct wld_item {
 	int id;
@@ -235,7 +236,9 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item* item);
 bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
-bool ai_player_attack_melee(struct wld_mob* player);
+bool ai_player_attack_target_melee(struct wld_mob* player);
+bool ai_player_attack_target_ranged_los(struct wld_mob* player);
+bool ai_player_draw_weapon(struct wld_mob* player);
 bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
 bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
 bool ai_rest(struct wld_mob *mob);

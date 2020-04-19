@@ -9,6 +9,15 @@ void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (
 void dm_shadowcast_r(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double), int octant, int row, double start_slope, double end_slope, int xx, int xy, int yx, int yy);
 
 ///////////////////////////
+// SPIRAL
+struct dm_spiral {
+	int x, y;
+	int leg, layer, maxlayers;
+};
+struct dm_spiral dm_spiral(int maxlayers);
+bool dm_spiralnext(struct dm_spiral*);
+
+///////////////////////////
 // RANDOM NUMBER GOD
 void dm_seed(unsigned long seed);
 double dm_randf();
