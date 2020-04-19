@@ -482,48 +482,15 @@ void wld_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 	if (mob->active_item) {
 		struct wld_itemtype *it = wld_get_itemtype(mob->active_item->type);
 		dmlogi("inspect", mob->active_item->type);
-		if (it->fn_target != NULL)
+		if (it->fn_target != NULL) {
 			it->fn_target(mob->active_item, mob, inspect);
+			return;
+		}
+
 	}
 
 	// else target as melee
 	wld_inspect_melee(mob, inspect);
-	// TODO
-
-	return;
-	//switch (mob->target_mode) {
-	//case TARGET_MELEE: {
-	//		struct dm_spiral sp = dm_spiral(1);
-	//		while (dm_spiralnext(&sp)) {
-	//			int spx = mob->map_x + sp.x;
-	//			int spy = mob->map_y + sp.y;
-	//			struct wld_tile *t = wld_gettileat(mob->map, spx, spy);
-	//			if (t->is_visible) {
-	//				inspect(spx, spy);
-	//			}
-	//		}
-	//	}
-	//	break;
-	//case TARGET_RANGED_LOS: {
-	//		// highlight a line from player to cursor, if something blocks the path then kill the line
-	//		int start_x = mob->map->player->map_x;
-	//		int start_y = mob->map->player->map_y;
-	//		int end_x = mob->map->cursor->x;
-	//		int end_y = mob->map->cursor->y;
-	//		bool is_blocked(int x, int y) {
-	//			struct wld_tile *t = wld_gettileat(mob->map, x, y);
-	//			struct wld_tiletype *tt = wld_get_tiletype(t->type);
-	//			return tt->is_block || !t->is_visible;
-	//		}
-	//		void on_visible(int x, int y) {
-	//			if (x == start_x && y == start_y)
-	//				return;
-	//			inspect(x, y);
-	//		}
-	//		dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
-	//	}
-	//	break;
-	//}
 }
 
 
@@ -627,7 +594,7 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 	if (weapon != NULL) {
 		struct wld_tile *tile = wld_gettileat_index(defender->map, defender->map_index);
 		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
-		if (it->target_type == TARGET_MELEE && it->can_use(weapon, aggressor, tile)) {
+		if (it->can_use(weapon, aggressor, tile)) {
 			it->use(weapon, aggressor, tile);
 			return;
 		}
@@ -858,6 +825,26 @@ void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_til
 	}
 }
 
+void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
+{
+	dmlog("itm_target_ranged_los");
+	// highlight a line from player to cursor, if something blocks the path then kill the line
+	int start_x = user->map->player->map_x;
+	int start_y = user->map->player->map_y;
+	int end_x = user->map->cursor->x;
+	int end_y = user->map->cursor->y;
+	bool is_blocked(int x, int y) {
+		struct wld_tile *t = wld_gettileat(user->map, x, y);
+		struct wld_tiletype *tt = wld_get_tiletype(t->type);
+		return tt->is_block || !t->is_visible;
+	}
+	void on_visible(int x, int y) {
+		if (x == start_x && y == start_y) // ignore origin position
+			return;
+		inspect(x, y);
+	}
+	dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
+}
 
 
 ///////////////////////////
@@ -1226,7 +1213,7 @@ void wld_setup()
 		{ ITEM_VOID,			' ', CLX_BLACK,		TARGET_PASSIVE, false, false, "", "", NULL, NULL, NULL, ""},
 		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	TARGET_SELF, false, false, "a potion of minor healing", "minor healing potion", NULL, NULL, NULL,		"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
 	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	TARGET_MELEE, true, false, "a shortsword", "shortsword", itm_target_melee, itm_can_use_melee, itm_use_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
-		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	TARGET_RANGED_LOS, true, false, "a shortbow", "shortbow", NULL, NULL, NULL,					"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
+		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	TARGET_RANGED_LOS, true, false, "a shortbow", "shortbow", itm_target_ranged_los, NULL, NULL,			"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
 		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	TARGET_RANGED_LOS_AOE, false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL, NULL,		"Runic art covers the parchment surface showing a",		"large swathe of fire." },
 		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	TARGET_PASSIVE, false, true, "a set of leather armor", "leather armor", NULL, NULL, NULL,			"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
 	};

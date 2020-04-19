@@ -907,7 +907,6 @@ void ai_player_input(struct wld_mob* player)
 						// enter targeting mode for active weapon
 						if (ai_player_draw_weapon(player)) {
 							// trigger targeting mode
-							ui_loginfo("Entering target mode");
 							ui_loginfo("You draw your weapon.");
 							//switch (player->target_mode) {
 							//	//case TARGET_PASSIVE: ui_modeinfo("passive"); break; // not a thing for weapons
@@ -954,29 +953,6 @@ void ai_player_input(struct wld_mob* player)
 						break;
 					}
 					break;
-				//case TARGET_MELEE:
-				//case TARGET_RANGED_LOS:
-				//	switch (key) {
-				//	case KEY_SPACE:
-				//		trigger_world = ai_player_trigger_target(player);
-				//		if (!trigger_world)
-				//			ui_loginfo("Unable to attack such a target.");
-				//		listen = false;
-				//		break;
-				//	case KEY_ESC:
-				//	case KEY_y:
-				//	case KEY_x:
-				//		if (ai_player_sheath_weapon(player)) {
-				//			ui_loginfo("You sheath your weapon.");
-				//			ui_modeinfo("");
-				//			player->target_mode = TARGET_NONE;
-				//		} else {
-				//			ui_loginfo("You are unable to sheath your weapon.");
-				//		}
-				//		listen = false;
-				//		break;
-				//	}
-				//	break;
 				} // eo target mode switch
 
 				// always active should we move this to play mode?
