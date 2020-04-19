@@ -410,7 +410,8 @@ int use_item_slot = -1;
 #define CURSOR_INFO_LENGTH 45
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
-#define INV_ITEM_LENGTH 45
+#define INV_LENGTH 48
+#define INV_ITEM_LENGTH 46
 #define USE_LENGTH 55
 char logs[LOG_COUNT][LOG_LENGTH];
 
@@ -531,19 +532,31 @@ void ui_loginfo(char *msg)
 void ui_loginfo_s(char *msg, char *msg2)
 {
 	char buffer [LOG_LENGTH];
-	int n = sprintf(buffer, msg, msg2);
+	snprintf(buffer, LOG_LENGTH, msg, msg2);
 	ui_loginfo(buffer);
 }
 void ui_loginfo_is(char *msg, int i, char *msg2)
 {
 	char buffer [LOG_LENGTH];
-	int n = sprintf(buffer, msg, i, msg2);
+	snprintf(buffer, LOG_LENGTH, msg, i, msg2);
 	ui_loginfo(buffer);
 }
 void ui_loginfo_si(char *msg, char *msg2, int i)
 {
 	char buffer [LOG_LENGTH];
-	int n = sprintf(buffer, msg, msg2, i);
+	snprintf(buffer, LOG_LENGTH, msg, msg2, i);
+	ui_loginfo(buffer);
+}
+void ui_loginfo_ss(char *msg, char *msg2, char *msg3)
+{
+	char buffer [LOG_LENGTH];
+	snprintf(buffer, LOG_LENGTH, msg, msg2, msg3);
+	ui_loginfo(buffer);
+}
+void ui_loginfo_ssi(char *msg, char *msg2, char *msg3, int i)
+{
+	char buffer [LOG_LENGTH];
+	snprintf(buffer, LOG_LENGTH, msg, msg2, msg3, i);
 	ui_loginfo(buffer);
 }
 
@@ -621,8 +634,8 @@ void ui_update_inventorypanel(struct wld_map *map)
 		struct wld_item *w = map->player->inventory[0];
 		if (w != NULL) {
 			struct wld_itemtype *it = wld_get_itemtype(w->type);
-			char buffer[LOG_LENGTH];
-			sprintf(buffer, "w: %s", it->title);
+			char buffer[INV_ITEM_LENGTH];
+			snprintf(buffer, INV_ITEM_LENGTH, "w: %s", it->title);
 			ui_write_rc(inventorypanel, 2, 1, buffer);
 		}
 		else
@@ -632,8 +645,8 @@ void ui_update_inventorypanel(struct wld_map *map)
 		struct wld_item *a = map->player->inventory[1];
 		if (a != NULL) {
 			struct wld_itemtype *it = wld_get_itemtype(a->type);
-			char buffer[LOG_LENGTH];
-			sprintf(buffer, "a: %s", it->title);
+			char buffer[INV_ITEM_LENGTH];
+			snprintf(buffer, INV_ITEM_LENGTH, "a: %s", it->title);
 			ui_write_rc(inventorypanel, 4, 1, buffer);
 		}
 		else
@@ -656,7 +669,7 @@ void ui_update_inventorypanel(struct wld_map *map)
 				case 10: key = '9'; break;
 				case 11: key = '0'; break;
 			}
-			char buffer[LOG_LENGTH];
+			char buffer[INV_ITEM_LENGTH];
 			char *desc;
 			struct wld_item *item = map->player->inventory[i];
 			if (item != NULL) {
@@ -665,7 +678,7 @@ void ui_update_inventorypanel(struct wld_map *map)
 			} else {
 				desc = "--";
 			}
-			int n = sprintf(buffer, "%c: %s", key, desc);
+			snprintf(buffer, INV_ITEM_LENGTH, "%c: %s", key, desc);
 			ui_write_rc(inventorypanel, row, 1, buffer);
 			row++;
 		}
@@ -768,7 +781,11 @@ void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, stru
 void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, int dmg, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
-	ui_loginfo_si("You attacked %s for %d.", mt->short_desc, dmg);
+	if (item != NULL) {
+		struct wld_itemtype *it = wld_get_itemtype(item->type);
+		ui_loginfo_ssi("With %s you attacked %s for %d.", it->title, mt->short_desc, dmg);
+	} else
+		ui_loginfo_si("You attacked %s for %d.", mt->short_desc, dmg);
 }
 void map_on_player_whiff_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, struct wld_item* item)
 {
@@ -778,7 +795,11 @@ void map_on_player_whiff_mob(struct wld_map *map, struct wld_mob* player, struct
 void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
-	ui_loginfo_s("You killed %s.", mt->short_desc);
+	if (item != NULL) {
+		struct wld_itemtype *it = wld_get_itemtype(item->type);
+		ui_loginfo_ss("You killed %s with your %s.", mt->short_desc, it->title);
+	} else
+		ui_loginfo_s("You killed %s.", mt->short_desc);
 }
 void map_on_player_pickup_item(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
@@ -1079,7 +1100,7 @@ void ps_layout_ui()
 	ui_box(cursorpanel);
 
 	// inventory panel
-	int invpanel_cols = 50;
+	int invpanel_cols = INV_LENGTH + 2;
 	int invpanel_rows = sy - logpanel_rows;
 	ui_anchor_ur(inventorypanel, invpanel_rows, invpanel_cols);
 	ui_box(inventorypanel);
