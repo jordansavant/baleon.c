@@ -18,6 +18,11 @@ struct dm_spiral dm_spiral(int maxlayers);
 bool dm_spiralnext(struct dm_spiral*);
 
 ///////////////////////////
+// BRESENHAM LINE
+//void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), void (*on_visible)(int, int));
+void dm_bresenham(int x1, int y1, int x2, int y2, void (*on_visible)(int, int));
+
+///////////////////////////
 // RANDOM NUMBER GOD
 void dm_seed(unsigned long seed);
 double dm_randf();

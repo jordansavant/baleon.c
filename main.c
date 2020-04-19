@@ -1279,9 +1279,27 @@ void ps_play_draw()
 					ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
 				}
 			}
-
-			break;
 		}
+		break;
+	case TARGET_RANGED_LOS: {
+			// highlight a line from player to cursor, if something blocks the path then kill the line
+			int start_x = current_map->player->map_x;
+			int start_y = current_map->player->map_y;
+			int end_x = current_map->cursor->x;
+			int end_y = current_map->cursor->y;
+			void on_visible(int x, int y) {
+				if ((x == start_x && y == start_y) || (x == end_x && y == end_y))
+					return;
+				struct wld_tile *t = wld_gettileat(current_map, x, y);
+				struct wld_tiletype *tt = wld_get_tiletype(t->type);
+				if (t->is_visible) {
+					struct draw_struct ds = wld_get_drawstruct(current_map, x, y);
+					ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
+				}
+			}
+			dm_bresenham(start_x, start_y, end_x, end_y, on_visible);
+		}
+		break;
 	}
 
 	// Draw cursor
