@@ -654,12 +654,12 @@ bool ai_player_draw_weapon(struct wld_mob* player)
 	struct wld_item *weapon = wld_get_item_in_slot(player, 0);
 	if (weapon) {
 		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
-		player->target_mode2 = TMODE_ACTIVE;
+		player->target_mode = TMODE_ACTIVE;
 		player->active_item = weapon;
 		return true;
 	}
 	// unarmed
-	player->target_mode2 = TMODE_ACTIVE;
+	player->target_mode = TMODE_ACTIVE;
 	player->active_item = NULL;
 	return false;
 }
@@ -668,14 +668,14 @@ bool ai_player_draw_weapon(struct wld_mob* player)
 bool ai_player_leave_targeting(struct wld_mob* player)
 {
 	// unarmed
-	player->target_mode2 = TMODE_NONE;
+	player->target_mode = TMODE_NONE;
 	player->active_item = NULL;
 	return true;
 }
 bool ai_player_sheath_weapon(struct wld_mob* player)
 {
 	// unarmed
-	player->target_mode2 = TMODE_NONE;
+	player->target_mode = TMODE_NONE;
 	player->active_item = NULL;
 	return true;
 }
@@ -991,7 +991,7 @@ void wld_genmobs(struct wld_map *map)
 		mob->ai_player_input = NULL;
 		mob->cursor_target_index = -1;
 		mob->mode = MODE_PLAY;
-		mob->target_mode2 = TMODE_NONE;
+		mob->target_mode = TMODE_NONE;
 		mob->is_dead = false;
 		mob->target_x = 0;
 		mob->target_y = 0;

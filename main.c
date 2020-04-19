@@ -847,7 +847,7 @@ void ai_player_input(struct wld_mob* player)
 		switch (player->mode) {
 			// while in play mode listen to targeting method commands if active
 			case MODE_PLAY:
-				switch (player->target_mode2) {
+				switch (player->target_mode) {
 				// If not in a targeting mode then listen for interaction inputs
 				case TMODE_NONE:
 					switch (key) {
@@ -1250,7 +1250,7 @@ void ps_play_draw()
 	}
 
 	// Draw targeting mode
-	if (current_map->player->target_mode2 == TMODE_ACTIVE) {
+	if (current_map->player->target_mode == TMODE_ACTIVE) {
 		// highlight the tiles in melee range of the player
 		int map_x = current_map->player->map_x;
 		int map_y = current_map->player->map_y;

@@ -103,7 +103,7 @@ struct wld_mob {
 	bool is_player, is_dead;
 	int cursor_target_index; // map index
 	enum MODE mode;
-	enum TARGET_MODE target_mode2;
+	enum TARGET_MODE target_mode;
 	struct wld_item **inventory;
 	int target_x, target_y;
 	struct wld_item *active_item;
