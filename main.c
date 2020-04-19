@@ -412,7 +412,7 @@ int use_item_slot = -1;
 #define LOG_LENGTH 60
 #define INV_LENGTH 48
 #define INV_ITEM_LENGTH 46
-#define USE_LENGTH 55
+#define USE_LENGTH 58
 char logs[LOG_COUNT][LOG_LENGTH];
 
 void ui_box_color(WINDOW* win, int colorpair)
@@ -430,6 +430,15 @@ void ui_box(WINDOW* win)
 }
 
 // helper to write to a row in a panel we boxed
+void ui_write_rc_len(WINDOW *win, int row, int col, char *msg, int length)
+{
+	char buffer[length];
+	memcpy(buffer, msg, length);
+
+	dm_clear_row_in_win(win, row + 1);
+	wmove(win, row + 1, col + 2);
+	waddstr(win, buffer);
+}
 void ui_write_rc(WINDOW *win, int row, int col, char *msg)
 {
 	dm_clear_row_in_win(win, row + 1);
@@ -439,6 +448,10 @@ void ui_write_rc(WINDOW *win, int row, int col, char *msg)
 void ui_write(WINDOW *win, int row, char *msg)
 {
 	ui_write_rc(win, row, 0, msg);
+}
+void ui_write_len(WINDOW *win, int row, char *msg, int length)
+{
+	ui_write_rc_len(win, row, 0, msg, length);
 }
 
 //void ui_anchor_ur(WINDOW* win, float height, float width)
@@ -698,10 +711,10 @@ void ui_update_usepanel(struct wld_map *map)
 				// intro item
 				struct wld_itemtype *it = wld_get_itemtype(use_item->type);
 				char buffer[USE_LENGTH];
-				sprintf(buffer,  "You prepare to use %s.", it->short_desc);
+				snprintf(buffer, USE_LENGTH, "You prepare to use %s.", it->short_desc);
 				ui_write(usepanel, 0, buffer);
-				ui_write(usepanel, 2, it->use_text_1);
-				ui_write(usepanel, 3, it->use_text_2);
+				ui_write_len(usepanel, 2, it->use_text_1, USE_LENGTH);
+				ui_write_len(usepanel, 3, it->use_text_2, USE_LENGTH);
 
 				// give options
 				int offset = 5;
@@ -1106,7 +1119,7 @@ void ps_layout_ui()
 	ui_box(inventorypanel);
 
 	// use panel
-	int usepanel_cols = 60;
+	int usepanel_cols = USE_LENGTH + 4;
 	int usepanel_rows = 16;
 	ui_anchor_center(usepanel, usepanel_rows, usepanel_cols, -(logpanel_rows / 2), 0);
 	ui_box(usepanel);
