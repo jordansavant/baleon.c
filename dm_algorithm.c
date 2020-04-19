@@ -145,10 +145,10 @@ bool dm_spiralnext(struct dm_spiral *s)
 }
 
 
-
-
-//  h ttp://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm - Algorithm
-// h ttp://roguebasin.roguelikedevelopment.org/index.php?title=Bresenham%27s_Line_Algorithm - Rogue Code
+///////////////////////////
+// BRESENHAM LINE
+// http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm - Algorithm
+// http://roguebasin.roguelikedevelopment.org/index.php?title=Bresenham%27s_Line_Algorithm - Rogue Code
 void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), void (*on_visible)(int, int))
 {
     if (is_blocked(x1, y1))

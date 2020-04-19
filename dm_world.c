@@ -252,7 +252,7 @@ void wld_movecursor(struct wld_map *map, int relx, int rely)
 		// notify subscriber
 		map->on_cursormove(map, map->cursor->x, map->cursor->y, map->cursor->index);
 		// if I am on top of a mob set them as the target
-		map->player->cursor_target = map->cursor->index;
+		map->player->cursor_target_index = map->cursor->index;
 	}
 }
 struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y)
@@ -464,6 +464,42 @@ bool wld_mob_unequip(struct wld_mob* mob, int itemslot)
 	}
 	return false;
 }
+void wld_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
+{
+	switch (mob->target_mode) {
+	case TARGET_MELEE: {
+			struct dm_spiral sp = dm_spiral(1);
+			while (dm_spiralnext(&sp)) {
+				int spx = mob->map_x + sp.x;
+				int spy = mob->map_y + sp.y;
+				struct wld_tile *t = wld_gettileat(mob->map, spx, spy);
+				if (t->is_visible) {
+					inspect(spx, spy);
+				}
+			}
+		}
+		break;
+	case TARGET_RANGED_LOS: {
+			// highlight a line from player to cursor, if something blocks the path then kill the line
+			int start_x = mob->map->player->map_x;
+			int start_y = mob->map->player->map_y;
+			int end_x = mob->map->cursor->x;
+			int end_y = mob->map->cursor->y;
+			bool is_blocked(int x, int y) {
+				struct wld_tile *t = wld_gettileat(mob->map, x, y);
+				struct wld_tiletype *tt = wld_get_tiletype(t->type);
+				return tt->is_block || !t->is_visible;
+			}
+			void on_visible(int x, int y) {
+				if (x == start_x && y == start_y)
+					return;
+				inspect(x, y);
+			}
+			dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
+		}
+		break;
+	}
+}
 
 
 
@@ -585,31 +621,28 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 	// whiff event
 	ai_mob_whiff_mob(aggressor, defender, weapon);
 }
-bool ai_player_attack_target_melee(struct wld_mob* player)
+bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile* cursor_tile)
 {
-	struct wld_tile *tile = wld_gettileat_index(player->map, player->cursor_target);
-	if (tile->is_visible) {
-		struct wld_mob *target = wld_getmobat_index(player->map, player->cursor_target);
-		// make sure its another valid mob
-		if (target != NULL && ai_can_melee(player, target)) {
-			ai_mob_melee_mob(player, target);
-			return true;
-		}
+	dmlog("ai_mob_use_item");
+	struct wld_itemtype *it = wld_get_itemtype(item->type);
+	if (it->can_use(item, mob, cursor_tile)) {
+		it->use(item, mob, cursor_tile);
+		return true;
 	}
 	return false;
 }
-bool ai_player_attack_target_ranged_los(struct wld_mob* player)
+bool ai_player_use_active_item(struct wld_mob* player)
 {
-	struct wld_tile *tile = wld_gettileat_index(player->map, player->cursor_target);
-	if (tile->is_visible) {
-		struct wld_mob *target = wld_getmobat_index(player->map, player->cursor_target);
-		// make sure its another valid mob
-		if (target != NULL) {// && ai_can_melee(player, target)) {
-			//ai_mob_melee_mob(player, target);
-			return true;
-		}
-	}
-	return false;
+	dmlog("ai_player_use_active_item");
+	// this is run with the active item (which is drawn from sheath or used from inventory)
+	if (player->active_item == NULL)
+		return false;
+
+	struct wld_tile *tile = wld_gettileat_index(player->map, player->cursor_target_index);
+	if (!tile->is_visible)
+		return false;
+
+	return ai_mob_use_item(player, player->active_item, tile);
 }
 bool ai_player_draw_weapon(struct wld_mob* player)
 {
@@ -617,12 +650,22 @@ bool ai_player_draw_weapon(struct wld_mob* player)
 	if (weapon) {
 		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
 		player->target_mode = it->target_type;
+		player->active_item = weapon;
 		return true;
 	}
 	// unarmed
 	player->target_mode = TARGET_MELEE;
+	player->active_item = NULL;
 	return false;
 }
+bool ai_player_sheath_weapon(struct wld_mob* player)
+{
+	// unarmed
+	player->target_mode = TARGET_MELEE;
+	player->active_item = NULL;
+	return true;
+}
+
 bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely)
 {
 	int newx = mob->map_x + relx;
@@ -731,25 +774,35 @@ ai_rerun:
 	wld_movemob(mob, mob->queue_x, mob->queue_y);
 	mob->queue_x = 0;
 	mob->queue_y = 0;
-
-	if (mob->queue_target > -1) {
-		// attack enemy
-		struct wld_mob* target = wld_getmobat_index(mob->map, mob->queue_target);
-		if (target != NULL) {
-			//ai_mob_attack_mob(mob, target);
-		}
-	}
-	mob->queue_target = -1;
 }
 
 
 ///////////////////////////
 // ITEM ACTIONS
-void itm_on_use_melee(struct wld_item *item, struct wld_mob *user)
+bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
+	dmlog("itm_can_use_melee");
+	struct wld_mob *target = wld_getmobat_index(user->map, cursor_tile->map_index);
+	if (target != NULL && ai_can_melee(user, target))
+		return true;
+	return false;
 }
-void itm_on_fire_melee(struct wld_item *item, struct wld_mob *user, int mapx, int mapy)
+void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
+	dmlog("itm_use_melee");
+	// TODO make this do a melee attack with the item's damage etc
+	struct wld_mob *target = wld_getmobat_index(user->map, cursor_tile->map_index);
+
+	// determine melee damage from weapon (or unarmed?)
+	struct wld_itemtype *it = wld_get_itemtype(weapon->type);
+	double chance = rpg_calc_melee_coh(user, target);
+	if (dm_randf() < chance) {
+		int dmg = rpg_calc_melee_dmg(user, target);
+		ai_mob_attack_mob(user, target, dmg, weapon);
+	} else {
+		// whiff event
+		ai_mob_whiff_mob(user, target, weapon);
+	}
 }
 
 
@@ -890,17 +943,19 @@ void wld_genmobs(struct wld_map *map)
 		mob->state = MS_START;
 		mob->queue_x = 0;
 		mob->queue_y = 0;
-		mob->queue_target = -1;
 		mob->health = 100;
 		mob->maxhealth = 100; // TODO define based on things
 		mob->ai_wander = NULL;
 		mob->ai_detect_combat = NULL;
 		mob->ai_decide_combat = NULL;
 		mob->ai_player_input = NULL;
-		mob->cursor_target = -1;
+		mob->cursor_target_index = -1;
 		mob->mode = MODE_PLAY;
 		mob->target_mode = TARGET_NONE;
 		mob->is_dead = false;
+		mob->target_x = 0;
+		mob->target_y = 0;
+		mob->active_item = NULL;
 
 		// create inventory (pointers to malloc items)
 		mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
@@ -1117,7 +1172,7 @@ void wld_setup()
 	struct wld_itemtype its [] = {																	/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
 		{ ITEM_VOID,			' ', CLX_BLACK,		TARGET_PASSIVE, false, false, "", "", NULL, NULL, ""},
 		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	TARGET_SELF, false, false, "a potion of minor healing", "minor healing potion", NULL, NULL,	"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
-	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	TARGET_MELEE, true, false, "a shortsword", "shortsword", itm_on_use_melee, itm_on_fire_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
+	 	{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	TARGET_MELEE, true, false, "a shortsword", "shortsword", itm_can_use_melee, itm_use_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
 		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	TARGET_RANGED_LOS, true, false, "a shortbow", "shortbow", NULL, NULL,				"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
 		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	TARGET_RANGED_LOS_AOE, false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL,	"Runic art covers the parchment surface showing a",		"large swathe of fire." },
 		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	TARGET_PASSIVE, false, true, "a set of leather armor", "leather armor", NULL, NULL,		"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
@@ -1132,8 +1187,8 @@ void wld_setup()
 		wld_itemtypes[i].is_aeq = its[i].is_aeq;
 		wld_itemtypes[i].short_desc = its[i].short_desc;
 		wld_itemtypes[i].title = its[i].title;
-		wld_itemtypes[i].on_use = its[i].on_use;
-		wld_itemtypes[i].on_fire = its[i].on_fire;
+		wld_itemtypes[i].can_use = its[i].can_use;
+		wld_itemtypes[i].use = its[i].use;
 		wld_itemtypes[i].use_text_1 = its[i].use_text_1;
 		wld_itemtypes[i].use_text_2 = its[i].use_text_2;
 	}

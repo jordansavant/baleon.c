@@ -930,27 +930,10 @@ void ai_player_input(struct wld_mob* player)
 					}
 					break;
 				case TARGET_MELEE:
-					switch (key) {
-					case KEY_SPACE:
-						trigger_world = ai_player_attack_target_melee(player);
-						if (!trigger_world)
-							ui_loginfo("Unable to attack such a target.");
-						listen = false;
-						break;
-					case KEY_ESC:
-					case KEY_y:
-					case KEY_x:
-						player->target_mode = TARGET_NONE;
-						ui_loginfo("You sheath your weapon.");
-						ui_modeinfo("");
-						listen = false;
-						break;
-					}
-					break;
 				case TARGET_RANGED_LOS:
 					switch (key) {
 					case KEY_SPACE:
-						trigger_world = ai_player_attack_target_ranged_los(player);
+						trigger_world = ai_player_use_active_item(player);
 						if (!trigger_world)
 							ui_loginfo("Unable to attack such a target.");
 						listen = false;
@@ -958,9 +941,13 @@ void ai_player_input(struct wld_mob* player)
 					case KEY_ESC:
 					case KEY_y:
 					case KEY_x:
-						player->target_mode = TARGET_NONE;
-						ui_loginfo("You sheath your weapon.");
-						ui_modeinfo("");
+						if (ai_player_sheath_weapon(player)) {
+							ui_loginfo("You sheath your weapon.");
+							ui_modeinfo("");
+							player->target_mode = TARGET_NONE;
+						} else {
+							ui_loginfo("You are unable to sheath your weapon.");
+						}
 						listen = false;
 						break;
 					}
@@ -1262,49 +1249,19 @@ void ps_play_draw()
 	}
 
 	// Draw targeting mode
-	switch (current_map->player->target_mode) {
-	case TARGET_MELEE: {
-			// highlight the tiles in melee range of the player
-			int map_x = current_map->player->map_x;
-			int map_y = current_map->player->map_y;
-			struct dm_spiral sp = dm_spiral(1);
-			while (dm_spiralnext(&sp)) {
-				int spx = map_x + sp.x;
-				int spy = map_y + sp.y;
-
-				struct wld_tile *t = wld_gettileat(current_map, spx, spy);
-				struct wld_tiletype *tt = wld_get_tiletype(t->type);
-				if (t->is_visible) {
-					struct draw_struct ds = wld_get_drawstruct(current_map, spx, spy);
-					ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
-				}
+	if (current_map->player->target_mode != TARGET_NONE) {
+		// highlight the tiles in melee range of the player
+		int map_x = current_map->player->map_x;
+		int map_y = current_map->player->map_y;
+		void inspect(int x, int y) {
+			struct wld_tile *t = wld_gettileat(current_map, x, y);
+			struct wld_tiletype *tt = wld_get_tiletype(t->type);
+			if (t->is_visible) {
+				struct draw_struct ds = wld_get_drawstruct(current_map, x, y);
+				ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
 			}
 		}
-		break;
-	case TARGET_RANGED_LOS: {
-			// highlight a line from player to cursor, if something blocks the path then kill the line
-			int start_x = current_map->player->map_x;
-			int start_y = current_map->player->map_y;
-			int end_x = current_map->cursor->x;
-			int end_y = current_map->cursor->y;
-			bool is_blocked(int x, int y) {
-				struct wld_tile *t = wld_gettileat(current_map, x, y);
-				struct wld_tiletype *tt = wld_get_tiletype(t->type);
-				return tt->is_block || !t->is_visible;
-			}
-			void on_visible(int x, int y) {
-				if ((x == start_x && y == start_y) || (x == end_x && y == end_y))
-					return;
-				struct wld_tile *t = wld_gettileat(current_map, x, y);
-				struct wld_tiletype *tt = wld_get_tiletype(t->type);
-				if (t->is_visible) {
-					struct draw_struct ds = wld_get_drawstruct(current_map, x, y);
-					ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
-				}
-			}
-			dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
-		}
-		break;
+		wld_inspect_targetables(current_map->player, inspect);
 	}
 
 	// Draw cursor

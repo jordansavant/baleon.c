@@ -96,13 +96,15 @@ struct wld_mob {
 	bool (*ai_detect_combat)(struct wld_mob*);
 	void (*ai_decide_combat)(struct wld_mob*);
 	void (*ai_player_input)(struct wld_mob*);
-	int queue_x, queue_y, queue_target;
+	int queue_x, queue_y;
 	int health, maxhealth;
 	bool is_player, is_dead;
-	int cursor_target; // map index
+	int cursor_target_index; // map index
 	enum MODE mode;
 	enum WLD_TARGETTYPE target_mode;
 	struct wld_item **inventory;
+	int target_x, target_y;
+	struct wld_item *active_item;
 };
 
 
@@ -129,8 +131,8 @@ struct wld_itemtype {
 	bool is_weq, is_aeq;
 	char *short_desc;
 	char *title;
-	void (*on_use)(struct wld_item*, struct wld_mob*);
-	void (*on_fire)(struct wld_item*, struct wld_mob*, int, int);
+	bool (*can_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
+	void (*use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	char *use_text_1;
 	char *use_text_2;
 };
@@ -219,6 +221,7 @@ bool wld_pickup_item(struct wld_mob*, struct wld_item*);
 bool wld_mob_equip(struct wld_mob*, int);
 bool wld_mob_unequip(struct wld_mob*, int);
 bool wld_mob_drop_item(struct wld_mob*, int);
+void wld_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 
 
 ///////////////////////////
@@ -236,9 +239,10 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item* item);
 bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
-bool ai_player_attack_target_melee(struct wld_mob* player);
-bool ai_player_attack_target_ranged_los(struct wld_mob* player);
+bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile* cursor_tile);
+bool ai_player_use_active_item(struct wld_mob* player);
 bool ai_player_draw_weapon(struct wld_mob* player);
+bool ai_player_sheath_weapon(struct wld_mob* player);
 bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
 bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
 bool ai_rest(struct wld_mob *mob);
@@ -248,8 +252,8 @@ void wld_update_mob(struct wld_mob *mob);
 
 ///////////////////////////
 // ITEM ACTIONS
-void itm_on_user_melee(struct wld_item *item, struct wld_mob *user);
-void itm_on_fire_melee(struct wld_item *item, struct wld_mob *user, int mapx, int mapy);
+bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* curstile);
+void itm_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* curstile);
 
 
 ///////////////////////////
