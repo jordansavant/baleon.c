@@ -960,11 +960,13 @@ void ai_player_input(struct wld_mob* player)
 					break;
 				case KEY_d:
 					dmlog("drop item");
-					if (wld_mob_drop_item(player, use_item_slot))
+					if (wld_mob_drop_item(player, use_item_slot)) {
 						ui_loginfo("Item dropped to floor.");
-					ui_unset_use();
-					ui_clear_win(usepanel);
-					player->mode = MODE_INVENTORY;
+						ui_unset_use();
+						ui_clear_win(usepanel);
+						player->mode = MODE_INVENTORY;
+					} else
+						ui_loginfo("Unable to drop item on a cluttered floor.");
 					listen = false;
 					break;
 				}

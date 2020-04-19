@@ -66,17 +66,21 @@ struct wld_itemtype *wld_itemtypes;
 void wld_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id)
 {
 	int index = wld_calcindex(x, y, map->cols);
+	item->id = id;
 	map->items[id] = item;
 	map->item_map[index] = id;
 }
 void wld_new_item(struct wld_map* map, struct wld_item* item, int x, int y)
 {
 	int index = wld_calcindex(x, y, map->cols);
+	item->map_index = index;
+	item->map_x = x;
+	item->map_y = y;
 
 	// see if I have a null spot
 	for (int i=0; i<map->items_length; i++) {
 		if (map->items[i] == NULL) {
-			wld_insert_item(map, item, i, x, y);
+			wld_insert_item(map, item, x, y, i);
 			return;
 		}
 	}
@@ -391,6 +395,20 @@ bool wld_pickup_item(struct wld_mob *m, struct wld_item *i)
 			m->map->on_player_pickup_item_fail(m->map, m, i);
 	}
 }
+bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
+{
+	// TODO UH OH, HOW DO I RETURN AN ITEM TO THE MAP? LOOK FOR A NULL SLOT AND IF NOT REMALLOC?
+	struct wld_item* item = wld_get_item_in_slot(mob, itemslot);
+	// if this is a real item and there is not one on this slot
+	if (item != NULL && wld_getitemat(mob->map, mob->map_x, mob->map_y) == NULL) {
+		wld_new_item(mob->map, item, mob->map_x, mob->map_y);
+
+		// remove from inventory
+		mob->inventory[itemslot] = NULL;
+		return true;
+	}
+	return false;
+}
 void wld_swap_item(struct wld_mob* mob, int slot_a, int slot_b)
 {
 	struct wld_item *a = wld_get_item_in_slot(mob, slot_a);
@@ -427,10 +445,6 @@ bool wld_mob_unequip(struct wld_mob* mob, int itemslot)
 		}
 	}
 	return false;
-}
-bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
-{
-	// TODO UH OH, HOW DO I RETURN AN ITEM TO THE MAP? LOOK FOR A NULL SLOT AND IF NOT REMALLOC?
 }
 
 
