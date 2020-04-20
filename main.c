@@ -845,6 +845,10 @@ void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struc
 	} else
 		ui_loginfo_si("You attacked %s for %d.", mt->short_desc, dmg);
 }
+void map_on_player_whiff(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
+{
+	ui_loginfo("You attacked and missed.");
+}
 void map_on_player_whiff_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
@@ -1158,6 +1162,7 @@ void ps_build_world()
 
 	current_map->on_player_heal = map_on_player_heal;
 	current_map->on_player_attack_mob = map_on_player_attack_mob;
+	current_map->on_player_whiff = map_on_player_whiff;
 	current_map->on_player_whiff_mob = map_on_player_whiff_mob;
 	current_map->on_player_kill_mob = map_on_player_kill_mob;
 	current_map->on_player_pickup_item = map_on_player_pickup_item;

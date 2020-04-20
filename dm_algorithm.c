@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <math.h>
 #include "dm_defines.h"
 #include "mt_rand.h"
 #include "dm_algorithm.h"
@@ -221,5 +222,23 @@ void dm_seed(unsigned long seed)
 double dm_randf()
 {
 	return genrandf();
+}
+
+
+
+///////////////////////////
+// MATH
+int dm_disti(int x1, int y1, int x2, int y2)
+{
+    double x = (double)(x1 - x2);
+    double y = (double)(y1 - y2);
+    return (int)sqrt(x*x + y*y);
+}
+
+double dm_distf(double x1, double y1, double x2, double y2)
+{
+    double x = x1 - x2;
+    double y = y1 - y2;
+    return sqrt(x*x + y*y);
 }
 

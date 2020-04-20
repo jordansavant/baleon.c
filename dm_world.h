@@ -128,6 +128,7 @@ struct wld_itemtype {
 	bool (*fn_can_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*fn_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*fn_hit)(struct wld_item*, struct wld_mob*, struct wld_tile*);
+	int base_range;
 	char *drink_label;
 	char *use_label;
 	char *use_text_1;
@@ -167,6 +168,7 @@ struct wld_map {
 	void (*on_mob_heal)(struct wld_map*, struct wld_mob *mob, int amt, struct wld_item* item);
 	void (*on_mob_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, int dmg, struct wld_item* item);
 	void (*on_mob_attack_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, int dmg, struct wld_item* item);
+	void (*on_mob_whiff)(struct wld_map*, struct wld_mob *agg, struct wld_item* item);
 	void (*on_mob_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
 	void (*on_mob_whiff_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
 	void (*on_mob_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
@@ -174,6 +176,7 @@ struct wld_map {
 
 	void (*on_player_heal)(struct wld_map*, struct wld_mob *mob, int amt, struct wld_item* item);
 	void (*on_player_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, int dmg, struct wld_item* item);
+	void (*on_player_whiff)(struct wld_map*, struct wld_mob *agg, struct wld_item* item);
 	void (*on_player_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
 	void (*on_player_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
 	void (*on_player_pickup_item)(struct wld_map*, struct wld_mob *player, struct wld_item *item);
@@ -200,6 +203,7 @@ int wld_cpair_bg(int tiletype);
 int wld_calcindex(int x, int y, int cols);
 int wld_calcx(int index, int cols);
 int wld_calcy(int index, int cols);
+int wld_distance_mob_tile(struct wld_map *map, struct wld_mob *mob, struct wld_tile *tile);
 bool wld_canmoveto(struct wld_map *map, int x, int y);
 void wld_movemob(struct wld_mob *mob, int relx, int rely);
 void wld_movecursor(struct wld_map *map, int relx, int rely);
@@ -231,6 +235,7 @@ int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender);
 int rpg_calc_ranged_dmg(struct wld_mob *aggressor, struct wld_mob *defender);
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender);
 double rpg_calc_ranged_coh(struct wld_mob *aggressor, struct wld_mob *defender);
+int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range);
 
 
 ///////////////////////////

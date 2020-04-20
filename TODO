@@ -3,6 +3,7 @@ TODO:
 now
 - range limits on items
 - destroy items when used
+- better event messaging, does not scale well, world needs to be able to define strings for ui log
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items

@@ -179,6 +179,14 @@ int wld_calcy(int index, int cols)
 {
 	return index / cols;
 }
+int wld_distance_mob_tile(struct wld_map *map, struct wld_mob *mob, struct wld_tile *tile)
+{
+	int mx = mob->map_x;
+	int my = mob->map_y;
+	int tx = tile->map_x;
+	int ty = tile->map_y;
+	return dm_disti(mx, my, tx, ty);
+}
 bool wld_canmoveto(struct wld_map *map, int x, int y)
 {
 	// make sure its in bounds
@@ -515,6 +523,12 @@ double rpg_calc_ranged_coh(struct wld_mob *aggressor, struct wld_mob *defender)
 {
 	return .66;
 }
+int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range)
+{
+	// TODO will calculate strength and dex etc
+	// TODO break into options for throwing range vs shooting range?
+	return base_range;
+}
 
 
 
@@ -597,6 +611,14 @@ bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender)
 {
 	return !defender->is_dead && wld_is_mob_nextto_mob(aggressor, defender);
 }
+void ai_mob_whiff(struct wld_mob *aggressor, struct wld_item* item)
+{
+	if (!aggressor->is_player && aggressor->map->on_mob_whiff)
+		aggressor->map->on_mob_whiff(aggressor->map, aggressor, item);
+
+	if (aggressor->is_player && aggressor->map->on_player_whiff)
+		aggressor->map->on_player_whiff(aggressor->map, aggressor, item);
+}
 void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item)
 {
 	if (!defender->is_player && aggressor->map->on_mob_whiff_mob)
@@ -645,9 +667,6 @@ bool ai_player_use_active_item(struct wld_mob* player)
 		return false;
 
 	struct wld_tile *tile = wld_gettileat_index(player->map, player->cursor_target_index);
-	if (!tile->is_visible)
-		return false;
-
 	return ai_mob_use_item(player, player->active_item, tile);
 }
 bool ai_player_trigger_target(struct wld_mob* player)
@@ -878,9 +897,17 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 	int start_y = user->map->player->map_y;
 	int end_x = user->map->cursor->x;
 	int end_y = user->map->cursor->y;
+	struct wld_itemtype *it = wld_get_itemtype(item->type);
+	int allowed_range = rpg_calc_range_dist(user, it->base_range);
 	bool is_blocked(int x, int y) {
 		struct wld_tile *t = wld_gettileat(user->map, x, y);
 		struct wld_tiletype *tt = wld_get_tiletype(t->type);
+
+		// stop at tiles outside of the range of the item
+		int dist = dm_disti(user->map_x, user->map_y, x, y);
+		if (dist > allowed_range)
+			return true;
+
 		return tt->is_block || !t->is_visible;
 	}
 	void on_visible(int x, int y) {
@@ -895,10 +922,12 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 // valid positions are the same as targeting los
 bool itm_can_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
-	// TODO, test item ranges against target range
+	// I would say we CAN use the item at any range despite its limit
 	// given that we will allow them to target any tile that is visible without regard for
 	// blocked obstacles or mobs in between
-	return cursor_tile->is_visible;
+	dmlog("can use item");
+	return true; // we can shoot it anywhere, even into the darkness
+	//return cursor_tile->is_visible;
 }
 void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
@@ -907,20 +936,34 @@ void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 	int start_y = user->map->player->map_y;
 	int end_x = cursor_tile->map_x;
 	int end_y = cursor_tile->map_y;
+	struct wld_itemtype *it = wld_get_itemtype(item->type);
+	int allowed_range = rpg_calc_range_dist(user, it->base_range);
+	bool hit_target = false;
 	bool is_blocked(int x, int y) {
 		// check and make sure we do not shoot ourself
 		if (x == start_x && y == start_y)
 			return false;
 
+		// check to see if we have traveled further than our max range
+		int dist = dm_disti(user->map_x, user->map_y, x, y);
+		if (dist > allowed_range)
+			return true;
+
+		// if we have come in contact with a mob, hit it and stop raycast
 		struct wld_mob *mob = wld_getmobat(user->map, x, y);
 		if (mob != NULL && !mob->is_dead) {
 			struct wld_itemtype *it = wld_get_itemtype(item->type);
 			it->fn_hit(item, user, wld_gettileat(user->map, x, y));
+			hit_target = true;
 			return true; // stop inspection
 		}
+
 		return false;
 	}
 	dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, NULL);
+
+	if (!hit_target)
+		ai_mob_whiff(user, item);
 }
 void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
 {
@@ -1229,6 +1272,7 @@ struct wld_map* wld_newmap(int depth)
 	map->on_mob_heal = NULL;
 	map->on_mob_attack_mob = NULL;
 	map->on_mob_attack_player = NULL;
+	map->on_mob_whiff = NULL;
 	map->on_mob_whiff_mob = NULL;
 	map->on_mob_whiff_player = NULL;
 	map->on_mob_kill_mob = NULL;
@@ -1236,6 +1280,7 @@ struct wld_map* wld_newmap(int depth)
 
 	map->on_player_heal = NULL;
 	map->on_player_attack_mob = NULL;
+	map->on_player_whiff = NULL;
 	map->on_player_whiff_mob = NULL;
 	map->on_player_kill_mob = NULL;
 	map->on_player_pickup_item = NULL;
@@ -1348,6 +1393,7 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
+			0,
 			"",
 			"",
 			"",
@@ -1366,6 +1412,7 @@ void wld_setup()
 			itm_can_use_ranged_los,
 			itm_use_ranged_los,
 			itm_hit_minorhealth,
+			5,
 			"quaff",
 			"throw",
 			/////////////////////////////////////////////////////////
@@ -1385,6 +1432,7 @@ void wld_setup()
 			itm_can_use_melee,
 			itm_use_melee,
 			itm_hit_melee_swordstyle,
+			1,
 			"",
 			"strike",
 			/////////////////////////////////////////////////////////
@@ -1404,6 +1452,7 @@ void wld_setup()
 			itm_can_use_ranged_los,
 			itm_use_ranged_los,
 			itm_hit_ranged_los_bowstyle,
+			10,
 			"",
 			"shoot",
 			/////////////////////////////////////////////////////////
@@ -1423,6 +1472,7 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
+			0,
 			"",
 			"",
 			/////////////////////////////////////////////////////////
@@ -1442,6 +1492,7 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
+			0,
 			"",
 			"",
 			/////////////////////////////////////////////////////////
@@ -1463,6 +1514,7 @@ void wld_setup()
 		wld_itemtypes[i].fn_can_use = its[i].fn_can_use;
 		wld_itemtypes[i].fn_use = its[i].fn_use;
 		wld_itemtypes[i].fn_hit = its[i].fn_hit;
+		wld_itemtypes[i].base_range = its[i].base_range;
 		wld_itemtypes[i].drink_label = its[i].drink_label;
 		wld_itemtypes[i].use_label = its[i].use_label;
 		wld_itemtypes[i].use_text_1 = its[i].use_text_1;

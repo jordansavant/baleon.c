@@ -26,4 +26,10 @@ void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), 
 void dm_seed(unsigned long seed);
 double dm_randf();
 
+///////////////////////////
+// MATH
+int dm_disti(int x1, int y1, int x2, int y2);
+double dm_distf(double x1, double y1, double x2, double y2);
+
+
 #endif
