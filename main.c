@@ -795,6 +795,15 @@ void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y
 }
 
 
+void map_on_mob_heal(struct wld_map *map, struct wld_mob* mob, int amt, struct wld_item* item)
+{
+	struct wld_mobtype *mt = wld_get_mobtype(mob->type);
+	if (item != NULL) {
+		struct wld_itemtype *it = wld_get_itemtype(item->type);
+		ui_loginfo_ssi("The %s healed %s for %d.", it->title, mt->short_desc, amt);
+	} else
+		ui_loginfo_si("%s healed for %d.", mt->short_desc, amt);
+}
 void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, int dmg, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
@@ -1136,6 +1145,7 @@ void ps_build_world()
 	current_map->on_cursormove = map_on_cursormove;
 	current_map->on_playermove = map_on_playermove;
 
+	current_map->on_mob_heal = map_on_mob_heal;
 	current_map->on_mob_attack_player = map_on_mob_attack_player;
 	current_map->on_mob_whiff_player = map_on_mob_whiff_player;
 	current_map->on_mob_kill_player = map_on_mob_kill_player;

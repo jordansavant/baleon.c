@@ -832,6 +832,7 @@ ai_rerun:
 ///////////////////////////
 // ITEM ACTIONS
 
+/////////////
 // MELEE
 void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
 {
@@ -853,7 +854,7 @@ void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_til
 	if (target != NULL)
 		it->fn_hit(weapon, user, cursor_tile);
 }
-void itm_hit_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* tile)
+void itm_hit_melee_swordstyle(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* tile)
 {
 	// TODO make this do a melee attack with the item's damage etc
 	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
@@ -868,6 +869,7 @@ void itm_hit_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_til
 	}
 }
 
+/////////////
 // RANGED LOS
 void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
 {
@@ -893,6 +895,7 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 // valid positions are the same as targeting los
 bool itm_can_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
+	// TODO, test item ranges against target range
 	// given that we will allow them to target any tile that is visible without regard for
 	// blocked obstacles or mobs in between
 	return cursor_tile->is_visible;
@@ -919,11 +922,10 @@ void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 	}
 	dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, NULL);
 }
-void itm_hit_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
+void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
 {
 	// when this standard ranged attack hits its first target it will do ranged weapon damage
 	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
-	struct wld_itemtype *it = wld_get_itemtype(item->type);
 	double chance = rpg_calc_ranged_coh(user, target);
 	if (dm_randf() < chance) {
 		int dmg = rpg_calc_ranged_dmg(user, target);
@@ -934,12 +936,20 @@ void itm_hit_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 	}
 }
 
+
+/////////////
 // POTIONS
-void itm_drink_potion(struct wld_item *item, struct wld_mob *user)
+void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user)
 {
 	// TODO minor vs major healing levels
 	int hp = dm_randf() * 10;
 	ai_mob_heal(user, hp, item);
+}
+void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
+{
+	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
+	int hp = dm_randf() * 10;
+	ai_mob_heal(target, hp, item);
 }
 
 
@@ -1349,11 +1359,11 @@ void wld_setup()
 			false,
 			"a potion of minor healing",
 			"minor healing potion",
-			itm_drink_potion,
-			NULL,
-			NULL,
-			NULL,
-			NULL,
+			itm_drink_minorhealth,
+			itm_target_ranged_los,
+			itm_can_use_ranged_los,
+			itm_use_ranged_los,
+			itm_hit_minorhealth,
 			/////////////////////////////////////////////////////////
 			"The glass of the potion is warm to the touch, its",
 			"properties should heal a small amount."
@@ -1370,7 +1380,7 @@ void wld_setup()
 			itm_target_melee,
 			itm_can_use_melee,
 			itm_use_melee,
-			itm_hit_melee,
+			itm_hit_melee_swordstyle,
 			/////////////////////////////////////////////////////////
 			"Though short, its sharp point could plunge deeply into",
 			"a soft skinned enemy."
@@ -1387,7 +1397,7 @@ void wld_setup()
 			itm_target_ranged_los,
 			itm_can_use_ranged_los,
 			itm_use_ranged_los,
-			itm_hit_ranged_los,
+			itm_hit_ranged_los_bowstyle,
 			/////////////////////////////////////////////////////////
 			"Its string has been worn but the wood is strong,this",
 			"small bow could fell small creatures"
