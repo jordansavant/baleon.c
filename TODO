@@ -1,3 +1,32 @@
+TODO:
+
+now
+- range limits on items
+- destroy items when used
+- aoe test item
+- ui: target mode state w/ keyhints
+- ui: equipped items
+- ui: health
+
+later
+- dungeon builder
+- map transitions
+- ui: mob list
+- ui: mob focus
+- ranged point test item
+- rpg rules
+- gameover
+
+no use cases yet
+- teleport
+- ui: interrupt panel
+
+scope creep
+- input recorder?
+- return of mouse cursor?
+
+
+
 CORE MECHANIC:
 - subdue enemies and choose to absorb their essence
 	- grants "aberrations" that produce strengths and weaknesses
@@ -6,75 +35,6 @@ CORE MECHANIC:
 	- mystery of aberrations
 	- cocktail of how they react
 	- with many aberrations comes highly unique combinations of characters
-
-
-
-
-TODO:
-
-- use potion by throwing it vs drinking it
-- range limits on items
-- throw potion and heal mob it hits
-
-- items
-	- can be owned by a mob
-	- can exist on a tile (multiple items on one tile?)
-	- can be picked up into inventory
-	- inventory list can let you move weapon (types?) into equipment slots (armors?)
-	- activating an item uses a target mode (see below)
-		- target mode self should auto activate
-	- items have
-		- sprite, color (standard yellow?), name, short description, target method, on_activate closure, on_do closure
-
-- OR we can enter contexts based on inputs (THIS)
-	- targeting modes: self, melee, ranged los, ranged teleport, ranged los aoe, ranged teleport aoe
-	- if we press melee input we go into melee targeting mode
-		- this could highlight melee range?
-		- press melee again (or activate) will attack melee on cursor (if not in melee then pull vector?)
-	- if we press ranged input we go into ranged targeting mode
-		- draws line to cursor
-		- press ranged again (or activate) it launches ranged attack along path (can be blocked by other things?)
-	- if we press inventory we get list of items
-		- items have targeting modes
-		- selecting item activates related targeting mode
-		- activating in that mode activates that item for that target location
-		- ?equipped melee/equipped ranged are just more items being activated?
-		- ?spells in spell book are just items as well?
-		- ?maybe an item has an "activateable"? spells have activateables? powers have an activateable?
-	- TODO
-		- FSM targeting modes
-			- y = equipped weapon targeting mode (if self it applies immediately)
-			- i = inventory panel, items listed with shortcut keys
-				- locks out movement inputs
-				- pressing button runs targeting mode (if self it applies immediately)
-				- [esc] escapes that mode
-			- j = magic panel, spells listed with shortcut keys
-				- see inventory FSM
-- ui:
-	- mob panel
-		- lists visible mobs and things
-		- their timers? health?
-		- we are a mob?
-	- interrupt event panel
-		- appears when events occur
-		- used for deeper inspection?
-	- character panel
-		- active timers (effects) (brogue)
-			- health
-			- exp?
-		- stats (defense?)
-	- inventory panel?
-- attack mob: ranged
-- multi map w/ transition
-- port xogeni parts
-
-
-FEATURE CREEP
-- ui reloader when terminal fucks up
-- input recorder?
-- how do we get mouse cursor? (do we need this)
-	- see mspy.c for example code
-	- we got pads to render the complete map, but now how do we translate cursor to pad?
 
 
 
