@@ -414,6 +414,27 @@ bool wld_mob_drink_item(struct wld_mob *mob, int itemslot)
 	}
 	return false;
 }
+
+void wld_mob_destroy_item_in_slot(struct wld_mob* mob, int itemslot)
+{
+	struct wld_item *item = mob->inventory[itemslot];
+	free(item);
+	mob->inventory[itemslot] = NULL;
+}
+
+void wld_mob_destroy_item(struct wld_mob* mob, struct wld_item* item)
+{
+	// need to find the item in the slot
+	for (int i=0; i<INVENTORY_SIZE; i++) {
+		struct wld_item *check = mob->inventory[i];
+		if (check == item) {
+			dmlogi("destory", i);
+			wld_mob_destroy_item_in_slot(mob, i);
+			break;
+		}
+	}
+}
+
 bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
 {
 	// TODO UH OH, HOW DO I RETURN AN ITEM TO THE MAP? LOOK FOR A NULL SLOT AND IF NOT REMALLOC?
@@ -987,12 +1008,14 @@ void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user)
 	// TODO minor vs major healing levels
 	int hp = dm_randf() * 10;
 	ai_mob_heal(user, hp, item);
+	wld_mob_destroy_item(user, item);
 }
 void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
 {
 	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
 	int hp = dm_randf() * 10;
 	ai_mob_heal(target, hp, item);
+	wld_mob_destroy_item(user, item);
 }
 
 
