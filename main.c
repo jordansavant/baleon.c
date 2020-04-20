@@ -555,6 +555,12 @@ void ui_loginfo_s(char *msg, char *msg2)
 	snprintf(buffer, LOG_LENGTH, msg, msg2);
 	ui_loginfo(buffer);
 }
+void ui_loginfo_i(char *msg, int i)
+{
+	char buffer [LOG_LENGTH];
+	snprintf(buffer, LOG_LENGTH, msg, i);
+	ui_loginfo(buffer);
+}
 void ui_loginfo_is(char *msg, int i, char *msg2)
 {
 	char buffer [LOG_LENGTH];
@@ -741,6 +747,8 @@ void ui_update_usepanel(struct wld_map *map)
 				}
 				if (it->fn_use != NULL)
 					ui_write(usepanel, offset++, "u: use");
+				if (it->fn_drink != NULL)
+					ui_write(usepanel, offset++, "q: quaff");
 				ui_write(usepanel, offset++, "d: drop");
 				ui_write(usepanel, ++offset, "x: close");
 			}
@@ -805,6 +813,14 @@ void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, stru
 }
 
 
+void map_on_player_heal(struct wld_map *map, struct wld_mob* player, int amt, struct wld_item* item)
+{
+	if (item != NULL) {
+		struct wld_itemtype *it = wld_get_itemtype(item->type);
+		ui_loginfo_si("The %s healed you for %d.", it->title, amt);
+	} else
+		ui_loginfo_i("You healed for %d.", amt);
+}
 void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, int dmg, struct wld_item* item)
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
@@ -1063,6 +1079,16 @@ void ai_player_input(struct wld_mob* player)
 					player->mode = MODE_INVENTORY;
 					listen = false;
 					break;
+				// DRINK ITEM directly
+				case KEY_q:
+					if (wld_mob_drink_item(player, use_item_slot)) {
+						ui_unset_use();
+						ui_clear_win(usepanel);
+						ui_clear_win(inventorypanel);
+						player->mode = MODE_PLAY;
+					}
+					listen = false;
+					break;
 				// USE ITEM directly
 				case KEY_u:
 					if (ai_player_set_use_item(player, use_item_slot)) {
@@ -1114,6 +1140,7 @@ void ps_build_world()
 	current_map->on_mob_whiff_player = map_on_mob_whiff_player;
 	current_map->on_mob_kill_player = map_on_mob_kill_player;
 
+	current_map->on_player_heal = map_on_player_heal;
 	current_map->on_player_attack_mob = map_on_player_attack_mob;
 	current_map->on_player_whiff_mob = map_on_player_whiff_mob;
 	current_map->on_player_kill_mob = map_on_player_kill_mob;

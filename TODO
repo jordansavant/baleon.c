@@ -12,6 +12,9 @@ CORE MECHANIC:
 
 TODO:
 
+- use potion by throwing it vs drinking it
+- range limits on items
+
 - items
 	- can be owned by a mob
 	- can exist on a tile (multiple items on one tile?)

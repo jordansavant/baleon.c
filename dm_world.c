@@ -393,6 +393,19 @@ bool wld_pickup_item(struct wld_mob *m, struct wld_item *i)
 
 	return false;
 }
+bool wld_mob_drink_item(struct wld_mob *mob, int itemslot)
+{
+	struct wld_item* item = wld_get_item_in_slot(mob, itemslot);
+	if (item != NULL) {
+		struct wld_itemtype *it = wld_get_itemtype(item->type);
+		if (it->fn_drink) {
+			it->fn_drink(item, mob);
+			// TODO, destroy item
+			return true;
+		}
+	}
+	return false;
+}
 bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
 {
 	// TODO UH OH, HOW DO I RETURN AN ITEM TO THE MAP? LOOK FOR A NULL SLOT AND IF NOT REMALLOC?
@@ -538,6 +551,16 @@ void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee atta
 		else if (y > mob->map_y)
 			mob->queue_y += 1;
 	}
+}
+void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item) // item can be NULL if it was not an item
+{
+	mob->health += amt;
+	if (mob->health > mob->maxhealth)
+		mob->health = mob->maxhealth;
+	if (mob->is_player && mob->map->on_player_heal)
+		mob->map->on_player_heal(mob->map, mob, amt, item);
+	else if(mob->map->on_mob_heal)
+		mob->map->on_mob_heal(mob->map, mob, amt, item);
 }
 void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item)
 {
@@ -803,6 +826,9 @@ ai_rerun:
 }
 
 
+
+
+
 ///////////////////////////
 // ITEM ACTIONS
 
@@ -907,6 +933,19 @@ void itm_hit_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 		ai_mob_whiff_mob(user, target, item);
 	}
 }
+
+// POTIONS
+void itm_drink_potion(struct wld_item *item, struct wld_mob *user)
+{
+	// TODO minor vs major healing levels
+	int hp = dm_randf() * 10;
+	ai_mob_heal(user, hp, item);
+}
+
+
+
+
+
 
 
 ///////////////////////////
@@ -1177,6 +1216,7 @@ struct wld_map* wld_newmap(int depth)
 	map->on_cursormove = NULL;
 	map->on_playermove = NULL;
 
+	map->on_mob_heal = NULL;
 	map->on_mob_attack_mob = NULL;
 	map->on_mob_attack_player = NULL;
 	map->on_mob_whiff_mob = NULL;
@@ -1184,6 +1224,7 @@ struct wld_map* wld_newmap(int depth)
 	map->on_mob_kill_mob = NULL;
 	map->on_mob_kill_player = NULL;
 
+	map->on_player_heal = NULL;
 	map->on_player_attack_mob = NULL;
 	map->on_player_whiff_mob = NULL;
 	map->on_player_kill_mob = NULL;
@@ -1296,6 +1337,7 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
+			NULL,
 			"",
 			""
 		},
@@ -1307,6 +1349,7 @@ void wld_setup()
 			false,
 			"a potion of minor healing",
 			"minor healing potion",
+			itm_drink_potion,
 			NULL,
 			NULL,
 			NULL,
@@ -1323,6 +1366,7 @@ void wld_setup()
 			false,
 			"a shortsword",
 			"shortsword",
+			NULL,
 			itm_target_melee,
 			itm_can_use_melee,
 			itm_use_melee,
@@ -1339,6 +1383,7 @@ void wld_setup()
 			false,
 			"a shortbow",
 			"shortbow",
+			NULL,
 			itm_target_ranged_los,
 			itm_can_use_ranged_los,
 			itm_use_ranged_los,
@@ -1359,6 +1404,7 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
+			NULL,
 			/////////////////////////////////////////////////////////
 			"Runic art covers the parchment surface showing a",
 			"large swathe of fire."
@@ -1371,6 +1417,7 @@ void wld_setup()
 			true,
 			"a set of leather armor",
 			"leather armor",
+			NULL,
 			NULL,
 			NULL,
 			NULL,
@@ -1389,6 +1436,7 @@ void wld_setup()
 		wld_itemtypes[i].is_aeq = its[i].is_aeq;
 		wld_itemtypes[i].short_desc = its[i].short_desc;
 		wld_itemtypes[i].title = its[i].title;
+		wld_itemtypes[i].fn_drink = its[i].fn_drink;
 		wld_itemtypes[i].fn_target = its[i].fn_target;
 		wld_itemtypes[i].fn_can_use = its[i].fn_can_use;
 		wld_itemtypes[i].fn_use = its[i].fn_use;

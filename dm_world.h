@@ -123,6 +123,7 @@ struct wld_itemtype {
 	bool is_weq, is_aeq;
 	char *short_desc;
 	char *title;
+	void (*fn_drink)(struct wld_item*, struct wld_mob*);
 	void (*fn_target)(struct wld_item*, struct wld_mob*, void (*inspect)(int,int));
 	bool (*fn_can_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*fn_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
@@ -161,6 +162,7 @@ struct wld_map {
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
 	void (*on_playermove)(struct wld_map*, struct wld_mob *, int x, int y, int index);
 
+	void (*on_mob_heal)(struct wld_map*, struct wld_mob *mob, int amt, struct wld_item* item);
 	void (*on_mob_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, int dmg, struct wld_item* item);
 	void (*on_mob_attack_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, int dmg, struct wld_item* item);
 	void (*on_mob_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
@@ -168,6 +170,7 @@ struct wld_map {
 	void (*on_mob_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
 	void (*on_mob_kill_player)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
 
+	void (*on_player_heal)(struct wld_map*, struct wld_mob *mob, int amt, struct wld_item* item);
 	void (*on_player_attack_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, int dmg, struct wld_item* item);
 	void (*on_player_whiff_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
 	void (*on_player_kill_mob)(struct wld_map*, struct wld_mob *agg, struct wld_mob *def, struct wld_item* item);
@@ -214,6 +217,7 @@ bool wld_has_inventory(struct wld_mob*);
 bool wld_pickup_item(struct wld_mob*, struct wld_item*);
 bool wld_mob_equip(struct wld_mob*, int);
 bool wld_mob_unequip(struct wld_mob*, int);
+bool wld_mob_drink_item(struct wld_mob *mob, int itemslot);
 bool wld_mob_drop_item(struct wld_mob*, int);
 void wld_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
@@ -232,6 +236,7 @@ double rpg_calc_ranged_coh(struct wld_mob *aggressor, struct wld_mob *defender);
 void ai_default_wander(struct wld_mob *mob);
 bool ai_default_detect_combat(struct wld_mob *mob);
 void ai_default_decide_combat(struct wld_mob *mob);
+void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item);
 void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item* item);
 bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
