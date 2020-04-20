@@ -1009,6 +1009,7 @@ void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user)
 	int hp = dm_randf() * 10;
 	ai_mob_heal(user, hp, item);
 	wld_mob_destroy_item(user, item);
+	wld_log("Potion consumed.");
 }
 void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
 {
@@ -1016,6 +1017,7 @@ void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld
 	int hp = dm_randf() * 10;
 	ai_mob_heal(target, hp, item);
 	wld_mob_destroy_item(user, item);
+	wld_log("Potion hit target and was destroyed.");
 }
 
 
@@ -1353,8 +1355,18 @@ void wld_delmap(struct wld_map *map)
 ///////////////////////////
 // WORLD INITALIZATION
 
-void wld_setup()
+void(*logger)(char *) = NULL;
+
+void wld_log(char *msg)
 {
+	if (logger)
+		logger(msg);
+}
+
+void wld_setup(void(*fn_log)(char *))
+{
+	logger = fn_log;
+
 	// build color maps of all bg/fg color pairs
 	for (int i=0; i < WLD_COLOR_COUNT; i++) {
 		for (int j=0; j < WLD_COLOR_COUNT; j++) {

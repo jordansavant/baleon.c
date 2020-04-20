@@ -282,7 +282,8 @@ void wld_delmap(struct wld_map *map);
 
 ///////////////////////////
 // WORLD INITALIZATION
-void wld_setup();
+void wld_log(char* msg);
+void wld_setup(void(*fn_log)(char *));
 void wld_teardown();
 
 #endif

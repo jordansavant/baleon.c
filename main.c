@@ -109,6 +109,7 @@ enum GAME_STATE
 enum GAME_STATE game_state = GS_START;
 bool trigger_world = false;
 
+void ui_loginfo(char*); // pointer to tbd function so we can pass it to world
 bool term_resized = false;
 void on_term_resize(int dummy)
 {
@@ -149,7 +150,7 @@ bool g_setup()
 	init_pair(SCOLOR_ALLBLACK,	COLOR_BLACK,	COLOR_BLACK);
 
 	// setup world colors
-	wld_setup();
+	wld_setup(ui_loginfo);
 
 	// set primary color
 	bkgd(COLOR_PAIR(SCOLOR_NORMAL));
