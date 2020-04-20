@@ -109,7 +109,6 @@ enum GAME_STATE
 enum GAME_STATE game_state = GS_START;
 bool trigger_world = false;
 
-void ui_loginfo(char*); // pointer to tbd function so we can pass it to world
 bool term_resized = false;
 void on_term_resize(int dummy)
 {
@@ -150,7 +149,7 @@ bool g_setup()
 	init_pair(SCOLOR_ALLBLACK,	COLOR_BLACK,	COLOR_BLACK);
 
 	// setup world colors
-	wld_setup(ui_loginfo);
+	wld_setup();
 
 	// set primary color
 	bkgd(COLOR_PAIR(SCOLOR_NORMAL));
@@ -983,7 +982,16 @@ void ai_player_input(struct wld_mob* player)
 					// we are in targeting mode, be it an item, spell or whatever set us into this mode
 					switch (key) {
 					case KEY_SPACE:
-						trigger_world = ai_player_trigger_target(player);
+						if (player->active_item) {
+							trigger_world = ai_player_trigger_target(player);
+							if (trigger_world) {
+								if (player->active_item == NULL) {
+									ai_player_leave_targeting(player);
+								}
+							}
+						} else {
+							trigger_world = ai_player_trigger_target(player);
+						}
 						if (!trigger_world)
 							ui_loginfo("Unable to attack such a target.");
 						listen = false;
@@ -1498,6 +1506,26 @@ void g_newgame()
 
 ///////////////////////////
 // MAIN
+
+// LOGGERS FOR WORLD
+void wld_log(char *msg)
+{
+	ui_loginfo(msg);
+}
+void wld_log_s(char *msg, char *s)
+{
+	ui_loginfo_s(msg, s);
+}
+void wld_log_ms(char* msg, struct wld_mob* mob)
+{
+	struct wld_mobtype *mt = wld_get_mobtype(mob->type);
+	ui_loginfo_s(msg, mt->short_desc);
+}
+void wld_log_it(char* msg, struct wld_item* item)
+{
+	struct wld_itemtype *it = wld_get_itemtype(item->type);
+	ui_loginfo_s(msg, it->title);
+}
 
 int main(void)
 {

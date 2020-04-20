@@ -408,7 +408,7 @@ bool wld_mob_drink_item(struct wld_mob *mob, int itemslot)
 		struct wld_itemtype *it = wld_get_itemtype(item->type);
 		if (it->fn_drink) {
 			it->fn_drink(item, mob);
-			// TODO, destroy item
+			wld_mob_resolve_item_uses(mob, item);
 			return true;
 		}
 	}
@@ -418,6 +418,11 @@ bool wld_mob_drink_item(struct wld_mob *mob, int itemslot)
 void wld_mob_destroy_item_in_slot(struct wld_mob* mob, int itemslot)
 {
 	struct wld_item *item = mob->inventory[itemslot];
+	if (mob->is_player)
+		wld_log_it("Your %s was destroyed.", item);
+
+	if (item == mob->active_item)
+		mob->active_item = NULL;
 	free(item);
 	mob->inventory[itemslot] = NULL;
 }
@@ -428,11 +433,17 @@ void wld_mob_destroy_item(struct wld_mob* mob, struct wld_item* item)
 	for (int i=0; i<INVENTORY_SIZE; i++) {
 		struct wld_item *check = mob->inventory[i];
 		if (check == item) {
-			dmlogi("destory", i);
 			wld_mob_destroy_item_in_slot(mob, i);
 			break;
 		}
 	}
+}
+
+void wld_mob_resolve_item_uses(struct wld_mob* mob, struct wld_item* item)
+{
+	struct wld_itemtype *it = wld_get_itemtype(item->type);
+	if (it->has_uses && --item->uses <= 0)
+		wld_mob_destroy_item(mob, item);
 }
 
 bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
@@ -658,6 +669,8 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
 		if (it->fn_can_use(weapon, aggressor, tile)) {
 			it->fn_use(weapon, aggressor, tile);
+			// TODO item uses?
+			wld_mob_resolve_item_uses(aggressor, weapon);
 			return;
 		}
 	} else {
@@ -677,6 +690,8 @@ bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile
 	struct wld_itemtype *it = wld_get_itemtype(item->type);
 	if (it->fn_can_use(item, mob, cursor_tile)) {
 		it->fn_use(item, mob, cursor_tile);
+		// if this item can be used up then do so
+		wld_mob_resolve_item_uses(mob, item);
 		return true;
 	}
 	return false;
@@ -946,7 +961,6 @@ bool itm_can_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct 
 	// I would say we CAN use the item at any range despite its limit
 	// given that we will allow them to target any tile that is visible without regard for
 	// blocked obstacles or mobs in between
-	dmlog("can use item");
 	return true; // we can shoot it anywhere, even into the darkness
 	//return cursor_tile->is_visible;
 }
@@ -1008,16 +1022,12 @@ void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user)
 	// TODO minor vs major healing levels
 	int hp = dm_randf() * 10;
 	ai_mob_heal(user, hp, item);
-	wld_mob_destroy_item(user, item);
-	wld_log("Potion consumed.");
 }
 void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
 {
 	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
 	int hp = dm_randf() * 10;
 	ai_mob_heal(target, hp, item);
-	wld_mob_destroy_item(user, item);
-	wld_log("Potion hit target and was destroyed.");
 }
 
 
@@ -1237,6 +1247,7 @@ void wld_genitems(struct wld_map *map)
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
 			item->type = ITEM_WEAPON_SHORTSWORD;
 			item->has_dropped = false;
+			item->uses = wld_itemtypes[ITEM_WEAPON_SHORTSWORD].base_uses;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
 		} else if (i == 1) {
 			item = (struct wld_item*)malloc(sizeof(struct wld_item));
@@ -1246,6 +1257,7 @@ void wld_genitems(struct wld_map *map)
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
 			item->type = ITEM_WEAPON_SHORTBOW;
 			item->has_dropped = false;
+			item->uses = wld_itemtypes[ITEM_WEAPON_SHORTBOW].base_uses;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
 		} else if (i == 2) {
 			item = (struct wld_item*)malloc(sizeof(struct wld_item));
@@ -1255,6 +1267,7 @@ void wld_genitems(struct wld_map *map)
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
 			item->type = ITEM_ARMOR_LEATHER;
 			item->has_dropped = false;
+			item->uses = wld_itemtypes[ITEM_ARMOR_LEATHER].base_uses;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
 		} else if (i == 3) {
 			item = (struct wld_item*)malloc(sizeof(struct wld_item));
@@ -1264,6 +1277,7 @@ void wld_genitems(struct wld_map *map)
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
 			item->type = ITEM_POTION_MINOR_HEAL;
 			item->has_dropped = false;
+			item->uses = wld_itemtypes[ITEM_POTION_MINOR_HEAL].base_uses;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
 		} else {
 			map->items[i] = NULL;
@@ -1355,17 +1369,8 @@ void wld_delmap(struct wld_map *map)
 ///////////////////////////
 // WORLD INITALIZATION
 
-void(*logger)(char *) = NULL;
-
-void wld_log(char *msg)
+void wld_setup()
 {
-	if (logger)
-		logger(msg);
-}
-
-void wld_setup(void(*fn_log)(char *))
-{
-	logger = fn_log;
 
 	// build color maps of all bg/fg color pairs
 	for (int i=0; i < WLD_COLOR_COUNT; i++) {
@@ -1429,6 +1434,7 @@ void wld_setup(void(*fn_log)(char *))
 			NULL,
 			NULL,
 			0,
+			false, 0, // uses
 			"",
 			"",
 			"",
@@ -1448,6 +1454,8 @@ void wld_setup(void(*fn_log)(char *))
 			itm_use_ranged_los,
 			itm_hit_minorhealth,
 			5,
+			true,
+			1,
 			"quaff",
 			"throw",
 			/////////////////////////////////////////////////////////
@@ -1468,6 +1476,7 @@ void wld_setup(void(*fn_log)(char *))
 			itm_use_melee,
 			itm_hit_melee_swordstyle,
 			1,
+			false, 0, // uses
 			"",
 			"strike",
 			/////////////////////////////////////////////////////////
@@ -1488,6 +1497,7 @@ void wld_setup(void(*fn_log)(char *))
 			itm_use_ranged_los,
 			itm_hit_ranged_los_bowstyle,
 			10,
+			false, 0, // uses
 			"",
 			"shoot",
 			/////////////////////////////////////////////////////////
@@ -1508,6 +1518,7 @@ void wld_setup(void(*fn_log)(char *))
 			NULL,
 			NULL,
 			0,
+			true,1,//uses
 			"",
 			"",
 			/////////////////////////////////////////////////////////
@@ -1528,6 +1539,7 @@ void wld_setup(void(*fn_log)(char *))
 			NULL,
 			NULL,
 			0,
+			false,0, // uses
 			"",
 			"",
 			/////////////////////////////////////////////////////////
@@ -1550,6 +1562,8 @@ void wld_setup(void(*fn_log)(char *))
 		wld_itemtypes[i].fn_use = its[i].fn_use;
 		wld_itemtypes[i].fn_hit = its[i].fn_hit;
 		wld_itemtypes[i].base_range = its[i].base_range;
+		wld_itemtypes[i].has_uses = its[i].has_uses;
+		wld_itemtypes[i].base_uses = its[i].base_uses;
 		wld_itemtypes[i].drink_label = its[i].drink_label;
 		wld_itemtypes[i].use_label = its[i].use_label;
 		wld_itemtypes[i].use_text_1 = its[i].use_text_1;

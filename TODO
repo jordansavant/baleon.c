@@ -2,6 +2,7 @@ TODO:
 
 now
 - better event messaging, does not scale well, world needs to be able to define strings for ui log
+- bug: does not leave target mode after destroying item
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items

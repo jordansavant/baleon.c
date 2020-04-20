@@ -115,6 +115,7 @@ struct wld_item {
 	int map_x, map_y, map_index;
 	enum WLD_ITEMTYPE type;
 	bool has_dropped;
+	int uses;
 };
 struct wld_itemtype {
 	enum WLD_ITEMTYPE type;
@@ -129,6 +130,8 @@ struct wld_itemtype {
 	void (*fn_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*fn_hit)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	int base_range;
+	bool has_uses;
+	int base_uses;
 	char *drink_label;
 	char *use_label;
 	char *use_text_1;
@@ -224,6 +227,9 @@ bool wld_pickup_item(struct wld_mob*, struct wld_item*);
 bool wld_mob_equip(struct wld_mob*, int);
 bool wld_mob_unequip(struct wld_mob*, int);
 bool wld_mob_drink_item(struct wld_mob *mob, int itemslot);
+void wld_mob_destroy_item_in_slot(struct wld_mob* mob, int itemslot);
+void wld_mob_destroy_item(struct wld_mob* mob, struct wld_item* item);
+void wld_mob_resolve_item_uses(struct wld_mob* mob, struct wld_item* item);
 bool wld_mob_drop_item(struct wld_mob*, int);
 void wld_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
@@ -283,7 +289,16 @@ void wld_delmap(struct wld_map *map);
 ///////////////////////////
 // WORLD INITALIZATION
 void wld_log(char* msg);
-void wld_setup(void(*fn_log)(char *));
+void wld_setup();
 void wld_teardown();
+
+
+///////////////////////////
+// LOGGERS
+// These are built in main
+void wld_log(char* msg);
+void wld_log_s(char* msg, char* s2);
+void wld_log_ms(char* msg, struct wld_mob* mob);
+void wld_log_it(char* msg, struct wld_item* item);
 
 #endif
