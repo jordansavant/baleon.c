@@ -233,9 +233,9 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely)
 		mob->map_x = newx;
 		mob->map_y = newy;
 
-		// if player, collect items he walks over
+		// if player, collect items he walks over unless he dropped it before
 		struct wld_item *item = wld_getitemat(mob->map, mob->map_x, mob->map_y);
-		if (mob->is_player && item != NULL && wld_has_inventory(mob)) {
+		if (mob->is_player && item != NULL && !item->has_dropped && wld_has_inventory(mob)) {
 			wld_pickup_item(mob, item);
 		}
 	}
@@ -415,6 +415,7 @@ bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
 
 		// remove from inventory
 		mob->inventory[itemslot] = NULL;
+		item->has_dropped = true; // mark as having been dropped before
 
 		if (mob->is_player && mob->map->on_player_pickup_item)
 			mob->map->on_player_drop_item(mob->map, mob, item);
@@ -1130,6 +1131,7 @@ void wld_genitems(struct wld_map *map)
 			item->map_y = map->rows / 2 + 2;
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
 			item->type = ITEM_WEAPON_SHORTSWORD;
+			item->has_dropped = false;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
 		} else if (i == 1) {
 			item = (struct wld_item*)malloc(sizeof(struct wld_item));
@@ -1138,6 +1140,7 @@ void wld_genitems(struct wld_map *map)
 			item->map_y = map->rows / 2 + 2;
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
 			item->type = ITEM_WEAPON_SHORTBOW;
+			item->has_dropped = false;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
 		} else if (i == 2) {
 			item = (struct wld_item*)malloc(sizeof(struct wld_item));
@@ -1146,6 +1149,7 @@ void wld_genitems(struct wld_map *map)
 			item->map_y = map->rows / 2 - 1;
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
 			item->type = ITEM_ARMOR_LEATHER;
+			item->has_dropped = false;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
 		} else {
 			map->items[i] = NULL;

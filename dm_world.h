@@ -114,6 +114,7 @@ struct wld_item {
 	int id;
 	int map_x, map_y, map_index;
 	enum WLD_ITEMTYPE type;
+	bool has_dropped;
 };
 struct wld_itemtype {
 	enum WLD_ITEMTYPE type;
