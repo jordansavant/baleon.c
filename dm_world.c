@@ -9,40 +9,28 @@
 ///////////////////////////
 // RAW DATA
 
-enum COLOR_INDEX {
-	CLX_BLACK,  // 0 void
-	CLX_GREEN,  // 1 grass
-	CLX_WHITE,  // 2 snow
-	CLX_RED,    // 3 fire
-	CLX_BLUE,   // 4 water
-	CLX_CYAN,   // 5
-	CLX_YELLOW, // 6
-	CLX_MAGENTA, // 7
+#define WLD_COLOR_BASE 100
+#define WLD_COLOR_COUNT 8
+enum WLD_COLOR_INDEX {
+	WCLR_BLACK,   // 0
+	WCLR_GREEN,   // 1
+	WCLR_WHITE,   // 2
+	WCLR_RED,     // 3
+	WCLR_BLUE,    // 4
+	WCLR_CYAN,    // 5
+	WCLR_YELLOW,  // 6
+	WCLR_MAGENTA, // 7
 };
-
-int bg_colors[] = {
-	COLOR_BLACK,  // 0 void
-	COLOR_GREEN,  // 1 grass
-	COLOR_WHITE,  // 2 snow
-	COLOR_RED,    // 3 fire
-	COLOR_BLUE,   // 4 water
-	COLOR_CYAN,   // 5
-	COLOR_YELLOW, // 6
+int curses_colors[] = {
+	COLOR_BLACK,   // 0
+	COLOR_GREEN,   // 1
+	COLOR_WHITE,   // 2
+	COLOR_RED,     // 3
+	COLOR_BLUE,    // 4
+	COLOR_CYAN,    // 5
+	COLOR_YELLOW,  // 6
 	COLOR_MAGENTA, // 7
 };
-int fg_colors[] = {
-	COLOR_BLACK,  // 0
-	COLOR_GREEN,  // 1
-	COLOR_WHITE,  // 2
-	COLOR_RED,    // 3
-	COLOR_BLUE,   // 4
-	COLOR_CYAN,   // 5
-	COLOR_YELLOW, // 6
-	COLOR_MAGENTA, // 7
-};
-int color_base = 100;
-int fg_size = 8;
-int bg_size = 8;
 
 
 ///////////////////////////
@@ -156,28 +144,28 @@ int wld_cpair_tm(int tiletype, int mobtype)
 {
 	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
 	if (mobtype == 0)
-		return color_base + (tt->fg_color * fg_size + tt->bg_color);
+		return WLD_COLOR_BASE + (tt->fg_color * WLD_COLOR_COUNT + tt->bg_color);
 	struct wld_mobtype *mt = wld_get_mobtype(mobtype);
-	return color_base + (mt->fg_color * fg_size + tt->bg_color);
+	return WLD_COLOR_BASE + (mt->fg_color * WLD_COLOR_COUNT + tt->bg_color);
 }
 int wld_cpair_ti(int tiletype, int itemtype)
 {
 	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
 	if (itemtype == 0)
-		return color_base + (tt->fg_color * fg_size + tt->bg_color);
+		return WLD_COLOR_BASE + (tt->fg_color * WLD_COLOR_COUNT + tt->bg_color);
 	struct wld_itemtype *it = wld_get_itemtype(itemtype);
-	return color_base + (it->fg_color * fg_size + tt->bg_color);
+	return WLD_COLOR_BASE + (it->fg_color * WLD_COLOR_COUNT + tt->bg_color);
 }
 int wld_cpairmem(int tiletype)
 {
 	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
-	return color_base + (tt->memory_fg_color * fg_size + tt->memory_bg_color);
+	return WLD_COLOR_BASE + (tt->memory_fg_color * WLD_COLOR_COUNT + tt->memory_bg_color);
 }
 
 int wld_cpair_bg(int tiletype)
 {
 	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
-	return color_base + tt->bg_color; // no addition of foreground so it is black
+	return WLD_COLOR_BASE + tt->bg_color; // no addition of foreground so it is black
 }
 int wld_calcindex(int x, int y, int cols)
 {
@@ -1248,23 +1236,23 @@ void wld_delmap(struct wld_map *map)
 
 void wld_setup()
 {
-	// build color maps
-	for (int i=0; i < bg_size; i++) {
-		for (int j=0; j < fg_size; j++) {
-			int index = j * fg_size + i;
-			int colorpair_id = color_base + index;
-			init_pair(colorpair_id, fg_colors[j], bg_colors[i]);
+	// build color maps of all bg/fg color pairs
+	for (int i=0; i < WLD_COLOR_COUNT; i++) {
+		for (int j=0; j < WLD_COLOR_COUNT; j++) {
+			int index = j * WLD_COLOR_COUNT + i;
+			int colorpair_id = WLD_COLOR_BASE + index;
+			init_pair(colorpair_id, curses_colors[j], curses_colors[i]);
 		}
 	}
 
 	// copy tiletypes into malloc
 	struct wld_tiletype tts[] = {
-		{ TILE_VOID,            ' ', 0, 0, ' ', 0, 0, false, "" }, // 0
-		{ TILE_GRASS,           '"', 0, 1, '"', 0, 4, false, "a small tuft of grass" }, // 1
-		{ TILE_WATER,           ' ', 4, 2, ' ', 0, 0, false, "a pool of water glistens" }, // 2
-		{ TILE_TREE,            'T', 0, 1, 'T', 0, 4, true,  "a large tree" }, // 3
-		{ TILE_STONEWALL,       '#', 2, 2, '#', 0, 4, true,  "rough stone wall" }, // 4
-		{ TILE_STONEFLOOR,      '.', 0, 2, '.', 0, 4, false, "rough stone floor" }, // 5
+		{ TILE_VOID,            ' ', WCLR_BLACK, WCLR_BLACK, ' ', WCLR_BLACK, WCLR_BLACK, false, "" },
+		{ TILE_GRASS,           '"', WCLR_BLACK, WCLR_GREEN, '"', WCLR_BLACK, WCLR_BLUE,  false, "a small tuft of grass" },
+		{ TILE_WATER,           ' ', WCLR_BLUE,  WCLR_WHITE, ' ', WCLR_BLACK, WCLR_BLACK, false, "a pool of water glistens" },
+		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  true,  "a large tree" },
+		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true,  "rough stone wall" },
+		{ TILE_STONEFLOOR,      '.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "rough stone floor" },
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
@@ -1281,9 +1269,9 @@ void wld_setup()
 
 	// copy mob types into malloc
 	struct wld_mobtype mts [] = {
-		{ MOB_VOID,	' ', 0, "" },
-		{ MOB_PLAYER,	'@', 7, "yourself", "You"},
-		{ MOB_BUGBEAR,	'b', 3, "a small bugbear", "small bugbear" },
+		{ MOB_VOID,	' ', WCLR_BLACK,   "" },
+		{ MOB_PLAYER,	'@', WCLR_MAGENTA, "yourself", "You"},
+		{ MOB_BUGBEAR,	'b', WCLR_RED,     "a small bugbear", "small bugbear" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
@@ -1295,13 +1283,102 @@ void wld_setup()
 	}
 
 	// copy item types into malloc
-	struct wld_itemtype its [] = {																			/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
-		{ ITEM_VOID,			' ', CLX_BLACK,		false, false, "", "", NULL, NULL, NULL, NULL, "", ""},
-		{ ITEM_POTION_MINOR_HEAL,	';', CLX_YELLOW,	false, false, "a potion of minor healing", "minor healing potion", NULL, NULL, NULL, NULL,			"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
-		{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	true, false, "a shortsword", "shortsword", itm_target_melee, itm_can_use_melee, itm_use_melee, itm_hit_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
-		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	true, false, "a shortbow", "shortbow", itm_target_ranged_los, itm_can_use_ranged_los, itm_use_ranged_los, itm_hit_ranged_los,					"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
-		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL, NULL, NULL,				"Runic art covers the parchment surface showing a",		"large swathe of fire." },
-		{ ITEM_ARMOR_LEATHER,		'M', CLX_YELLOW,	false, true, "a set of leather armor", "leather armor", NULL, NULL, NULL, NULL,					"Humble but sturdy this set of leather armor is a rogue's",	"favorite friend." },
+	struct wld_itemtype its [] = {
+		{
+			ITEM_VOID,
+			' ',
+			WCLR_BLACK,
+			false,
+			false,
+			"",
+			"",
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			"",
+			""
+		},
+		{
+			ITEM_POTION_MINOR_HEAL,
+			';',
+			WCLR_YELLOW,
+			false,
+			false,
+			"a potion of minor healing",
+			"minor healing potion",
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			/////////////////////////////////////////////////////////
+			"The glass of the potion is warm to the touch, its",
+			"properties should heal a small amount."
+		},
+		{
+			ITEM_WEAPON_SHORTSWORD,
+			'/',
+			WCLR_YELLOW,
+			true,
+			false,
+			"a shortsword",
+			"shortsword",
+			itm_target_melee,
+			itm_can_use_melee,
+			itm_use_melee,
+			itm_hit_melee,
+			/////////////////////////////////////////////////////////
+			"Though short, its sharp point could plunge deeply into",
+			"a soft skinned enemy."
+		},
+		{
+			ITEM_WEAPON_SHORTBOW,
+			')',
+			WCLR_YELLOW,
+			true,
+			false,
+			"a shortbow",
+			"shortbow",
+			itm_target_ranged_los,
+			itm_can_use_ranged_los,
+			itm_use_ranged_los,
+			itm_hit_ranged_los,
+			/////////////////////////////////////////////////////////
+			"Its string has been worn but the wood is strong,this",
+			"small bow could fell small creatures"
+		},
+		{
+			ITEM_SCROLL_FIREBOMB,
+			'=',
+			WCLR_YELLOW,
+			false,
+			false,
+			"a scroll of firebomb",
+			"scroll of firebomb",
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			/////////////////////////////////////////////////////////
+			"Runic art covers the parchment surface showing a",
+			"large swathe of fire."
+		},
+		{
+			ITEM_ARMOR_LEATHER,
+			'M',
+			WCLR_YELLOW,
+			false,
+			true,
+			"a set of leather armor",
+			"leather armor",
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			/////////////////////////////////////////////////////////
+			"Humble but sturdy this set of leather armor is a rogue's",
+			"favorite friend."
+		},
 	};
 	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));
 	for (int i=0; i<ARRAY_SIZE(its); i++) {
