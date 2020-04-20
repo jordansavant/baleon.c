@@ -441,6 +441,11 @@ void ui_write_rc_len(WINDOW *win, int row, int col, char *msg, int length)
 	wmove(win, row + 1, col + 2);
 	waddstr(win, buffer);
 }
+void ui_write_char(WINDOW *win, int row, int col, unsigned long ch)
+{
+	wmove(win, row + 1, col + 2);
+	waddch(win, ch);
+}
 void ui_write_rc(WINDOW *win, int row, int col, char *msg)
 {
 	dm_clear_row_in_win(win, row + 1);
@@ -650,8 +655,9 @@ void ui_update_inventorypanel(struct wld_map *map)
 		if (w != NULL) {
 			struct wld_itemtype *it = wld_get_itemtype(w->type);
 			char buffer[INV_ITEM_LENGTH];
-			snprintf(buffer, INV_ITEM_LENGTH, "w: %s", it->title);
+			snprintf(buffer, INV_ITEM_LENGTH, "w: - %s", it->title);
 			ui_write_rc(inventorypanel, 2, 1, buffer);
+			ui_write_char(inventorypanel, 2, 4, it->sprite);
 		}
 		else
 			ui_write_rc(inventorypanel, 2, 1, "-- none --");
@@ -661,8 +667,9 @@ void ui_update_inventorypanel(struct wld_map *map)
 		if (a != NULL) {
 			struct wld_itemtype *it = wld_get_itemtype(a->type);
 			char buffer[INV_ITEM_LENGTH];
-			snprintf(buffer, INV_ITEM_LENGTH, "a: %s", it->title);
+			snprintf(buffer, INV_ITEM_LENGTH, "a: - %s", it->title);
 			ui_write_rc(inventorypanel, 4, 1, buffer);
+			ui_write_char(inventorypanel, 4, 4, it->sprite);
 		}
 		else
 			ui_write_rc(inventorypanel, 4, 1, "-- none --");
@@ -686,15 +693,19 @@ void ui_update_inventorypanel(struct wld_map *map)
 			}
 			char buffer[INV_ITEM_LENGTH];
 			char *desc;
+			unsigned long sprite;
 			struct wld_item *item = map->player->inventory[i];
 			if (item != NULL) {
 				struct wld_itemtype *it = wld_get_itemtype(item->type);
 				desc = it->title;
+				sprite = it->sprite;
 			} else {
 				desc = "--";
+				sprite = '-';
 			}
-			snprintf(buffer, INV_ITEM_LENGTH, "%c: %s", key, desc);
+			snprintf(buffer, INV_ITEM_LENGTH, "%c: - %s", key, desc);
 			ui_write_rc(inventorypanel, row, 1, buffer);
+			ui_write_char(inventorypanel, row, 4, sprite); // stick sprite over '-'
 			row++;
 		}
 		ui_write_rc(inventorypanel, row + 1, 1, "x: close");

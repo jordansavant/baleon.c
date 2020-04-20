@@ -1113,7 +1113,7 @@ void wld_genmobs(struct wld_map *map)
 void wld_genitems(struct wld_map *map)
 {
 	// items are malloc'd pointers, not structs in map memory because they need to be moved
-	int item_count = 3;
+	int item_count = 4;
 	map->items = (struct wld_item**)malloc(MALLOC_ITEM_SIZE * sizeof(struct wld_item*));
 	map->items_length = item_count;
 
@@ -1149,6 +1149,15 @@ void wld_genitems(struct wld_map *map)
 			item->map_y = map->rows / 2 - 1;
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
 			item->type = ITEM_ARMOR_LEATHER;
+			item->has_dropped = false;
+			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
+		} else if (i == 3) {
+			item = (struct wld_item*)malloc(sizeof(struct wld_item));
+			item->id = i;
+			item->map_x = map->cols / 2 + 1;
+			item->map_y = map->rows / 2 + 3;
+			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+			item->type = ITEM_POTION_MINOR_HEAL;
 			item->has_dropped = false;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
 		} else {
@@ -1288,7 +1297,7 @@ void wld_setup()
 	// copy item types into malloc
 	struct wld_itemtype its [] = {																			/////////////////////////////////////////////////////////	/////////////////////////////////////////////////////////
 		{ ITEM_VOID,			' ', CLX_BLACK,		false, false, "", "", NULL, NULL, NULL, NULL, "", ""},
-		{ ITEM_POTION_MINOR_HEAL,	'i', CLX_YELLOW,	false, false, "a potion of minor healing", "minor healing potion", NULL, NULL, NULL, NULL,			"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
+		{ ITEM_POTION_MINOR_HEAL,	ACS_LANTERN, CLX_YELLOW,	false, false, "a potion of minor healing", "minor healing potion", NULL, NULL, NULL, NULL,			"The glass of the potion is warm to the touch, its",		"properties should heal a small amount." },
 		{ ITEM_WEAPON_SHORTSWORD,	'/', CLX_YELLOW,	true, false, "a shortsword", "shortsword", itm_target_melee, itm_can_use_melee, itm_use_melee, itm_hit_melee,	"Though short, its sharp point could plunge deeply into",	"a soft skinned enemy." },
 		{ ITEM_WEAPON_SHORTBOW,		')', CLX_YELLOW,	true, false, "a shortbow", "shortbow", itm_target_ranged_los, itm_can_use_ranged_los, itm_use_ranged_los, itm_hit_ranged_los,					"Its string has been worn but the wood is strong, this",	"small bow could fell small creatures" },
 		{ ITEM_SCROLL_FIREBOMB,		'=', CLX_YELLOW,	false, false, "a scroll of firebomb", "scroll of firebomb", NULL, NULL, NULL, NULL,				"Runic art covers the parchment surface showing a",		"large swathe of fire." },
