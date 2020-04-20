@@ -745,10 +745,16 @@ void ui_update_usepanel(struct wld_map *map)
 					ui_write(usepanel, offset, "e: equip");
 					offset++;
 				}
-				if (it->fn_use != NULL)
-					ui_write(usepanel, offset++, "u: use");
-				if (it->fn_drink != NULL)
-					ui_write(usepanel, offset++, "q: quaff");
+				if (it->fn_use != NULL) {
+					char label[USE_LENGTH];
+					snprintf(label, USE_LENGTH, "u: %s", it->use_label);
+					ui_write(usepanel, offset++, label);
+				}
+				if (it->fn_drink != NULL) {
+					char label[USE_LENGTH];
+					snprintf(label, USE_LENGTH, "q: %s", it->drink_label);
+					ui_write(usepanel, offset++, label);
+				}
 				ui_write(usepanel, offset++, "d: drop");
 				ui_write(usepanel, ++offset, "x: close");
 			}

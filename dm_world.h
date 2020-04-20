@@ -128,6 +128,8 @@ struct wld_itemtype {
 	bool (*fn_can_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*fn_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*fn_hit)(struct wld_item*, struct wld_mob*, struct wld_tile*);
+	char *drink_label;
+	char *use_label;
 	char *use_text_1;
 	char *use_text_2;
 };

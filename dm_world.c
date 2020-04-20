@@ -1349,6 +1349,8 @@ void wld_setup()
 			NULL,
 			NULL,
 			"",
+			"",
+			"",
 			""
 		},
 		{
@@ -1364,6 +1366,8 @@ void wld_setup()
 			itm_can_use_ranged_los,
 			itm_use_ranged_los,
 			itm_hit_minorhealth,
+			"quaff",
+			"throw",
 			/////////////////////////////////////////////////////////
 			"The glass of the potion is warm to the touch, its",
 			"properties should heal a small amount."
@@ -1381,6 +1385,8 @@ void wld_setup()
 			itm_can_use_melee,
 			itm_use_melee,
 			itm_hit_melee_swordstyle,
+			"",
+			"strike",
 			/////////////////////////////////////////////////////////
 			"Though short, its sharp point could plunge deeply into",
 			"a soft skinned enemy."
@@ -1398,6 +1404,8 @@ void wld_setup()
 			itm_can_use_ranged_los,
 			itm_use_ranged_los,
 			itm_hit_ranged_los_bowstyle,
+			"",
+			"shoot",
 			/////////////////////////////////////////////////////////
 			"Its string has been worn but the wood is strong,this",
 			"small bow could fell small creatures"
@@ -1415,6 +1423,8 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
+			"",
+			"",
 			/////////////////////////////////////////////////////////
 			"Runic art covers the parchment surface showing a",
 			"large swathe of fire."
@@ -1432,6 +1442,8 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
+			"",
+			"",
 			/////////////////////////////////////////////////////////
 			"Humble but sturdy this set of leather armor is a rogue's",
 			"favorite friend."
@@ -1451,6 +1463,8 @@ void wld_setup()
 		wld_itemtypes[i].fn_can_use = its[i].fn_can_use;
 		wld_itemtypes[i].fn_use = its[i].fn_use;
 		wld_itemtypes[i].fn_hit = its[i].fn_hit;
+		wld_itemtypes[i].drink_label = its[i].drink_label;
+		wld_itemtypes[i].use_label = its[i].use_label;
 		wld_itemtypes[i].use_text_1 = its[i].use_text_1;
 		wld_itemtypes[i].use_text_2 = its[i].use_text_2;
 	}
