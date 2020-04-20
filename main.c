@@ -728,8 +728,10 @@ void ui_update_usepanel(struct wld_map *map)
 					ui_write(usepanel, offset, "e: equip");
 					offset++;
 				}
+				if (it->fn_use != NULL)
+					ui_write(usepanel, offset++, "u: use");
 				ui_write(usepanel, offset++, "d: drop");
-				ui_write(usepanel, offset + 1, "x: close");
+				ui_write(usepanel, ++offset, "x: close");
 			}
 			break;
 		}
@@ -1024,6 +1026,7 @@ void ai_player_input(struct wld_mob* player)
 				}
 				break; // eo MODE INVENTORY
 			case MODE_USE:
+				// EXIT USE MODE
 				switch (key) {
 				case KEY_ESC:
 				case KEY_x:
@@ -1033,6 +1036,7 @@ void ai_player_input(struct wld_mob* player)
 					player->mode = MODE_INVENTORY;
 					listen = false;
 					break;
+				// EQUIP ITEM
 				case KEY_e:
 					if (use_item_slot == 0 || use_item_slot == 1) {
 						if (!wld_mob_unequip(player, use_item_slot))
@@ -1048,6 +1052,18 @@ void ai_player_input(struct wld_mob* player)
 					player->mode = MODE_INVENTORY;
 					listen = false;
 					break;
+				// USE ITEM directly
+				case KEY_u:
+					if (ai_player_set_use_item(player, use_item_slot)) {
+						ui_unset_use();
+						ui_clear_win(usepanel);
+						ui_clear_win(inventorypanel);
+						player->mode = MODE_PLAY;
+						ai_player_enter_targeting(player);
+					}
+					listen = false;
+					break;
+				// DROP ITEM
 				case KEY_d:
 					if (wld_mob_drop_item(player, use_item_slot)) {
 						ui_unset_use();

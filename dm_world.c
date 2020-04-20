@@ -654,6 +654,24 @@ bool ai_player_trigger_target(struct wld_mob* player)
 
 	return false;
 }
+// this is synomous with drawing your active weapon
+// but it is called after something else has set the active item (or spell etc)
+bool ai_player_set_use_item(struct wld_mob* mob, int itemslot)
+{
+	struct wld_item* item = wld_get_item_in_slot(mob, itemslot);
+	struct wld_itemtype *it = wld_get_itemtype(item->type);
+	if (item != NULL && it->fn_use != NULL) {
+		mob->active_item = item;
+		return true;
+	}
+	// TODO Events to say the user has prepped to use an item
+	return false;
+}
+bool ai_player_enter_targeting(struct wld_mob* player)
+{
+	player->target_mode = TMODE_ACTIVE;
+	return true;
+}
 bool ai_player_draw_weapon(struct wld_mob* player)
 {
 	struct wld_item *weapon = wld_get_item_in_slot(player, 0);
