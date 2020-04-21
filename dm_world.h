@@ -33,7 +33,7 @@ struct wld_tile {
 	int id; // position in tile list
 	int map_x, map_y, map_index;
 	enum WLD_TILETYPE type_id;
-	struct wld_tiletype *type2;
+	struct wld_tiletype *type;
 	struct wld_map *map;
 	bool is_visible;
 	bool was_visible;

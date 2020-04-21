@@ -201,7 +201,7 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 		return false;
 
 	int tile_id = map->tile_map[map_index];
-	if (map->tiles[tile_id].type2->is_block)
+	if (map->tiles[tile_id].type->is_block)
 		return false;
 
 	return true;
@@ -295,7 +295,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 	bool wld_ss_isblocked(int x, int y)
 	{
 		struct wld_tile *t = wld_gettileat(map, x, y);
-		return t->type2->is_block;
+		return t->type->is_block;
 	}
 	void wld_ss_onvisible(int x, int y, double radius)
 	{
@@ -306,7 +306,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 {
 	struct wld_tile *t = wld_gettileat(map, x, y);
-	unsigned long cha = t->type2->sprite;
+	unsigned long cha = t->type->sprite;
 	int mob_id = map->mob_map[t->map_index];
 	int item_id = map->item_map[t->map_index];
 
@@ -334,7 +334,7 @@ struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y)
 {
 	// memory we do not look at mob data
 	struct wld_tile *t = wld_gettileat(map, x, y);
-	unsigned long cha = t->type2->memory_sprite;
+	unsigned long cha = t->type->memory_sprite;
 	int colorpair = wld_cpairmem(t->type_id);
 
 	struct draw_struct ds = { colorpair, cha };
@@ -925,7 +925,7 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 		if (dist > allowed_range)
 			return true;
 
-		return t->type2->is_block || !t->is_visible;
+		return t->type->is_block || !t->is_visible;
 	}
 	void on_visible(int x, int y) {
 		if (x == start_x && y == start_y) // ignore origin position
@@ -1118,15 +1118,15 @@ void wld_gentiles(struct wld_map *map)
 		default:
 		case 1:
 			tile->type_id = TILE_STONEFLOOR;
-			tile->type2 = &wld_tiletypes[TILE_STONEFLOOR];
+			tile->type = &wld_tiletypes[TILE_STONEFLOOR];
 			break;
 		case 2:
 			tile->type_id = TILE_STONEWALL;
-			tile->type2 = &wld_tiletypes[TILE_STONEWALL];
+			tile->type = &wld_tiletypes[TILE_STONEWALL];
 			break;
 		case 3:
 			tile->type_id = TILE_GRASS;
-			tile->type2 = &wld_tiletypes[TILE_GRASS];
+			tile->type = &wld_tiletypes[TILE_GRASS];
 			break;
 		}
 

@@ -602,7 +602,7 @@ void ui_update_cursorinfo(struct wld_map *map)
 		} else if (i != NULL) {
 			ui_cursorinfo(i->type->short_desc);
 		} else {
-			ui_cursorinfo(t->type2->short_desc);
+			ui_cursorinfo(t->type->short_desc);
 		}
 	} else {
 		ui_cursorinfo("");
@@ -620,7 +620,7 @@ void ui_update_positioninfo(struct wld_map *map)
 		if (i != NULL) {
 			ui_positioninfo(i->type->short_desc);
 		} else {
-			ui_positioninfo(t->type2->short_desc);
+			ui_positioninfo(t->type->short_desc);
 		}
 	} else {
 		ui_positioninfo("");
