@@ -83,7 +83,7 @@ struct wld_mob {
 	int id; // positin in maps mob list
 	int map_x, map_y, map_index; // position in map geo and index
 	enum WLD_MOBTYPE type_id; // wld_mobtypes struct index
-	struct wld_mobtype *type2;
+	struct wld_mobtype *type;
 	struct wld_map *map;
 	enum WLD_MOB_STATE state;
 	void (*ai_wander)(struct wld_mob*);
