@@ -134,7 +134,7 @@ struct wld_item {
 	int id;
 	int map_x, map_y, map_index;
 	enum WLD_ITEMTYPE type_id;
-	struct wld_itemtype *type2;
+	struct wld_itemtype *type;
 	bool has_dropped;
 	int uses;
 };

@@ -602,7 +602,7 @@ void ui_update_cursorinfo(struct wld_map *map)
 			struct wld_mobtype *mt = wld_get_mobtype(m->type);
 			ui_cursorinfo(mt->short_desc);
 		} else if (i != NULL) {
-			ui_cursorinfo(i->type2->short_desc);
+			ui_cursorinfo(i->type->short_desc);
 		} else {
 			ui_cursorinfo(tt->short_desc);
 		}
@@ -621,7 +621,7 @@ void ui_update_positioninfo(struct wld_map *map)
 	if (t->is_visible) {
 		struct wld_item *i = wld_getitemat(map, x, y);
 		if (i != NULL) {
-			ui_positioninfo(i->type2->short_desc);
+			ui_positioninfo(i->type->short_desc);
 		} else {
 			ui_positioninfo(tt->short_desc);
 		}
@@ -658,9 +658,9 @@ void ui_update_inventorypanel(struct wld_map *map)
 		struct wld_item *w = map->player->inventory[0];
 		if (w != NULL) {
 			char buffer[INV_ITEM_LENGTH];
-			snprintf(buffer, INV_ITEM_LENGTH, "w: - %s", w->type2->title);
+			snprintf(buffer, INV_ITEM_LENGTH, "w: - %s", w->type->title);
 			ui_write_rc(inventorypanel, 2, 1, buffer);
-			ui_write_char(inventorypanel, 2, 4, w->type2->sprite);
+			ui_write_char(inventorypanel, 2, 4, w->type->sprite);
 		}
 		else
 			ui_write_rc(inventorypanel, 2, 1, "-- none --");
@@ -669,9 +669,9 @@ void ui_update_inventorypanel(struct wld_map *map)
 		struct wld_item *a = map->player->inventory[1];
 		if (a != NULL) {
 			char buffer[INV_ITEM_LENGTH];
-			snprintf(buffer, INV_ITEM_LENGTH, "a: - %s", a->type2->title);
+			snprintf(buffer, INV_ITEM_LENGTH, "a: - %s", a->type->title);
 			ui_write_rc(inventorypanel, 4, 1, buffer);
-			ui_write_char(inventorypanel, 4, 4, a->type2->sprite);
+			ui_write_char(inventorypanel, 4, 4, a->type->sprite);
 		}
 		else
 			ui_write_rc(inventorypanel, 4, 1, "-- none --");
@@ -698,8 +698,8 @@ void ui_update_inventorypanel(struct wld_map *map)
 			unsigned long sprite;
 			struct wld_item *item = map->player->inventory[i];
 			if (item != NULL) {
-				desc = item->type2->title;
-				sprite = item->type2->sprite;
+				desc = item->type->title;
+				sprite = item->type->sprite;
 			} else {
 				desc = "--";
 				sprite = '-';
@@ -724,14 +724,14 @@ void ui_update_usepanel(struct wld_map *map)
 		case USE_ITEM: {
 				// intro item
 				char buffer[USE_LENGTH];
-				snprintf(buffer, USE_LENGTH, "You prepare to use %s.", use_item->type2->short_desc);
+				snprintf(buffer, USE_LENGTH, "You prepare to use %s.", use_item->type->short_desc);
 				ui_write(usepanel, 0, buffer);
-				ui_write_len(usepanel, 2, use_item->type2->use_text_1, USE_LENGTH);
-				ui_write_len(usepanel, 3, use_item->type2->use_text_2, USE_LENGTH);
+				ui_write_len(usepanel, 2, use_item->type->use_text_1, USE_LENGTH);
+				ui_write_len(usepanel, 3, use_item->type->use_text_2, USE_LENGTH);
 
 				// give options
 				int offset = 5;
-				bool equippable = use_item->type2->is_weq || use_item->type2->is_aeq;
+				bool equippable = use_item->type->is_weq || use_item->type->is_aeq;
 				if (use_item_slot == 0 || use_item_slot == 1) {
 					ui_write(usepanel, offset, "e: unequip");
 					offset++;
@@ -739,14 +739,14 @@ void ui_update_usepanel(struct wld_map *map)
 					ui_write(usepanel, offset, "e: equip");
 					offset++;
 				}
-				if (use_item->type2->fn_use != NULL) {
+				if (use_item->type->fn_use != NULL) {
 					char label[USE_LENGTH];
-					snprintf(label, USE_LENGTH, "u: %s", use_item->type2->use_label);
+					snprintf(label, USE_LENGTH, "u: %s", use_item->type->use_label);
 					ui_write(usepanel, offset++, label);
 				}
-				if (use_item->type2->fn_drink != NULL) {
+				if (use_item->type->fn_drink != NULL) {
 					char label[USE_LENGTH];
-					snprintf(label, USE_LENGTH, "q: %s", use_item->type2->drink_label);
+					snprintf(label, USE_LENGTH, "q: %s", use_item->type->drink_label);
 					ui_write(usepanel, offset++, label);
 				}
 				ui_write(usepanel, offset++, "d: drop");
@@ -799,7 +799,7 @@ void map_on_mob_heal(struct wld_map *map, struct wld_mob* mob, int amt, struct w
 {
 	struct wld_mobtype *mt = wld_get_mobtype(mob->type);
 	if (item != NULL) {
-		ui_loginfo_ssi("The %s healed %s for %d.", item->type2->title, mt->short_desc, amt);
+		ui_loginfo_ssi("The %s healed %s for %d.", item->type->title, mt->short_desc, amt);
 	} else
 		ui_loginfo_si("%s healed for %d.", mt->short_desc, amt);
 }
@@ -824,7 +824,7 @@ void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, stru
 void map_on_player_heal(struct wld_map *map, struct wld_mob* player, int amt, struct wld_item* item)
 {
 	if (item != NULL) {
-		ui_loginfo_si("The %s healed you for %d.", item->type2->title, amt);
+		ui_loginfo_si("The %s healed you for %d.", item->type->title, amt);
 	} else
 		ui_loginfo_i("You healed for %d.", amt);
 }
@@ -832,7 +832,7 @@ void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struc
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
 	if (item != NULL) {
-		ui_loginfo_ssi("With %s you attacked %s for %d.", item->type2->title, mt->short_desc, dmg);
+		ui_loginfo_ssi("With %s you attacked %s for %d.", item->type->title, mt->short_desc, dmg);
 	} else
 		ui_loginfo_si("You attacked %s for %d.", mt->short_desc, dmg);
 }
@@ -849,13 +849,13 @@ void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* player, struct 
 {
 	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
 	if (item != NULL) {
-		ui_loginfo_ss("You killed %s with your %s.", mt->short_desc, item->type2->title);
+		ui_loginfo_ss("You killed %s with your %s.", mt->short_desc, item->type->title);
 	} else
 		ui_loginfo_s("You killed %s.", mt->short_desc);
 }
 void map_on_player_pickup_item(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo_s("You picked up %s.", item->type2->short_desc);
+	ui_loginfo_s("You picked up %s.", item->type->short_desc);
 }
 void map_on_player_pickup_item_fail(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
@@ -863,7 +863,7 @@ void map_on_player_pickup_item_fail(struct wld_map *map, struct wld_mob* player,
 }
 void map_on_player_drop_item(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo_s("You dropped %s to the floor.", item->type2->short_desc);
+	ui_loginfo_s("You dropped %s to the floor.", item->type->short_desc);
 }
 void map_on_player_drop_item_fail(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
@@ -1511,7 +1511,7 @@ void wld_log_ms(char* msg, struct wld_mob* mob)
 }
 void wld_log_it(char* msg, struct wld_item* item)
 {
-	ui_loginfo_s(msg, item->type2->title);
+	ui_loginfo_s(msg, item->type->title);
 }
 
 int main(void)
