@@ -599,8 +599,7 @@ void ui_update_cursorinfo(struct wld_map *map)
 		struct wld_item *i = wld_getitemat(map, x, y);
 		if (m != NULL) {
 			// TODO get "what" the mob is doing
-			struct wld_mobtype *mt = wld_get_mobtype(m->type);
-			ui_cursorinfo(mt->short_desc);
+			ui_cursorinfo(m->type2->short_desc);
 		} else if (i != NULL) {
 			ui_cursorinfo(i->type->short_desc);
 		} else {
@@ -797,26 +796,22 @@ void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y
 
 void map_on_mob_heal(struct wld_map *map, struct wld_mob* mob, int amt, struct wld_item* item)
 {
-	struct wld_mobtype *mt = wld_get_mobtype(mob->type);
 	if (item != NULL) {
-		ui_loginfo_ssi("The %s healed %s for %d.", item->type->title, mt->short_desc, amt);
+		ui_loginfo_ssi("The %s healed %s for %d.", item->type->title, mob->type2->short_desc, amt);
 	} else
-		ui_loginfo_si("%s healed for %d.", mt->short_desc, amt);
+		ui_loginfo_si("%s healed for %d.", mob->type2->short_desc, amt);
 }
 void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, int dmg, struct wld_item* item)
 {
-	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
-	ui_loginfo_is("You were attacked for %d by %s.", dmg, mt->short_desc);
+	ui_loginfo_is("You were attacked for %d by %s.", dmg, aggressor->type2->short_desc);
 }
 void map_on_mob_whiff_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, struct wld_item* item)
 {
-	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
-	ui_loginfo_s("Attack from %s misses.", mt->short_desc);
+	ui_loginfo_s("Attack from %s misses.", aggressor->type2->short_desc);
 }
 void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, struct wld_item* item)
 {
-	struct wld_mobtype *mt = wld_get_mobtype(aggressor->type);
-	ui_loginfo_s("You were killed by %s.", mt->short_desc);
+	ui_loginfo_s("You were killed by %s.", aggressor->type2->short_desc);
 	play_state = PS_GAMEOVER;
 }
 
@@ -830,11 +825,10 @@ void map_on_player_heal(struct wld_map *map, struct wld_mob* player, int amt, st
 }
 void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, int dmg, struct wld_item* item)
 {
-	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
 	if (item != NULL) {
-		ui_loginfo_ssi("With %s you attacked %s for %d.", item->type->title, mt->short_desc, dmg);
+		ui_loginfo_ssi("With %s you attacked %s for %d.", item->type->title, player->type2->short_desc, dmg);
 	} else
-		ui_loginfo_si("You attacked %s for %d.", mt->short_desc, dmg);
+		ui_loginfo_si("You attacked %s for %d.", player->type2->short_desc, dmg);
 }
 void map_on_player_whiff(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
@@ -842,16 +836,14 @@ void map_on_player_whiff(struct wld_map *map, struct wld_mob* player, struct wld
 }
 void map_on_player_whiff_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, struct wld_item* item)
 {
-	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
-	ui_loginfo_s("You attacked and missed %s.", mt->short_desc);
+	ui_loginfo_s("You attacked and missed %s.", player->type2->short_desc);
 }
 void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, struct wld_item* item)
 {
-	struct wld_mobtype *mt = wld_get_mobtype(defender->type);
 	if (item != NULL) {
-		ui_loginfo_ss("You killed %s with your %s.", mt->short_desc, item->type->title);
+		ui_loginfo_ss("You killed %s with your %s.", player->type2->short_desc, item->type->title);
 	} else
-		ui_loginfo_s("You killed %s.", mt->short_desc);
+		ui_loginfo_s("You killed %s.", player->type2->short_desc);
 }
 void map_on_player_pickup_item(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
@@ -1506,8 +1498,7 @@ void wld_log_s(char *msg, char *s)
 }
 void wld_log_ms(char* msg, struct wld_mob* mob)
 {
-	struct wld_mobtype *mt = wld_get_mobtype(mob->type);
-	ui_loginfo_s(msg, mt->short_desc);
+	ui_loginfo_s(msg, mob->type2->short_desc);
 }
 void wld_log_it(char* msg, struct wld_item* item)
 {

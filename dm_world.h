@@ -5,6 +5,8 @@
 
 #define INVENTORY_SIZE 12
 
+struct wld_item;
+
 ///////////////////////////
 // TILE STRUCTS
 
@@ -71,17 +73,17 @@ enum TARGET_MODE {
 	TMODE_RANGED_TEL_AOE,
 };
 struct wld_mobtype {
-	int type;
+	enum WLD_MOBTYPE type;
 	unsigned long sprite;
 	int fg_color;
 	char *short_desc;
 	char *title;
 };
-struct wld_item;
 struct wld_mob {
 	int id; // positin in maps mob list
 	int map_x, map_y, map_index; // position in map geo and index
-	enum WLD_MOBTYPE type; // wld_mobtypes struct index
+	enum WLD_MOBTYPE type_id; // wld_mobtypes struct index
+	struct wld_mobtype *type2;
 	struct wld_map *map;
 	enum WLD_MOB_STATE state;
 	void (*ai_wander)(struct wld_mob*);

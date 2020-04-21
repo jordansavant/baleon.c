@@ -318,10 +318,9 @@ struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 	if (mob_id > -1) {
 		// if mob use its fg sprite and fg color
 		struct wld_mob *m = wld_getmobat(map, x, y);
-		struct wld_mobtype *mt = wld_get_mobtype(m->type);
-		if (mt->sprite != ' ')
-			cha = mt->sprite;
-		colorpair = wld_cpair_tm(t->type, m->type);
+		if (m->type2->sprite != ' ')
+			cha = m->type2->sprite;
+		colorpair = wld_cpair_tm(t->type, m->type_id);
 	} else if(item_id > -1) {
 		// if item  use its fg sprite and fg color
 		struct wld_item *i = wld_getitemat(map, x, y);
@@ -1185,7 +1184,8 @@ void wld_genmobs(struct wld_map *map)
 			mob->map_x = map->cols / 2;
 			mob->map_y = map->rows / 2;
 			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
-			mob->type = MOB_PLAYER;
+			mob->type_id = MOB_PLAYER;
+			mob->type2 = &wld_mobtypes[MOB_PLAYER];
 			mob->is_player = true;
 			map->player = mob; // assign to map specifically
 
@@ -1199,7 +1199,8 @@ void wld_genmobs(struct wld_map *map)
 			mob->map_x = 38;
 			mob->map_y = 36;
 			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
-			mob->type = MOB_BUGBEAR;
+			mob->type_id = MOB_BUGBEAR;
+			mob->type2 = &wld_mobtypes[MOB_BUGBEAR];
 			mob->is_player = false;
 			mob->ai_wander = ai_default_wander;
 			mob->ai_detect_combat = ai_default_detect_combat;
