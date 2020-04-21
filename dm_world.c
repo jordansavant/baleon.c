@@ -325,10 +325,9 @@ struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 	} else if(item_id > -1) {
 		// if item  use its fg sprite and fg color
 		struct wld_item *i = wld_getitemat(map, x, y);
-		struct wld_itemtype *it = wld_get_itemtype(i->type);
-		if (it->sprite != ' ')
-			cha = it->sprite;
-		colorpair = wld_cpair_ti(t->type, i->type);
+		if (i->type2->sprite != ' ')
+			cha = i->type2->sprite;
+		colorpair = wld_cpair_ti(t->type, i->type_id);
 	} else {
 		colorpair = wld_cpair_tm(t->type, 0);
 	}
@@ -405,9 +404,8 @@ bool wld_mob_drink_item(struct wld_mob *mob, int itemslot)
 {
 	struct wld_item* item = wld_get_item_in_slot(mob, itemslot);
 	if (item != NULL) {
-		struct wld_itemtype *it = wld_get_itemtype(item->type);
-		if (it->fn_drink) {
-			it->fn_drink(item, mob);
+		if (item->type2->fn_drink) {
+			item->type2->fn_drink(item, mob);
 			wld_mob_resolve_item_uses(mob, item);
 			return true;
 		}
@@ -441,8 +439,7 @@ void wld_mob_destroy_item(struct wld_mob* mob, struct wld_item* item)
 
 void wld_mob_resolve_item_uses(struct wld_mob* mob, struct wld_item* item)
 {
-	struct wld_itemtype *it = wld_get_itemtype(item->type);
-	if (it->has_uses && --item->uses <= 0)
+	if (item->type2->has_uses && --item->uses <= 0)
 		wld_mob_destroy_item(mob, item);
 }
 
@@ -480,14 +477,13 @@ bool wld_mob_equip(struct wld_mob* mob, int itemslot)
 {
 	struct wld_item *i = wld_get_item_in_slot(mob, itemslot);
 	if (i != NULL) {
-		struct wld_itemtype *it = wld_get_itemtype(i->type);
 		// weapon
-		if (it->is_weq) {
+		if (i->type2->is_weq) {
 			wld_swap_item(mob, itemslot, 0);
 			return true;
 		}
 		// armor
-		if (it->is_aeq) {
+		if (i->type2->is_aeq) {
 			wld_swap_item(mob, itemslot, 1);
 			return true;
 		}
@@ -522,9 +518,8 @@ void wld_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 {
 	// if we have an item we are using, target with it
 	if (mob->active_item) {
-		struct wld_itemtype *it = wld_get_itemtype(mob->active_item->type);
-		if (it->fn_target != NULL) {
-			it->fn_target(mob->active_item, mob, inspect);
+		if (mob->active_item->type2->fn_target != NULL) {
+			mob->active_item->type2->fn_target(mob->active_item, mob, inspect);
 			return;
 		}
 
@@ -666,9 +661,8 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 	struct wld_item* weapon = wld_get_item_in_slot(aggressor, 0);
 	if (weapon != NULL) {
 		struct wld_tile *tile = wld_gettileat_index(defender->map, defender->map_index);
-		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
-		if (it->fn_can_use(weapon, aggressor, tile)) {
-			it->fn_use(weapon, aggressor, tile);
+		if (weapon->type2->fn_can_use(weapon, aggressor, tile)) {
+			weapon->type2->fn_use(weapon, aggressor, tile);
 			// TODO item uses?
 			wld_mob_resolve_item_uses(aggressor, weapon);
 			return;
@@ -687,9 +681,8 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 }
 bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile* cursor_tile)
 {
-	struct wld_itemtype *it = wld_get_itemtype(item->type);
-	if (it->fn_can_use(item, mob, cursor_tile)) {
-		it->fn_use(item, mob, cursor_tile);
+	if (item->type2->fn_can_use(item, mob, cursor_tile)) {
+		item->type2->fn_use(item, mob, cursor_tile);
 		// if this item can be used up then do so
 		wld_mob_resolve_item_uses(mob, item);
 		return true;
@@ -726,8 +719,7 @@ bool ai_player_trigger_target(struct wld_mob* player)
 bool ai_player_set_use_item(struct wld_mob* mob, int itemslot)
 {
 	struct wld_item* item = wld_get_item_in_slot(mob, itemslot);
-	struct wld_itemtype *it = wld_get_itemtype(item->type);
-	if (item != NULL && it->fn_use != NULL) {
+	if (item != NULL && item->type2->fn_use != NULL) {
 		mob->active_item = item;
 		return true;
 	}
@@ -743,7 +735,6 @@ bool ai_player_draw_weapon(struct wld_mob* player)
 {
 	struct wld_item *weapon = wld_get_item_in_slot(player, 0);
 	if (weapon) {
-		struct wld_itemtype *it = wld_get_itemtype(weapon->type);
 		player->target_mode = TMODE_ACTIVE;
 		player->active_item = weapon;
 		return true;
@@ -904,16 +895,14 @@ bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_t
 void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
 	// Using a standard melee item just fires on the targeted tile without any calculation
-	struct wld_itemtype *it = wld_get_itemtype(weapon->type);
 	struct wld_mob *target = wld_getmobat_index(user->map, cursor_tile->map_index);
 	if (target != NULL)
-		it->fn_hit(weapon, user, cursor_tile);
+		weapon->type2->fn_hit(weapon, user, cursor_tile);
 }
 void itm_hit_melee_swordstyle(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* tile)
 {
 	// TODO make this do a melee attack with the item's damage etc
 	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
-	struct wld_itemtype *it = wld_get_itemtype(weapon->type);
 	double chance = rpg_calc_melee_coh(user, target);
 	if (dm_randf() < chance) {
 		int dmg = rpg_calc_melee_dmg(user, target);
@@ -933,8 +922,7 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 	int start_y = user->map->player->map_y;
 	int end_x = user->map->cursor->x;
 	int end_y = user->map->cursor->y;
-	struct wld_itemtype *it = wld_get_itemtype(item->type);
-	int allowed_range = rpg_calc_range_dist(user, it->base_range);
+	int allowed_range = rpg_calc_range_dist(user, item->type2->base_range);
 	bool is_blocked(int x, int y) {
 		struct wld_tile *t = wld_gettileat(user->map, x, y);
 		struct wld_tiletype *tt = wld_get_tiletype(t->type);
@@ -971,8 +959,7 @@ void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 	int start_y = user->map->player->map_y;
 	int end_x = cursor_tile->map_x;
 	int end_y = cursor_tile->map_y;
-	struct wld_itemtype *it = wld_get_itemtype(item->type);
-	int allowed_range = rpg_calc_range_dist(user, it->base_range);
+	int allowed_range = rpg_calc_range_dist(user, item->type2->base_range);
 	bool hit_target = false;
 	bool is_blocked(int x, int y) {
 		// check and make sure we do not shoot ourself
@@ -987,8 +974,7 @@ void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 		// if we have come in contact with a mob, hit it and stop raycast
 		struct wld_mob *mob = wld_getmobat(user->map, x, y);
 		if (mob != NULL && !mob->is_dead) {
-			struct wld_itemtype *it = wld_get_itemtype(item->type);
-			it->fn_hit(item, user, wld_gettileat(user->map, x, y));
+			item->type2->fn_hit(item, user, wld_gettileat(user->map, x, y));
 			hit_target = true;
 			return true; // stop inspection
 		}
@@ -1245,7 +1231,8 @@ void wld_genitems(struct wld_map *map)
 			item->map_x = map->cols / 2 + 4;
 			item->map_y = map->rows / 2 + 2;
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-			item->type = ITEM_WEAPON_SHORTSWORD;
+			item->type_id = ITEM_WEAPON_SHORTSWORD;
+			item->type2 = &wld_itemtypes[ITEM_WEAPON_SHORTSWORD];
 			item->has_dropped = false;
 			item->uses = wld_itemtypes[ITEM_WEAPON_SHORTSWORD].base_uses;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
@@ -1255,7 +1242,8 @@ void wld_genitems(struct wld_map *map)
 			item->map_x = map->cols / 2 + 6;
 			item->map_y = map->rows / 2 + 2;
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-			item->type = ITEM_WEAPON_SHORTBOW;
+			item->type_id = ITEM_WEAPON_SHORTBOW;
+			item->type2 = &wld_itemtypes[ITEM_WEAPON_SHORTBOW];
 			item->has_dropped = false;
 			item->uses = wld_itemtypes[ITEM_WEAPON_SHORTBOW].base_uses;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
@@ -1265,7 +1253,8 @@ void wld_genitems(struct wld_map *map)
 			item->map_x = map->cols / 2 + 7;
 			item->map_y = map->rows / 2 - 1;
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-			item->type = ITEM_ARMOR_LEATHER;
+			item->type_id = ITEM_ARMOR_LEATHER;
+			item->type2 = &wld_itemtypes[ITEM_ARMOR_LEATHER];
 			item->has_dropped = false;
 			item->uses = wld_itemtypes[ITEM_ARMOR_LEATHER].base_uses;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
@@ -1275,7 +1264,8 @@ void wld_genitems(struct wld_map *map)
 			item->map_x = map->cols / 2 + 1;
 			item->map_y = map->rows / 2 + 3;
 			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-			item->type = ITEM_POTION_MINOR_HEAL;
+			item->type_id = ITEM_POTION_MINOR_HEAL;
+			item->type2 = &wld_itemtypes[ITEM_POTION_MINOR_HEAL];
 			item->has_dropped = false;
 			item->uses = wld_itemtypes[ITEM_POTION_MINOR_HEAL].base_uses;
 			wld_insert_item(map, item, item->map_x, item->map_y, item->id);

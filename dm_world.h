@@ -110,13 +110,6 @@ enum WLD_ITEMTYPE {
 	ITEM_SCROLL_FIREBOMB,
 	ITEM_ARMOR_LEATHER,
 };
-struct wld_item {
-	int id;
-	int map_x, map_y, map_index;
-	enum WLD_ITEMTYPE type;
-	bool has_dropped;
-	int uses;
-};
 struct wld_itemtype {
 	enum WLD_ITEMTYPE type;
 	unsigned long sprite;
@@ -136,6 +129,14 @@ struct wld_itemtype {
 	char *use_label;
 	char *use_text_1;
 	char *use_text_2;
+};
+struct wld_item {
+	int id;
+	int map_x, map_y, map_index;
+	enum WLD_ITEMTYPE type_id;
+	struct wld_itemtype *type2;
+	bool has_dropped;
+	int uses;
 };
 
 
