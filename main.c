@@ -770,7 +770,7 @@ void ui_set_use_item(struct wld_item* item, int item_slot)
 void ui_use_item_select(struct wld_mob* player, int item_slot)
 {
 	ui_clear_win(inventorypanel);
-	struct wld_item *item = wld_get_item_in_slot(player, item_slot);
+	struct wld_item *item = wld_mob_get_item_in_slot(player, item_slot);
 	if (item != NULL) {
 		ui_set_use_item(item, item_slot);
 		player->mode = MODE_USE;
@@ -1322,7 +1322,7 @@ void ps_play_draw()
 				ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
 			}
 		}
-		wld_inspect_targetables(current_map->player, inspect);
+		wld_mob_inspect_targetables(current_map->player, inspect);
 	}
 
 	// Draw cursor

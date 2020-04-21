@@ -203,31 +203,36 @@ void wld_new_mob(struct wld_map* map, struct wld_mob* mob, int x, int y);
 struct wld_tiletype* wld_get_tiletype(int id);
 struct wld_mobtype* wld_get_mobtype(int id);
 struct wld_itemtype* wld_get_itemtype(int id);
+
 int wld_cpair_tm(int tiletype, int mobtype);
 int wld_cpair_ti(int tiletype, int itemtype);
 int wld_cpairmem(int tiletype);
 int wld_cpair_bg(int tiletype);
+
 int wld_calcindex(int x, int y, int cols);
 int wld_calcx(int index, int cols);
 int wld_calcy(int index, int cols);
+
 int wld_distance_mob_tile(struct wld_map *map, struct wld_mob *mob, struct wld_tile *tile);
 bool wld_canmoveto(struct wld_map *map, int x, int y);
 void wld_movemob(struct wld_mob *mob, int relx, int rely);
 void wld_movecursor(struct wld_map *map, int relx, int rely);
+
 struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y);
 struct wld_tile* wld_gettileat_index(struct wld_map *map, int index);
 struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y);
 struct wld_mob* wld_getmobat_index(struct wld_map *map, int index);
 struct wld_item* wld_getitemat(struct wld_map *map, int x, int y);
 struct wld_item* wld_getitemat_index(struct wld_map *map, int index);
+
 void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double));
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y);
-bool wld_is_mob_nextto_mob(struct wld_mob* ma, struct wld_mob* mb);
-struct wld_item* wld_get_item_in_slot(struct wld_mob *mob, int slot);
-int wld_get_open_inventory_slot(struct wld_mob *mob);
-bool wld_has_inventory(struct wld_mob*);
-bool wld_pickup_item(struct wld_mob*, struct wld_item*);
+bool wld_mob_nextto_mob(struct wld_mob* ma, struct wld_mob* mb);
+struct wld_item* wld_mob_get_item_in_slot(struct wld_mob *mob, int slot);
+int wld_mob_get_open_inventory_slot(struct wld_mob *mob);
+bool wld_mob_has_inventory(struct wld_mob*);
+bool wld_mob_pickup_item(struct wld_mob*, struct wld_item*);
 bool wld_mob_equip(struct wld_mob*, int);
 bool wld_mob_unequip(struct wld_mob*, int);
 bool wld_mob_drink_item(struct wld_mob *mob, int itemslot);
@@ -235,8 +240,8 @@ void wld_mob_destroy_item_in_slot(struct wld_mob* mob, int itemslot);
 void wld_mob_destroy_item(struct wld_mob* mob, struct wld_item* item);
 void wld_mob_resolve_item_uses(struct wld_mob* mob, struct wld_item* item);
 bool wld_mob_drop_item(struct wld_mob*, int);
-void wld_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
-void wld_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
+void wld_mob_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
+void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 
 
 ///////////////////////////

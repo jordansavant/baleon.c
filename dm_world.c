@@ -229,8 +229,8 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely)
 
 		// if player, collect items he walks over unless he dropped it before
 		struct wld_item *item = wld_getitemat(mob->map, mob->map_x, mob->map_y);
-		if (mob->is_player && item != NULL && !item->has_dropped && wld_has_inventory(mob)) {
-			wld_pickup_item(mob, item);
+		if (mob->is_player && item != NULL && !item->has_dropped && wld_mob_has_inventory(mob)) {
+			wld_mob_pickup_item(mob, item);
 		}
 	}
 }
@@ -340,18 +340,18 @@ struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y)
 	struct draw_struct ds = { colorpair, cha };
 	return ds;
 }
-bool wld_is_mob_nextto_mob(struct wld_mob *ma, struct wld_mob *mb)
+bool wld_mob_nextto_mob(struct wld_mob *ma, struct wld_mob *mb)
 {
 	int diffx = abs(ma->map_x - mb->map_x);
 	int diffy = abs(ma->map_y - mb->map_y);
 	return diffx <= 1 && diffy <= 1;
 }
-struct wld_item* wld_get_item_in_slot(struct wld_mob *mob, int slot)
+struct wld_item* wld_mob_get_item_in_slot(struct wld_mob *mob, int slot)
 {
 	struct wld_item *item = mob->inventory[slot];
 	return item;
 }
-int wld_get_open_inventory_slot(struct wld_mob *mob)
+int wld_mob_get_open_inventory_slot(struct wld_mob *mob)
 {
 	// slot 0 reserved for weapon
 	// slot 1 reserved for armor/robes
@@ -360,16 +360,16 @@ int wld_get_open_inventory_slot(struct wld_mob *mob)
 			return i;
 	return -1;
 }
-bool wld_has_inventory(struct wld_mob *mob)
+bool wld_mob_has_inventory(struct wld_mob *mob)
 {
-	int slot = wld_get_open_inventory_slot(mob);
+	int slot = wld_mob_get_open_inventory_slot(mob);
 	if (slot != -1)
 		return true;
 	return false;
 }
-bool wld_pickup_item(struct wld_mob *m, struct wld_item *i)
+bool wld_mob_pickup_item(struct wld_mob *m, struct wld_item *i)
 {
-	int slot = wld_get_open_inventory_slot(m);
+	int slot = wld_mob_get_open_inventory_slot(m);
 	if (slot != -1) {
 		// set item copy in world to nonexist
 		// move item from world to mob inventory
@@ -396,7 +396,7 @@ bool wld_pickup_item(struct wld_mob *m, struct wld_item *i)
 }
 bool wld_mob_drink_item(struct wld_mob *mob, int itemslot)
 {
-	struct wld_item* item = wld_get_item_in_slot(mob, itemslot);
+	struct wld_item* item = wld_mob_get_item_in_slot(mob, itemslot);
 	if (item != NULL) {
 		if (item->type->fn_drink) {
 			item->type->fn_drink(item, mob);
@@ -440,7 +440,7 @@ void wld_mob_resolve_item_uses(struct wld_mob* mob, struct wld_item* item)
 bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
 {
 	// TODO UH OH, HOW DO I RETURN AN ITEM TO THE MAP? LOOK FOR A NULL SLOT AND IF NOT REMALLOC?
-	struct wld_item* item = wld_get_item_in_slot(mob, itemslot);
+	struct wld_item* item = wld_mob_get_item_in_slot(mob, itemslot);
 	// if this is a real item and there is not one on this slot
 	if (item != NULL && wld_getitemat(mob->map, mob->map_x, mob->map_y) == NULL) {
 		wld_new_item(mob->map, item, mob->map_x, mob->map_y);
@@ -462,14 +462,14 @@ bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
 }
 void wld_swap_item(struct wld_mob* mob, int slot_a, int slot_b)
 {
-	struct wld_item *a = wld_get_item_in_slot(mob, slot_a);
-	struct wld_item *b = wld_get_item_in_slot(mob, slot_b);
+	struct wld_item *a = wld_mob_get_item_in_slot(mob, slot_a);
+	struct wld_item *b = wld_mob_get_item_in_slot(mob, slot_b);
 	mob->inventory[slot_b] = a;
 	mob->inventory[slot_a] = b;
 }
 bool wld_mob_equip(struct wld_mob* mob, int itemslot)
 {
-	struct wld_item *i = wld_get_item_in_slot(mob, itemslot);
+	struct wld_item *i = wld_mob_get_item_in_slot(mob, itemslot);
 	if (i != NULL) {
 		// weapon
 		if (i->type->is_weq) {
@@ -486,9 +486,9 @@ bool wld_mob_equip(struct wld_mob* mob, int itemslot)
 }
 bool wld_mob_unequip(struct wld_mob* mob, int itemslot)
 {
-	struct wld_item *i = wld_get_item_in_slot(mob, itemslot);
+	struct wld_item *i = wld_mob_get_item_in_slot(mob, itemslot);
 	if (i != NULL) {
-		int open_slot = wld_get_open_inventory_slot(mob);
+		int open_slot = wld_mob_get_open_inventory_slot(mob);
 		if (open_slot != -1) {
 			wld_swap_item(mob, itemslot, open_slot);
 			return true;
@@ -496,7 +496,7 @@ bool wld_mob_unequip(struct wld_mob* mob, int itemslot)
 	}
 	return false;
 }
-void wld_inspect_melee(struct wld_mob* mob, void (*inspect)(int,int))
+void wld_mob_inspect_melee(struct wld_mob* mob, void (*inspect)(int,int))
 {
 	struct dm_spiral sp = dm_spiral(1);
 	while (dm_spiralnext(&sp)) {
@@ -508,7 +508,7 @@ void wld_inspect_melee(struct wld_mob* mob, void (*inspect)(int,int))
 		}
 	}
 }
-void wld_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
+void wld_mob_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 {
 	// if we have an item we are using, target with it
 	if (mob->active_item) {
@@ -520,7 +520,7 @@ void wld_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 	}
 
 	// else target as melee
-	wld_inspect_melee(mob, inspect);
+	wld_mob_inspect_melee(mob, inspect);
 }
 
 
@@ -570,7 +570,7 @@ bool ai_default_detect_combat(struct wld_mob *mob)
 void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee attack
 {
 	// GET PLAYER (TODO in visible range, if can see, etc)
-	if (wld_is_mob_nextto_mob(mob, mob->map->player)) {
+	if (wld_mob_nextto_mob(mob, mob->map->player)) {
 		// attack target
 		ai_mob_melee_mob(mob, mob->map->player);
 	} else {
@@ -630,7 +630,7 @@ void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int 
 // Bool returns if it was a valid option?
 bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender)
 {
-	return !defender->is_dead && wld_is_mob_nextto_mob(aggressor, defender);
+	return !defender->is_dead && wld_mob_nextto_mob(aggressor, defender);
 }
 void ai_mob_whiff(struct wld_mob *aggressor, struct wld_item* item)
 {
@@ -652,7 +652,7 @@ void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender, struc
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 {
 	// determine melee damage from weapon (or unarmed?)
-	struct wld_item* weapon = wld_get_item_in_slot(aggressor, 0);
+	struct wld_item* weapon = wld_mob_get_item_in_slot(aggressor, 0);
 	if (weapon != NULL) {
 		struct wld_tile *tile = wld_gettileat_index(defender->map, defender->map_index);
 		if (weapon->type->fn_can_use(weapon, aggressor, tile)) {
@@ -712,7 +712,7 @@ bool ai_player_trigger_target(struct wld_mob* player)
 // but it is called after something else has set the active item (or spell etc)
 bool ai_player_set_use_item(struct wld_mob* mob, int itemslot)
 {
-	struct wld_item* item = wld_get_item_in_slot(mob, itemslot);
+	struct wld_item* item = wld_mob_get_item_in_slot(mob, itemslot);
 	if (item != NULL && item->type->fn_use != NULL) {
 		mob->active_item = item;
 		return true;
@@ -727,7 +727,7 @@ bool ai_player_enter_targeting(struct wld_mob* player)
 }
 bool ai_player_draw_weapon(struct wld_mob* player)
 {
-	struct wld_item *weapon = wld_get_item_in_slot(player, 0);
+	struct wld_item *weapon = wld_mob_get_item_in_slot(player, 0);
 	if (weapon) {
 		player->target_mode = TMODE_ACTIVE;
 		player->active_item = weapon;
@@ -803,7 +803,7 @@ bool ai_get(struct wld_mob *mob, int relx, int rely)
 	struct wld_item *i = wld_getitemat(mob->map, posx, posy);
 
 	if (i != NULL)
-		if (wld_pickup_item(mob, i))
+		if (wld_mob_pickup_item(mob, i))
 			return true;
 	return false;
 }
@@ -877,7 +877,7 @@ ai_rerun:
 void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
 {
 	// spiral
-	wld_inspect_melee(user, inspect);
+	wld_mob_inspect_melee(user, inspect);
 }
 bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
