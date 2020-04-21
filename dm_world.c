@@ -201,9 +201,7 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 		return false;
 
 	int tile_id = map->tile_map[map_index];
-	int tiletype = map->tiles[tile_id].type;
-	struct wld_tiletype *tt = &wld_tiletypes[tiletype];
-	if (tt->is_block)
+	if (map->tiles[tile_id].type2->is_block)
 		return false;
 
 	return true;
@@ -297,8 +295,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 	bool wld_ss_isblocked(int x, int y)
 	{
 		struct wld_tile *t = wld_gettileat(map, x, y);
-		struct wld_tiletype *tt = wld_get_tiletype(t->type);
-		return tt->is_block;
+		return t->type2->is_block;
 	}
 	void wld_ss_onvisible(int x, int y, double radius)
 	{
@@ -309,8 +306,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 {
 	struct wld_tile *t = wld_gettileat(map, x, y);
-	struct wld_tiletype *tt = wld_get_tiletype(t->type);
-	unsigned long cha = tt->sprite;
+	unsigned long cha = t->type2->sprite;
 	int mob_id = map->mob_map[t->map_index];
 	int item_id = map->item_map[t->map_index];
 
@@ -320,15 +316,15 @@ struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 		struct wld_mob *m = wld_getmobat(map, x, y);
 		if (m->type->sprite != ' ')
 			cha = m->type->sprite;
-		colorpair = wld_cpair_tm(t->type, m->type_id);
+		colorpair = wld_cpair_tm(t->type_id, m->type_id);
 	} else if(item_id > -1) {
 		// if item  use its fg sprite and fg color
 		struct wld_item *i = wld_getitemat(map, x, y);
 		if (i->type->sprite != ' ')
 			cha = i->type->sprite;
-		colorpair = wld_cpair_ti(t->type, i->type_id);
+		colorpair = wld_cpair_ti(t->type_id, i->type_id);
 	} else {
-		colorpair = wld_cpair_tm(t->type, 0);
+		colorpair = wld_cpair_tm(t->type_id, 0);
 	}
 
 	struct draw_struct ds = { colorpair, cha };
@@ -338,9 +334,8 @@ struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y)
 {
 	// memory we do not look at mob data
 	struct wld_tile *t = wld_gettileat(map, x, y);
-	struct wld_tiletype *tt = wld_get_tiletype(t->type);
-	unsigned long cha = tt->memory_sprite;
-	int colorpair = wld_cpairmem(t->type);
+	unsigned long cha = t->type2->memory_sprite;
+	int colorpair = wld_cpairmem(t->type_id);
 
 	struct draw_struct ds = { colorpair, cha };
 	return ds;
@@ -924,14 +919,13 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 	int allowed_range = rpg_calc_range_dist(user, item->type->base_range);
 	bool is_blocked(int x, int y) {
 		struct wld_tile *t = wld_gettileat(user->map, x, y);
-		struct wld_tiletype *tt = wld_get_tiletype(t->type);
 
 		// stop at tiles outside of the range of the item
 		int dist = dm_disti(user->map_x, user->map_y, x, y);
 		if (dist > allowed_range)
 			return true;
 
-		return tt->is_block || !t->is_visible;
+		return t->type2->is_block || !t->is_visible;
 	}
 	void on_visible(int x, int y) {
 		if (x == start_x && y == start_y) // ignore origin position
@@ -1116,19 +1110,23 @@ void wld_gentiles(struct wld_map *map)
 		tile->map_x = wld_calcx(i, map->cols);
 		tile->map_y = wld_calcy(i, map->cols);
 		tile->map_index = i;
+		tile->map = map;
 		tile->is_visible = false;
 		tile->was_visible = false;
 
 		switch (map_data_type) {
 		default:
 		case 1:
-			tile->type = TILE_STONEFLOOR;
+			tile->type_id = TILE_STONEFLOOR;
+			tile->type2 = &wld_tiletypes[TILE_STONEFLOOR];
 			break;
 		case 2:
-			tile->type = TILE_STONEWALL;
+			tile->type_id = TILE_STONEWALL;
+			tile->type2 = &wld_tiletypes[TILE_STONEWALL];
 			break;
 		case 3:
-			tile->type = TILE_GRASS;
+			tile->type_id = TILE_GRASS;
+			tile->type2 = &wld_tiletypes[TILE_GRASS];
 			break;
 		}
 

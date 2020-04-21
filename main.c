@@ -593,7 +593,6 @@ void ui_update_cursorinfo(struct wld_map *map)
 
 	// Get details about the tile they are on
 	struct wld_tile *t = wld_gettileat(map, x, y);
-	struct wld_tiletype *tt = wld_get_tiletype(t->type);
 	if (t->is_visible) {
 		struct wld_mob *m = wld_getmobat(map, x, y);
 		struct wld_item *i = wld_getitemat(map, x, y);
@@ -603,7 +602,7 @@ void ui_update_cursorinfo(struct wld_map *map)
 		} else if (i != NULL) {
 			ui_cursorinfo(i->type->short_desc);
 		} else {
-			ui_cursorinfo(tt->short_desc);
+			ui_cursorinfo(t->type2->short_desc);
 		}
 	} else {
 		ui_cursorinfo("");
@@ -615,14 +614,13 @@ void ui_update_positioninfo(struct wld_map *map)
 	int y = map->player->map_y;
 	// Get details about the tile they are on
 	struct wld_tile *t = wld_gettileat(map, x, y);
-	struct wld_tiletype *tt = wld_get_tiletype(t->type);
 
 	if (t->is_visible) {
 		struct wld_item *i = wld_getitemat(map, x, y);
 		if (i != NULL) {
 			ui_positioninfo(i->type->short_desc);
 		} else {
-			ui_positioninfo(tt->short_desc);
+			ui_positioninfo(t->type2->short_desc);
 		}
 	} else {
 		ui_positioninfo("");
@@ -1293,7 +1291,6 @@ void ps_play_draw()
 		wclrtoeol(map_pad);
 		for (int c=0; c < current_map->cols; c++) {
 			struct wld_tile *t = wld_gettileat(current_map, c, r);
-			struct wld_tiletype *tt = wld_get_tiletype(t->type);
 
 			if (t->is_visible) {
 				struct draw_struct ds = wld_get_drawstruct(current_map, c, r);
@@ -1320,7 +1317,6 @@ void ps_play_draw()
 		int map_y = current_map->player->map_y;
 		void inspect(int x, int y) {
 			struct wld_tile *t = wld_gettileat(current_map, x, y);
-			struct wld_tiletype *tt = wld_get_tiletype(t->type);
 			if (t->is_visible) {
 				struct draw_struct ds = wld_get_drawstruct(current_map, x, y);
 				ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
@@ -1392,7 +1388,6 @@ void ps_play_update()
 	for (int r=0; r < current_map->rows; r++) {
 		for (int c=0; c < current_map->cols; c++) {
 			struct wld_tile *t = wld_gettileat(current_map, c, r);
-			struct wld_tiletype *tt = wld_get_tiletype(t->type);
 			t->is_visible = false;
 		}
 	}
