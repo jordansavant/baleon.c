@@ -171,13 +171,15 @@ int wld_calcindex(int x, int y, int cols)
 {
 	return y * cols + x;
 }
+// TODO I think these are wrong!
 int wld_calcx(int index, int cols)
 {
 	return index % cols;
 }
-int wld_calcy(int index, int cols)
+// TODO I think these are wrong!
+int wld_calcy(int index, int rows)
 {
-	return index / cols;
+	return index / rows;
 }
 int wld_distance_mob_tile(struct wld_map *map, struct wld_mob *mob, struct wld_tile *tile)
 {

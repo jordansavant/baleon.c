@@ -20,16 +20,19 @@ void dng_cellmap_buildground(struct dng_cellmap *cellmap)
 	cellmap->cells = (struct dng_cell**)malloc(cellmap->size * sizeof(struct dng_cell*));
 	cellmap->cells_length = cellmap->size; // redundant but consistent
 
-	for (int i=0; i < cellmap->size; i++) {
-		struct dng_cell* cell = (struct dng_cell*)malloc(sizeof(struct dng_cell));
-		dng_cell_init(cell);
+	for (int r=0; r < cellmap->height; r++) {
+		for (int c=0; c < cellmap->width; c++) {
+			struct dng_cell* cell = (struct dng_cell*)malloc(sizeof(struct dng_cell));
+			dng_cell_init(cell);
 
-		// TODO is this why it blows up with non-square maps?
-		cell->index = i;
-		cell->x = i % cellmap->width;
-		cell->y = i / cellmap->height;
+			// TODO is this why it blows up with non-square maps?
+			int index = r * cellmap->width + c;
+			cell->index = index;
+			cell->x = c;
+			cell->y = r;
 
-		cellmap->cells[i] = cell;
+			cellmap->cells[index] = cell;
+		}
 	}
 }
 
@@ -95,9 +98,9 @@ void dng_cellmap_buildrooms(struct dng_cellmap *cellmap)
 
 struct dng_room* dng_cellmap_buildroom(struct dng_cellmap *cellmap)
 {
+	struct dng_room *room = NULL;
 	int room_width = dm_randii(cellmap->min_room_width, cellmap->max_room_width);
 	int room_height = dm_randii(cellmap->min_room_height, cellmap->max_room_height);
-	struct dng_room *room = NULL;
 	int i=0;
 
 	// sample cells spread out by room scatter factor
@@ -148,6 +151,7 @@ void dng_room_init(struct dng_room *room, int x, int y, int w, int h)
 void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room)
 {
 	bool inspect_dim(struct dng_cell* cell) {
+
 		cell->room = room;
 		// set room edge
 		cell->is_room_edge = (
@@ -156,6 +160,7 @@ void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room
 			cell->x == room->x + room->width - 1 ||
 			cell->y == room->y + room->height - 1
 		);
+
 		// set exterior walls
 		if (cell->is_room_edge) {
 			// top left corner
@@ -822,11 +827,17 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	//entranceCount = 1;
 	//exitCount = 1;
 
+	printf("build ground\n");
 	dng_cellmap_buildground(cellmap);
+	printf("build rooms\n");
 	dng_cellmap_buildrooms(cellmap);
+	printf("build tunnels\n");
 	dng_cellmap_buildtunnels(cellmap);
+	printf("build doords\n");
 	dng_cellmap_builddoors(cellmap);
+	printf("build entrance\n");
 	dng_cellmap_buildentrance(cellmap);
+	printf("clean\n");
 	dng_cellmap_cleanup_connections(cellmap);
 
 	//cellMap->buildGround();

@@ -5,7 +5,7 @@
 int main(void)
 {
 	dm_seed(100);
-	struct dng_cellmap *cellmap = dng_genmap(1, 56, 56);
+	struct dng_cellmap *cellmap = dng_genmap(1, 72, 48);
 
 	for (int r=0; r < cellmap->height; r++) {
 		for (int c=0; c < cellmap->width; c++) {
