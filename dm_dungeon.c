@@ -609,6 +609,81 @@ void dng_cellmap_build_landing_pad(struct dng_cellmap *cellmap, struct dng_cell*
 ///////////////////////////
 
 
+
+///////////////////////////
+// CLEANUP CONNECTION START
+
+void dng_cellmap_cleanup_connections(struct dng_cellmap *cellmap)
+{
+    // Remove dead ends
+    dng_cellmap_collapse_tunnels(cellmap);
+
+    // Fix doors
+    //dng_cellmap_fix_doors(cellmap); TODO
+
+    // Fix rooms
+    //dng_cellmap_fix_rooms(cellmap); TODO
+}
+
+void dng_cellmap_collapse_tunnels(struct dng_cellmap *cellmap)
+{
+    // scan all cells
+    for (int i = cellmap->map_padding; i < cellmap->width - cellmap->map_padding; i++) { // cols
+        for(unsigned int j = cellmap->map_padding; j < cellmap->height - cellmap->map_padding; j++) { // rows
+	    struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, i, j);
+            // if tunnel and connected tunnels < 2 its a dead end
+            // if dead end recursively collapse
+	    bool p = dm_randf() > cellmap->deadend_ratio;
+            if (p && cell->is_tunnel && dng_cellmap_count_tunnel_connections(cellmap, cell) < 2) {
+                dng_cellmap_collapse(cellmap, cell);
+            }
+        }
+    }
+}
+
+int dng_cellmap_count_tunnel_connections(struct dng_cellmap *cellmap, struct dng_cell *tunnel_cell)
+{
+	int count = 0;
+
+	// Look at cardinal tiles
+	struct dng_cell *top_cell = dng_cellmap_get_cell_at_position_nullable(cellmap, tunnel_cell->x, tunnel_cell->y - 1);
+	struct dng_cell *bottom_cell = dng_cellmap_get_cell_at_position_nullable(cellmap, tunnel_cell->x, tunnel_cell->y + 1);
+	struct dng_cell *right_cell = dng_cellmap_get_cell_at_position_nullable(cellmap, tunnel_cell->x + 1, tunnel_cell->y);
+	struct dng_cell *left_cell = dng_cellmap_get_cell_at_position_nullable(cellmap, tunnel_cell->x - 1, tunnel_cell->y);
+
+	if (top_cell != NULL && (top_cell->is_tunnel || top_cell->is_door || top_cell->is_room_edge))
+		count++;
+	if (bottom_cell != NULL && (bottom_cell->is_tunnel || bottom_cell->is_door || bottom_cell->is_room_edge))
+		count++;
+	if (right_cell != NULL && (right_cell->is_tunnel || right_cell->is_door || right_cell->is_room_edge))
+		count++;
+	if (left_cell != NULL && (left_cell->is_tunnel || left_cell->is_door || left_cell->is_room_edge))
+		count++;
+
+
+	return count;
+}
+
+void dng_cellmap_collapse(struct dng_cellmap *cellmap, struct dng_cell *tunnel_cell)
+{
+	// collapse this tunnel
+	tunnel_cell->is_tunnel = false;
+
+	// Find direction of adjacent tunnel(s) // should be one unless used outside of collapsing dead ends
+	for (int i=0; i < 4; i++) {
+		// Collapse them if they are dead ends
+		struct dng_cell *neighbor = dng_cellmap_get_cell_at_position_nullable(cellmap, tunnel_cell->x + tunnel_dirs[i].x, tunnel_cell->y + tunnel_dirs[i].y);
+		if (neighbor && neighbor->is_tunnel && dng_cellmap_count_tunnel_connections(cellmap, neighbor) < 2) {
+			dng_cellmap_collapse(cellmap, neighbor);
+		}
+	}
+}
+
+// CLEANUP CONNECTIO END
+///////////////////////////
+
+
+
 ///////////////////////////
 // CELLMAP INSPECTORS START
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*))
@@ -752,6 +827,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	dng_cellmap_buildtunnels(cellmap);
 	dng_cellmap_builddoors(cellmap);
 	dng_cellmap_buildentrance(cellmap);
+	dng_cellmap_cleanup_connections(cellmap);
 
 	//cellMap->buildGround();
 	//cellMap->buildRooms();

@@ -130,6 +130,12 @@ void dng_cellmap_buildentrance(struct dng_cellmap *cellmap);
 struct dng_cell* dng_cellmap_pick_transition_cell_for_room(struct dng_cellmap *cellmap, struct dng_room *room);
 void dng_cellmap_build_landing_pad(struct dng_cellmap *cellmap, struct dng_cell* start_cell, int entrance_id);
 
+// CLEANERS
+void dng_cellmap_cleanup_connections(struct dng_cellmap *cellmap);
+void dng_cellmap_collapse_tunnels(struct dng_cellmap *cellmap);
+int dng_cellmap_count_tunnel_connections(struct dng_cellmap *cellmap, struct dng_cell *tunnel_cell);
+void dng_cellmap_collapse(struct dng_cellmap *cellmap, struct dng_cell *tunnel_cell);
+
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));
 void dng_cellmap_inspect_cells_in_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h, bool (*inspect)(struct dng_cell*));
