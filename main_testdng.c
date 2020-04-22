@@ -5,7 +5,7 @@
 int main(void)
 {
 	dm_seed(100);
-	struct dng_cellmap *cellmap = dng_genmap(1, 72, 48);
+	struct dng_cellmap *cellmap = dng_genmap(1, 56, 48);
 
 	for (int r=0; r < cellmap->height; r++) {
 		for (int c=0; c < cellmap->width; c++) {
@@ -19,6 +19,8 @@ int main(void)
 				printf("e ");
 			else if (cell->is_tunnel)
 				printf("T ");
+			else if (cell->was_corridor_tunnel)
+				printf("t ");
 			else if (cell->is_door)
 				printf("D ");
 			else if (cell->is_sill)

@@ -1,6 +1,8 @@
 TODO:
 
 now
+- tunnels are getting stubbed out in little groups and thus not collapsing
+- room placements in a spiral dont work for "wide maps"
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items

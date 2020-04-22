@@ -289,12 +289,12 @@ bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, 
 	int next_left_x = next_x + dir.y;
 	int next_left_y = next_y + -dir.x;
 
-	int nextUpX = next_x + dir.x;
-	int nextUpY = next_y + dir.y;
-	int nextUpRightX = nextUpX + -dir.y;
-	int nextUpRightY = nextUpY + dir.x;
-	int nextUpLeftX = nextUpX + dir.y;
-	int nextUpLeftY = nextUpY + -dir.x;
+	int next_up_x = next_x + dir.x;
+	int next_up_y = next_y + dir.y;
+	int next_up_right_x = next_up_x + -dir.y;
+	int next_up_right_y = next_up_y + dir.x;
+	int next_up_left_x = next_up_x + dir.y;
+	int next_up_left_y = next_up_y + -dir.x;
 
 	if (cell->room != NULL)
 		return false; // I added this in baleon code, not xogeni
@@ -304,9 +304,9 @@ bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, 
 		struct dng_cell *next_cell = dng_cellmap_get_cell_at_position(cellmap, next_x, next_y);
 		struct dng_cell *next_left_cell = dng_cellmap_get_cell_at_position(cellmap, next_left_x, next_left_y);
 		struct dng_cell *next_right_cell = dng_cellmap_get_cell_at_position(cellmap, next_right_x, next_right_y);
-		struct dng_cell *next_up_cell = dng_cellmap_get_cell_at_position(cellmap, nextUpX, nextUpY);
-		struct dng_cell *next_up_left_cell = dng_cellmap_get_cell_at_position(cellmap, nextUpLeftX, nextUpLeftY);
-		struct dng_cell *next_up_right_cell = dng_cellmap_get_cell_at_position(cellmap, nextUpRightX, nextUpRightY);
+		struct dng_cell *next_up_cell = dng_cellmap_get_cell_at_position(cellmap, next_up_x, next_up_y);
+		struct dng_cell *next_up_left_cell = dng_cellmap_get_cell_at_position(cellmap, next_up_left_x, next_up_left_y);
+		struct dng_cell *next_up_right_cell = dng_cellmap_get_cell_at_position(cellmap, next_up_right_x, next_up_right_y);
 
 		bool is_heading_into_room = next_cell->is_room_perimeter || next_up_cell->is_room_perimeter;
 		bool is_heading_into_tunnel = next_cell->is_tunnel || next_up_cell->is_tunnel;
@@ -622,6 +622,7 @@ void dng_cellmap_cleanup_connections(struct dng_cellmap *cellmap)
 {
     // Remove dead ends
     dng_cellmap_collapse_tunnels(cellmap);
+    // TODO i have found tunnels that form a loop and live in isolation
 
     // Fix doors
     //dng_cellmap_fix_doors(cellmap); TODO
