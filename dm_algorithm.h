@@ -25,6 +25,8 @@ void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), 
 // RANDOM NUMBER GOD
 void dm_seed(unsigned long seed);
 double dm_randf();
+int dm_randi();
+int dm_randii(int a, int b);
 
 ///////////////////////////
 // MATH

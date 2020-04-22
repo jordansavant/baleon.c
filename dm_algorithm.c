@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
+#include <limits.h>
 #include "dm_defines.h"
 #include "mt_rand.h"
 #include "dm_algorithm.h"
@@ -115,7 +116,7 @@ bool dm_spiralnext(struct dm_spiral *s)
 	case 0:
 		++s->x;
 		// since stepping right finishes a layers circle we break if it has finished
-		if (s->x > s->maxlayers)
+		if (s->maxlayers > -1 && s->x > s->maxlayers)
 			return false;
 		if (s->x == s->layer)
 			++s->leg;
@@ -222,6 +223,17 @@ void dm_seed(unsigned long seed)
 double dm_randf()
 {
 	return genrandf();
+}
+
+int dm_randi()
+{
+	return (int)(dm_randf() * INT_MAX);
+}
+
+int dm_randii(int a, int b)
+{
+	int len = b - a;
+	return (int)(dm_randf() * len + a);
 }
 
 

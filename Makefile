@@ -20,5 +20,5 @@ valgrind: $(BUILD) $(DEPS)
 valgrind-full: $(BUILD) $(DEPS)
 	gcc -g -O0 $(BUILD) $(LIBS) $(CFLAGS) -o main.out && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all ./main.out
 
-dng: main_testdng.c dm_dungeon.c dm_dungeon.h
-	gcc main_testdng.c dm_dungeon.c -o main_testdng.out -lm && ./main_testdng.out
+dng: main_testdng.c dm_dungeon.c dm_dungeon.h dm_algorithm.h dm_algorithm.c
+	gcc main_testdng.c dm_dungeon.c dm_algorithm.c mt_rand.c -o main_testdng.out -lm && ./main_testdng.out
