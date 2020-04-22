@@ -369,16 +369,17 @@ void dng_cellmap_open_room(struct dng_cellmap *cellmap, struct dng_room *room)
 	int hyp_size = (int)sqrt(room->width * room->height);
 	int num_openings = hyp_size + dm_randii(0, hyp_size);
 
+	// for small rooms this is not running
 	// assign room sills and prep a list of door sills
 	int sill_length = 0;
 	int starter_cell_index = -1;
 	void on_sill_set(struct dng_cell *cell_sill) {
 		// ensure we pick at least one cell to be a door
 		// pick first, then potentially overwrite it with another random one
-		if (starter_cell_index == -1 || dm_randii(0, sill_length) == sill_length)
+		if (starter_cell_index == -1 || dm_randii(0, sill_length) == sill_length) {
 			starter_cell_index = cell_sill->index;
 		// else pick them at random to be a door cell
-		else if (dm_randii(0, num_openings / 2) == 0)
+		} else if (dm_randii(0, num_openings / 2) == 0)
 			dng_cellmap_emplace_door(cellmap, room, cell_sill);
 
 		sill_length++;
@@ -502,6 +503,7 @@ void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *
 		struct dng_cell* right_cell = dng_cellmap_get_cell_at_position(cellmap, cell->x - door->dir_y, cell->y + door->dir_x);
 		struct dng_cell* left_cell = dng_cellmap_get_cell_at_position(cellmap, cell->x + door->dir_y, cell->y - door->dir_x);
 
+
 		cell = dng_cellmap_get_cell_at_position_nullable(cellmap, cell->x + door->dir_x, cell->y + door->dir_y);
 		if (cell != NULL) {
 			bool stop = (
@@ -623,9 +625,10 @@ void dng_cellmap_cleanup_connections(struct dng_cellmap *cellmap)
     // Remove dead ends
     dng_cellmap_collapse_tunnels(cellmap);
     // TODO i have found tunnels that form a loop and live in isolation
+    // others that dangle out in a 2x2 and therefore do not collapse
 
     // Fix doors
-    //dng_cellmap_fix_doors(cellmap); TODO
+    dng_cellmap_fix_doors(cellmap);
 
     // Fix rooms
     //dng_cellmap_fix_rooms(cellmap); TODO
@@ -685,7 +688,48 @@ void dng_cellmap_collapse(struct dng_cellmap *cellmap, struct dng_cell *tunnel_c
 	}
 }
 
-// CLEANUP CONNECTIO END
+void dng_cellmap_fix_doors(struct dng_cellmap *cellmap)
+{
+	//Door Cleanup
+	//- Iterate all doors
+	//    - If door direction has no tunnel, door or other room
+	//        - delete door
+	//  - If door direction is another door
+	//      - delete door
+
+	// Find all doors, I opted to not keep a list of doors so we have to rescan the map
+	// Maybe go back to a listing of doors?
+	// although the list of doors had to be deleted in place
+	for (int i = cellmap->map_padding; i < cellmap->width - cellmap->map_padding; i++) { // cols
+		for(unsigned int j = cellmap->map_padding; j < cellmap->height - cellmap->map_padding; j++) { // rows
+
+			// Fix dangling doors
+			struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, i, j);
+			if (cell->is_door) {
+				struct dng_cell *neighbor = dng_cellmap_get_cell_at_position(cellmap, cell->x + cell->door.dir_x, cell->y + cell->door.dir_y);
+				if (neighbor->room == NULL && !neighbor->is_door && !neighbor->is_tunnel) {
+					cell->is_door = false;
+				}
+			}
+
+			// Fix doubled doors
+			if (cell->is_door) {
+				struct dng_cell *neighbor = dng_cellmap_get_cell_at_position(cellmap, cell->x + cell->door.dir_x, cell->y + cell->door.dir_y);
+				if (neighbor->is_door) {
+					cell->is_door = false;
+					dng_cellmap_mark_as_tunnel(cellmap, cell);
+				}
+			}
+
+			// Else this passes the door tests so give it a door type
+			// TODO door types
+			if (cell->is_door) {
+			}
+		}
+	}
+}
+
+// CLEANUP CONNECTION END
 ///////////////////////////
 
 
@@ -761,9 +805,12 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 
 	// Room details
 	cellmap->map_padding = 1;
+	// mathematically anything smaller than a 6 by 6 can't have sills placed reliably
+	// we required certain spacing between sills and room corners to not have
+	// strange tunneling adjacent to doors
 	cellmap->min_room_width = 6;
-	cellmap->max_room_width = 16;
 	cellmap->min_room_height = 6;
+	cellmap->max_room_width = 16;
 	cellmap->max_room_height = 16;
 
 	double map_hyp_size = sqrt(width * height);
@@ -834,7 +881,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	dng_cellmap_buildrooms(cellmap);
 	printf("build tunnels\n");
 	dng_cellmap_buildtunnels(cellmap);
-	printf("build doords\n");
+	printf("build doors\n");
 	dng_cellmap_builddoors(cellmap);
 	printf("build entrance\n");
 	dng_cellmap_buildentrance(cellmap);

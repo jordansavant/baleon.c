@@ -135,6 +135,7 @@ void dng_cellmap_cleanup_connections(struct dng_cellmap *cellmap);
 void dng_cellmap_collapse_tunnels(struct dng_cellmap *cellmap);
 int dng_cellmap_count_tunnel_connections(struct dng_cellmap *cellmap, struct dng_cell *tunnel_cell);
 void dng_cellmap_collapse(struct dng_cellmap *cellmap, struct dng_cell *tunnel_cell);
+void dng_cellmap_fix_doors(struct dng_cellmap *cellmap);
 
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));
