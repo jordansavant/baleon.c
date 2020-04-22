@@ -3,6 +3,11 @@
 
 #include "dm_defines.h"
 
+struct dng_sill_data {
+	int door_x;
+	int door_y;
+};
+
 struct dng_room {
 	int x, y;
 	int width, height;
@@ -10,6 +15,14 @@ struct dng_room {
 	bool is_machine_room;
 
 	//unsigned int cellCount();
+};
+
+struct dng_roomdoor {
+        int x, y;
+	//  TODO door types
+        // DoorType doorType;
+        struct dng_room* parent_room;
+	int dir_x, dir_y;
 };
 
 struct dng_cell {
@@ -27,6 +40,12 @@ struct dng_cell {
         bool was_corridor_tunnel;
         bool was_door_tunnel;
         bool was_room_fix_tunnel;
+
+	struct dng_sill_data sill_data;
+        bool is_sill;
+        bool is_door;
+        bool was_door;
+	struct dng_roomdoor door; // TODO was a pointer in xogeni
 };
 
 struct tunnel_dir {
@@ -74,6 +93,13 @@ bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, 
 void dng_cellmap_emplace_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir);
 void dng_cellmap_mark_as_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell);
 void dng_get_shuffled_directions(struct tunnel_dir *dirs);
+
+// DOORS
+void dng_cellmap_builddoors(struct dng_cellmap *cellmap);
+void dng_cellmap_open_room(struct dng_cellmap *cellmap, struct dng_room *room);
+void dng_cellmap_emplace_door(struct dng_cellmap* cellmap, struct dng_room *room, struct dng_cell *cell_sill);
+void dng_cellmap_set_room_sills(struct dng_cellmap* cellmap, struct dng_room *room, void (*on_set)(struct dng_cell*));
+void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *door);
 
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));

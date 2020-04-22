@@ -49,10 +49,19 @@ void dng_cell_init(struct dng_cell *cell)
         cell->was_corridor_tunnel = false;
         cell->was_door_tunnel = false;
         cell->was_room_fix_tunnel = false;
+
+	cell->sill_data.door_x = -1;
+	cell->sill_data.door_y = -1;
+	cell->is_sill = false;
+        cell->is_door = false;
+        cell->was_door = false;
+	cell->door; // TODO? is this ok?
 }
 
 // GROUND END
 ///////////////////////////
+
+
 
 ///////////////////////////
 // ROOMS START
@@ -190,7 +199,6 @@ void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room
 ///////////////////////////
 
 
-
 ///////////////////////////
 // TUNNELS START
 void dng_cellmap_buildtunnels(struct dng_cellmap *cellmap)
@@ -322,6 +330,187 @@ void dng_get_shuffled_directions(struct tunnel_dir *dirs)
 }
 // TUNNELS END
 ///////////////////////////
+
+
+
+
+///////////////////////////
+// DOORS START
+
+void dng_cellmap_builddoors(struct dng_cellmap *cellmap)
+{
+	for (int i=0; i < cellmap->rooms_length; i++)
+		dng_cellmap_open_room(cellmap, cellmap->rooms[i]);
+}
+
+void dng_cellmap_open_room(struct dng_cellmap *cellmap, struct dng_room *room)
+{
+	// THIS function was pretty significantly refactored from XoGeni so
+	// I could avoid these vectors beloe
+	//std::vector<Cell*> sills;
+	//std::vector<Cell*> doorSills;
+
+	// Calculate number of openings this rooms could/should have
+	int hyp_size = (int)sqrt(room->width * room->height);
+	int num_openings = hyp_size + dm_randii(0, hyp_size);
+
+	// assign room sills and prep a list of door sills
+	int sill_length = 0;
+	int starter_cell_index = -1;
+	void on_sill_set(struct dng_cell *cell_sill) {
+		// ensure we pick at least one cell to be a door
+		// pick first, then potentially overwrite it with another random one
+		if (starter_cell_index == -1 || dm_randii(0, sill_length) == sill_length)
+			starter_cell_index = cell_sill->index;
+		// else pick them at random to be a door cell
+		else if (dm_randii(0, num_openings / 2) == 0)
+			dng_cellmap_emplace_door(cellmap, room, cell_sill);
+
+		sill_length++;
+	};
+	dng_cellmap_set_room_sills(cellmap, room, on_sill_set);
+
+	// ensure we set our door for the first cell we picked
+	struct dng_cell *cell_sill = cellmap->cells[starter_cell_index];
+	dng_cellmap_emplace_door(cellmap, room, cell_sill);
+}
+
+void dng_cellmap_emplace_door(struct dng_cellmap* cellmap, struct dng_room *room, struct dng_cell *cell_sill)
+{
+	struct dng_cell *cell_door = dng_cellmap_get_cell_at_position(cellmap, cell_sill->sill_data.door_x, cell_sill->sill_data.door_y);
+	if (!cell_door->is_door) {
+		// TODO door types were here
+		//RoomDoor::DoorType doorType;
+		//switch(LevelGenerator::random.next(2))
+		//{
+		//	case 0:
+		//		doorType = RoomDoor::DoorType::Arch;
+		//		break;
+		//	case 1:
+		//		doorType = RoomDoor::DoorType::Door;
+		//		break;
+		//}
+
+		// Create door
+		int dir_x = cell_door->x - cell_sill->x;
+		int dir_y = cell_door->y - cell_sill->y;
+		struct dng_roomdoor roomdoor = {
+			cell_door->x, cell_door->y,
+			// TODO DOOR TYPE
+			cell_door->room,
+			dir_x, dir_y
+		};
+
+		cell_door->is_door = true;
+		cell_door->was_door = true;
+		cell_door->door = roomdoor;
+
+		// Help connections
+		dng_cellmap_connect_door(cellmap, &roomdoor);
+	}
+}
+
+// TODO this is hardcoded for square rooms, not round or cavelikes
+void dng_cellmap_set_room_sills(struct dng_cellmap* cellmap, struct dng_room *room, void (*on_set)(struct dng_cell*))
+{
+	// identify and mark sills of a room
+	int topMargin = cellmap->min_hall_width + 2;
+	int bottomMargin = cellmap->height - (cellmap->min_hall_width + 2);
+	int leftMargin = cellmap->min_hall_width + 2;
+	int rightMargin = cellmap->width - (cellmap->min_hall_width + 2);
+	int cornerSpacing = 2; // do not let sills be valid within 2 spaces of corners
+
+	// North wall
+	if (room->y > topMargin) {
+		for (int i = room->x + cornerSpacing; i < room->x + room->width - cornerSpacing; i++) {
+			if(i % 2 == 0) {
+				struct dng_cell* cell = dng_cellmap_get_cell_at_position(cellmap, i, room->y);
+				cell->is_sill = true;
+				cell->sill_data.door_x = cell->x;
+				cell->sill_data.door_y = cell->y - 1;
+				on_set(cell);
+				//fill.push_back(cell);
+			}
+		}
+	}
+	// South wall
+	if (room->y + room->height < bottomMargin) {
+		for (int i = room->x + cornerSpacing; i < room->x + room->width - cornerSpacing; i++) {
+			if (i % 2 == 0) {
+				struct dng_cell* cell = dng_cellmap_get_cell_at_position(cellmap, i, room->y + room->height - 1);
+				cell->is_sill = true;
+				cell->sill_data.door_x = cell->x;
+				cell->sill_data.door_y = cell->y + 1;
+				on_set(cell);
+				//fill.push_back(cell);
+			}
+		}
+	}
+	// East wall
+	if (room->x > leftMargin) {
+		for (int i = room->y + cornerSpacing; i < room->y + room->height - cornerSpacing; i++) {
+			if (i % 2 == 0) {
+				struct dng_cell* cell = dng_cellmap_get_cell_at_position(cellmap, room->x, i);
+				cell->is_sill = true;
+				cell->sill_data.door_x = cell->x - 1;
+				cell->sill_data.door_y = cell->y;
+				on_set(cell);
+				//fill.push_back(cell);
+			}
+		}
+	}
+	// West wall
+	if (room->x + room->width < rightMargin) {
+		for (int i = room->y + cornerSpacing; i < room->y + room->height - cornerSpacing; i++) {
+			if (i % 2 == 0) {
+				struct dng_cell* cell = dng_cellmap_get_cell_at_position(cellmap, room->x + room->width - 1, i);
+				cell->is_sill = true;
+				cell->sill_data.door_x = cell->x + 1;
+				cell->sill_data.door_y = cell->y;
+				on_set(cell);
+				//fill.push_back(cell);
+			}
+		}
+	}
+}
+
+void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *door)
+{
+	// Tunnel away from door until we find
+	// - A tunnel
+	// - Another door
+	// - Another room
+
+	bool complete = false;
+	struct dng_cell* cell = dng_cellmap_get_cell_at_position(cellmap, door->x, door->y);
+	while (!complete) {
+		struct dng_cell* right_cell = dng_cellmap_get_cell_at_position(cellmap, cell->x - door->dir_y, cell->y + door->dir_x);
+		struct dng_cell* left_cell = dng_cellmap_get_cell_at_position(cellmap, cell->x + door->dir_y, cell->y - door->dir_x);
+
+		cell = dng_cellmap_get_cell_at_position_nullable(cellmap, cell->x + door->dir_x, cell->y + door->dir_y);
+		if (cell != NULL) {
+			bool stop = (
+				cell->is_tunnel || cell->is_door || cell->is_room_edge || // next cell
+				right_cell->is_tunnel || left_cell->is_tunnel || // side is a tunnel
+				right_cell->is_room_edge || left_cell->is_room_edge || // side is a room
+				right_cell->is_door || left_cell->is_door // side is a door
+			);
+			if (stop) {
+				complete = true;
+			} else {
+				cell->is_tunnel = true;
+				cell->was_door_tunnel = true;
+			}
+		} else {
+			// TODO: Failure condition
+			complete = true;
+		}
+	}
+}
+
+// DOORS END
+///////////////////////////
+
 
 
 
@@ -462,6 +651,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	dng_cellmap_buildground(cellmap);
 	dng_cellmap_buildrooms(cellmap);
 	dng_cellmap_buildtunnels(cellmap);
+	dng_cellmap_builddoors(cellmap);
 
 	//cellMap->buildGround();
 	//cellMap->buildRooms();
