@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <math.h>
+#include <stdio.h> // TODO REMOVE
 #include "dm_algorithm.h"
 #include "dm_dungeon.h"
 
@@ -16,6 +17,7 @@ void dng_cellmap_buildground(struct dng_cellmap *cellmap)
 
 	for (int i=0; i < cellmap->size; i++) {
 		struct dng_cell* cell = (struct dng_cell*)malloc(sizeof(struct dng_cell));
+		dng_cell_init(cell);
 
 		// TODO is this why it blows up with non-square maps?
 		cell->index = i;
@@ -24,6 +26,18 @@ void dng_cellmap_buildground(struct dng_cellmap *cellmap)
 
 		cellmap->cells[i] = cell;
 	}
+}
+
+void dng_cell_init(struct dng_cell *cell)
+{
+	cell->index = 0;
+	cell->x = 0;
+	cell->y = 0;
+	cell->is_wall = false;
+	cell->is_entrance = false;
+	cell->room = NULL;
+	cell->is_room_edge = false;
+	cell->is_room_perimeter = false;
 }
 
 // GROUND END
@@ -61,8 +75,9 @@ struct dng_room* dng_cellmap_buildroom(struct dng_cellmap *cellmap)
 		if (i % cellmap->room_scatter == 0) {
 			// if the map can house this room then lets pick it for a room spot
 			if (dng_cellmap_can_house_dimension(cellmap, cell->x, cell->y, room_width, room_height)) {
-				bool can_be_placed = true;
+
 				// can be a room if not already a room or room perimeter, if any cell then no
+				bool can_be_placed = true;
 				bool inspect_dim(struct dng_cell* cell) {
 					if (cell->room != NULL || cell->is_room_perimeter) {
 						can_be_placed = false;
@@ -70,12 +85,11 @@ struct dng_room* dng_cellmap_buildroom(struct dng_cellmap *cellmap)
 					}
 					return false;
 				}
-
 				dng_cellmap_inspect_cells_in_dimension(cellmap, cell->x, cell->y, room_width, room_height, inspect_dim);
 
 				if (can_be_placed) {
 					room = (struct dng_room*)malloc(sizeof(struct dng_room));
-					dng_room_init(room);
+					dng_room_init(room, cell->x, cell->y, room_width, room_height);
 					dng_cellmap_emplace_room(cellmap, room);
 					return true;
 				}
@@ -90,11 +104,13 @@ struct dng_room* dng_cellmap_buildroom(struct dng_cellmap *cellmap)
 	return room;
 }
 
-void dng_room_init(struct dng_room *room)
+void dng_room_init(struct dng_room *room, int x, int y, int w, int h)
 {
 	//: x(0), y(0), width(0), height(0), entranceWeight(0), isMachineRoom(false)
-	room->x = 0;
-	room->y = 0;
+	room->x = x;
+	room->y = y;
+	room->width = w;
+	room->height = h;
 	room->entrance_weight = 0;
 	room->is_machine_room = false;
 }
@@ -156,7 +172,7 @@ void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room
 		return false;
 	}
 
-	dng_cellmap_inspect_spiral_cells(cellmap, inspect_dim);
+	dng_cellmap_inspect_cells_in_dimension(cellmap, room->x, room->y, room->width, room->height, inspect_dim);
 }
 
 // ROOMS END
@@ -174,10 +190,11 @@ void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspec
 	do {
 		int current_x = center_x + sp.x;
 		int current_y = center_y + sp.y;
+		if (current_x >= cellmap->width || current_y >= cellmap->height)
+			return;
 		struct dng_cell *current = dng_cellmap_get_cell_at_position(cellmap, current_x, current_y);
-		if (inspect(current)) {
+		if (inspect(current))
 			return; // break
-		}
 	} while(dm_spiralnext(&sp));
 }
 

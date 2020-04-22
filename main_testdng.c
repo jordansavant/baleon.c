@@ -9,10 +9,10 @@ int main(void)
 		for (int c=0; c < cellmap->width; c++) {
 			int index = r * cellmap->width + c;
 			struct dng_cell *cell = cellmap->cells[index];
-			if (!cell->is_wall)
-				printf("  ");
-			else
+			if (cell->room != NULL)
 				printf("# ");
+			else
+				printf("  ");
 		}
 		printf("\n");
 	}

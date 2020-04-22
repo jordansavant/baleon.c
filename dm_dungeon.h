@@ -51,11 +51,12 @@ struct dng_cellmap {
 ///////////////////////////
 // CELLMAP BUILDERS
 void dng_cellmap_buildground(struct dng_cellmap*);
+void dng_cell_init(struct dng_cell*);
 
 // ROOMS
 void dng_cellmap_buildrooms(struct dng_cellmap*);
 struct dng_room* dng_cellmap_buildroom(struct dng_cellmap *cellmap);
-void dng_room_init(struct dng_room *room);
+void dng_room_init(struct dng_room *room, int x, int y, int w, int h);
 void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room);
 
 // INSPECTORS
