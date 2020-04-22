@@ -211,9 +211,35 @@ void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), 
 }
 
 
+///////////////////////////
+// FLOODFILL
+int __dm_floodfill_id = 0;
+void dm_floodfill(int x, int y, bool (*is_blocked)(int, int, int), void (*on_flood)(int, int, int))
+{
+	dm_floodfill_r(x, y, is_blocked, on_flood, 0);
+	__dm_floodfill_id++;
+}
+void dm_floodfill_r(int x, int y, bool (*is_blocked)(int, int, int), void (*on_flood)(int, int, int), int depth)
+{
+	if (is_blocked(x, y, depth))
+		return;
+
+	on_flood(x, y, depth);
+
+	depth++;
+	dm_floodfill_r(x + 1, y, is_blocked, on_flood, depth);
+	dm_floodfill_r(x - 1, y, is_blocked, on_flood, depth);
+	dm_floodfill_r(x, y + 1, is_blocked, on_flood, depth);
+	dm_floodfill_r(x, y - 1, is_blocked, on_flood, depth);
+}
+int dm_floodfill_id()
+{
+	return __dm_floodfill_id;
+}
+
 
 ///////////////////////////
-// RANDOM NUMBER GOD
+// RANDOM
 
 void dm_seed(unsigned long seed)
 {

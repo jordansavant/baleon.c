@@ -3,6 +3,17 @@
 
 #include "dm_defines.h"
 
+
+struct dng_entrance {
+	// Entrance(unsigned int id, unsigned int x, unsigned int y, unsigned int parentMapId = 0, unsigned int parentExitId = 0);
+	int id;
+	int x, y;
+	bool isConnectedToParent;
+	int parent_map_id;
+	int parent_exitId;
+
+};
+
 struct dng_sill_data {
 	int door_x;
 	int door_y;
@@ -30,7 +41,6 @@ struct dng_cell {
         int x, y;
 
 	bool is_wall;
-	bool is_entrance;
 
 	struct dng_room* room;
         bool is_room_edge;
@@ -45,7 +55,17 @@ struct dng_cell {
         bool is_sill;
         bool is_door;
         bool was_door;
-	struct dng_roomdoor door; // TODO was a pointer in xogeni
+	struct dng_roomdoor door; // TODO was a pointer in xogeni (seems to work as stack based)
+
+        bool is_entrance;
+        int entrance_id;
+        int entrance_priority;
+        bool is_entrance_transition;
+	struct dng_entrance *entrance_transition;
+        bool is_exit_transition;
+	// struct dng_exit *exit_transition; // TODO
+	int transition_dir_x, transition_dir_y;
+        int metadata_flood_id;
 };
 
 struct tunnel_dir {
@@ -71,6 +91,10 @@ struct dng_cellmap {
 
 	// entrance details
 	int entrance_count, exit_count;
+	struct dng_entrance *entrance;
+	//struct dng_exit *exit; TODO
+	struct dng_room *entrance_room;
+	struct dng_room *exit_room;
 };
 
 
@@ -100,6 +124,11 @@ void dng_cellmap_open_room(struct dng_cellmap *cellmap, struct dng_room *room);
 void dng_cellmap_emplace_door(struct dng_cellmap* cellmap, struct dng_room *room, struct dng_cell *cell_sill);
 void dng_cellmap_set_room_sills(struct dng_cellmap* cellmap, struct dng_room *room, void (*on_set)(struct dng_cell*));
 void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *door);
+
+// ENTRANCE
+void dng_cellmap_buildentrance(struct dng_cellmap *cellmap);
+struct dng_cell* dng_cellmap_pick_transition_cell_for_room(struct dng_cellmap *cellmap, struct dng_room *room);
+void dng_cellmap_build_landing_pad(struct dng_cellmap *cellmap, struct dng_cell* start_cell, int entrance_id);
 
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));

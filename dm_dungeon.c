@@ -39,7 +39,6 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->x = 0;
 	cell->y = 0;
 	cell->is_wall = false;
-	cell->is_entrance = false;
 
 	cell->room = NULL;
 	cell->is_room_edge = false;
@@ -56,6 +55,17 @@ void dng_cell_init(struct dng_cell *cell)
         cell->is_door = false;
         cell->was_door = false;
 	cell->door; // TODO? is this ok?
+
+	cell->is_entrance = false;
+	cell->entrance_id = -1;
+	cell->entrance_priority = 0;
+	cell->is_entrance_transition = false;
+	cell->entrance_transition = NULL;
+	cell->is_exit_transition = false;
+	//cell->exit_transition = NULL; // TODO
+	cell->transition_dir_x = 0;
+	cell->transition_dir_y = 0;
+	cell->metadata_flood_id = -1;
 }
 
 // GROUND END
@@ -144,7 +154,7 @@ void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room
 			cell->x == room->x ||
 			cell->y == room->y ||
 			cell->x == room->x + room->width - 1 ||
-			cell->y == room->y + room->height - 0
+			cell->y == room->y + room->height - 1
 		);
 		// set exterior walls
 		if (cell->is_room_edge) {
@@ -515,6 +525,91 @@ void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *
 
 
 ///////////////////////////
+// ENTRANCE START
+//
+// Exit and entrances depend on connecting parent maps
+// If there is no parent map we can create an entrance and exit
+// If there is a parent we should tie the entrance to their exit and create an exit
+// In either scenario we are the master of exits so generate them
+
+// This is run before rooms are guaranteed connected because it is used as the primary connection point
+void dng_cellmap_buildentrance(struct dng_cellmap *cellmap)
+{
+	int entrance_id = 1;
+
+	// Pick a random room (in future give better heuristic)
+	// TODO in future make better heuristic, maybe?
+	struct dng_room *room = cellmap->rooms[dm_randii(0, cellmap->rooms_length)];
+
+	// Pick a good entrance cell
+	struct dng_cell *entrance_cell = dng_cellmap_pick_transition_cell_for_room(cellmap, room);
+
+	// Build entrance
+	cellmap->entrance = (struct dng_entrance*)malloc(sizeof(struct dng_entrance));
+	entrance_cell->is_entrance_transition = true;
+	entrance_cell->entrance_transition = cellmap->entrance;
+
+	// Build  landing pad
+	dng_cellmap_build_landing_pad(cellmap, entrance_cell, entrance_id);
+
+	// Set our maps entrance room
+	cellmap->entrance_room = room;
+}
+
+struct dng_cell* dng_cellmap_pick_transition_cell_for_room(struct dng_cellmap *cellmap, struct dng_room *room)
+{
+	// Default to the center of the room because its guaranteed, though not amazing
+	int center_x = room->x + room->width / 2;
+	int center_y = room->y + room->height / 2;
+	struct dng_cell *pick = dng_cellmap_get_cell_at_position(cellmap, center_x, center_y);
+
+	// First pick is the northwest corner
+	// It must have a wall to north and to west (TODO, this was because of Isometric map display, does not have to be this)
+	int nw_x = room->x;
+	int nw_y = room->y;
+	struct dng_cell *nw_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y);
+	struct dng_cell *nwn_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y - 1);
+	struct dng_cell *nww_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x - 1, nw_y);
+	if (!nwn_cell->is_door && !nwn_cell->is_tunnel && !nww_cell->is_door && !nww_cell->is_tunnel) {
+		pick = nw_cell;
+		pick->transition_dir_x = 0;
+		pick->transition_dir_y = 1;
+		return pick;
+	}
+
+	return pick;
+}
+
+void dng_cellmap_build_landing_pad(struct dng_cellmap *cellmap, struct dng_cell* start_cell, int entrance_id)
+{
+	// flood fill outwards picking a landing pad (so we can transition into the area even if entrance is blocked)
+	// this was for multiplayer logic back in the day in RogueZombie but I like the idea still
+	int max_radius = 3;
+	bool is_blocked(int x, int y, int depth) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+		int radius = dm_disti(cell->x, cell->y, start_cell->x, start_cell->y);
+		return radius > max_radius || cell->metadata_flood_id == dm_floodfill_id() || cell->is_room_perimeter;
+	}
+	void on_fill(int x, int y, int depth) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+		if (cell->metadata_flood_id != dm_floodfill_id()) {
+			// Entrance transition is not blocked so we can flodd from it outward, so dont assign it as a pad
+			if (!cell->is_entrance_transition && !cell->is_exit_transition) {
+				int radius = dm_disti(cell->x, cell->y, start_cell->x, start_cell->y);
+				cell->is_entrance = true;
+				cell->entrance_id = entrance_id;
+				cell->entrance_priority = radius;
+				cell->metadata_flood_id = dm_floodfill_id();
+			}
+		}
+	}
+	dm_floodfill(start_cell->x, start_cell->y, is_blocked, on_fill);
+}
+// ENTRANCE END
+///////////////////////////
+
+
+///////////////////////////
 // CELLMAP INSPECTORS START
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*))
 {
@@ -611,6 +706,10 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	// Entrance details
 	cellmap->entrance_count = 1;
 	cellmap->exit_count = 1;
+	cellmap->entrance = NULL;
+	//cellmap->exit = NULL; TODO
+	cellmap->entrance_room = NULL;
+	cellmap->exit_room = NULL;
 
 	//mapPadding = 1;
 	//float mapHypSize = sqrtf(width * height);
@@ -652,6 +751,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	dng_cellmap_buildrooms(cellmap);
 	dng_cellmap_buildtunnels(cellmap);
 	dng_cellmap_builddoors(cellmap);
+	dng_cellmap_buildentrance(cellmap);
 
 	//cellMap->buildGround();
 	//cellMap->buildRooms();
@@ -671,6 +771,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 
 void dng_delmap(struct dng_cellmap *cellmap)
 {
+	free(cellmap->entrance);
 	for (int i=0; i < cellmap->rooms_length; i++) {
 		free(cellmap->rooms[i]); // free cell
 	}

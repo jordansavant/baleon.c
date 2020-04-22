@@ -11,14 +11,20 @@ int main(void)
 		for (int c=0; c < cellmap->width; c++) {
 			int index = r * cellmap->width + c;
 			struct dng_cell *cell = cellmap->cells[index];
-			if (cell->is_tunnel)
-				printf("^ ");
+			//if (cell->is_room_perimeter)
+			//	printf("P ");
+			if (cell->is_entrance_transition)
+				printf("E ");
+			else if (cell->is_entrance)
+				printf("e ");
+			else if (cell->is_tunnel)
+				printf("T ");
 			else if (cell->is_door)
 				printf("D ");
 			else if (cell->is_sill)
-				printf("_ ");
+				printf("S ");
 			else if (cell->room != NULL)
-				printf(". ");
+				printf("- ");
 			else
 				printf("  ");
 		}
