@@ -11,7 +11,9 @@ int main(void)
 		for (int c=0; c < cellmap->width; c++) {
 			int index = r * cellmap->width + c;
 			struct dng_cell *cell = cellmap->cells[index];
-			if (cell->room != NULL)
+			if (cell->is_tunnel)
+				printf("* ");
+			else if (cell->room != NULL)
 				printf("# ");
 			else
 				printf("  ");

@@ -22,8 +22,16 @@ struct dng_cell {
 	struct dng_room* room;
         bool is_room_edge;
         bool is_room_perimeter;
+
+        bool is_tunnel;
+        bool was_corridor_tunnel;
+        bool was_door_tunnel;
+        bool was_room_fix_tunnel;
 };
 
+struct tunnel_dir {
+	int x, y;
+};
 struct dng_cellmap {
 	int id;
 	int difficulty;
@@ -41,7 +49,6 @@ struct dng_cellmap {
 	// tunnel details
 	int min_hall_width;
 	double tunnel_turn_ratio, deadend_ratio;
-	// TODO tunneldirs
 
 	// entrance details
 	int entrance_count, exit_count;
@@ -58,6 +65,15 @@ void dng_cellmap_buildrooms(struct dng_cellmap*);
 struct dng_room* dng_cellmap_buildroom(struct dng_cellmap *cellmap);
 void dng_room_init(struct dng_room *room, int x, int y, int w, int h);
 void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room);
+
+// TUNNELS
+void dng_cellmap_buildtunnels(struct dng_cellmap*);
+void dng_cellmap_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir last_dir);
+bool dng_cellmap_open_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir);
+bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir);
+void dng_cellmap_emplace_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir);
+void dng_cellmap_mark_as_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell);
+void dng_get_shuffled_directions(struct tunnel_dir *dirs);
 
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));

@@ -7,6 +7,11 @@
 ///////////////////////////
 // CELLMAP BUILDERS
 
+struct tunnel_dir tunnel_dirs[] = {
+	// right, down, left, up
+	{1,0}, {0,1}, {-1,0}, {0,-1}
+};
+
 ///////////////////////////
 // GROUND START
 
@@ -35,9 +40,15 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->y = 0;
 	cell->is_wall = false;
 	cell->is_entrance = false;
+
 	cell->room = NULL;
 	cell->is_room_edge = false;
 	cell->is_room_perimeter = false;
+
+        cell->is_tunnel = false;
+        cell->was_corridor_tunnel = false;
+        cell->was_door_tunnel = false;
+        cell->was_room_fix_tunnel = false;
 }
 
 // GROUND END
@@ -181,6 +192,137 @@ void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room
 
 
 ///////////////////////////
+// TUNNELS START
+void dng_cellmap_buildtunnels(struct dng_cellmap *cellmap)
+{
+	// Iterate all cells within the map
+	for (int i = cellmap->map_padding; i < cellmap->width - cellmap->map_padding; i++) { // cols
+		for(int j = cellmap->map_padding; j < cellmap->height - cellmap->map_padding; j++) { // rows
+			// Build recursive tunnels from cell
+			struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, i, j);
+			if (cell->room == NULL && !cell->is_room_perimeter && !cell->is_tunnel) {
+				//tunnel2(cell);
+				dng_cellmap_tunnel(cellmap, cell, tunnel_dirs[0]);
+			}
+		}
+	}
+}
+
+// recursive dig
+void dng_cellmap_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir last_dir)
+{
+	// ORIGINAL
+	if (last_dir.x == 0 && last_dir.y == 0) {
+		// first cell
+		last_dir = tunnel_dirs[0];
+	}
+
+	bool attempt_straight = dm_randf() > cellmap->tunnel_turn_ratio; // % chance to try to go straight
+
+	// create new tunnel dirs to randomize
+	struct tunnel_dir rand_dirs[4];
+	for (int i=0; i<4; i++)
+		rand_dirs[i] = tunnel_dirs[i];
+	dng_get_shuffled_directions(rand_dirs);
+
+	// Try to dig straight
+	if (attempt_straight) {
+		if (dng_cellmap_open_tunnel(cellmap, cell, last_dir)) {
+			struct dng_cell *next_cell = dng_cellmap_get_cell_at_position(cellmap, cell->x + last_dir.x, cell->y + last_dir.y);
+			dng_cellmap_tunnel(cellmap, next_cell, last_dir);
+		}
+	}
+
+	// Try to dig in any direction
+	for (unsigned int i=0; i < 4; i++) {
+		struct tunnel_dir dir = rand_dirs[i];
+
+		if (attempt_straight && dir.x == last_dir.x && dir.y == last_dir.y)
+			continue;
+
+		if (dng_cellmap_open_tunnel(cellmap, cell, dir)) {
+			struct dng_cell *next_cell = dng_cellmap_get_cell_at_position(cellmap, cell->x + dir.x, cell->y + dir.y);
+			dng_cellmap_tunnel(cellmap, next_cell, dir);
+		}
+	}
+}
+
+bool dng_cellmap_open_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir)
+{
+    if (dng_cellmap_can_tunnel(cellmap, cell, dir)) {
+        dng_cellmap_emplace_tunnel(cellmap, cell, dir);
+        return true;
+    }
+
+    return false;
+}
+
+bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir)
+{
+	int next_x = cell->x + dir.x;
+	int next_y = cell->y + dir.y;
+	int next_right_x = next_x + -dir.y;
+	int next_right_y = next_y + dir.x;
+	int next_left_x = next_x + dir.y;
+	int next_left_y = next_y + -dir.x;
+
+	int nextUpX = next_x + dir.x;
+	int nextUpY = next_y + dir.y;
+	int nextUpRightX = nextUpX + -dir.y;
+	int nextUpRightY = nextUpY + dir.x;
+	int nextUpLeftX = nextUpX + dir.y;
+	int nextUpLeftY = nextUpY + -dir.x;
+
+	// Cell two positions over cannot be: outside of margin, room perimeter, another corridor
+	if (next_x >= cellmap->map_padding && next_y >= cellmap->map_padding && next_x < cellmap->width - cellmap->map_padding && next_y < cellmap->height - cellmap->map_padding) {
+		struct dng_cell *next_cell = dng_cellmap_get_cell_at_position(cellmap, next_x, next_y);
+		struct dng_cell *next_left_cell = dng_cellmap_get_cell_at_position(cellmap, next_left_x, next_left_y);
+		struct dng_cell *next_right_cell = dng_cellmap_get_cell_at_position(cellmap, next_right_x, next_right_y);
+		struct dng_cell *next_up_cell = dng_cellmap_get_cell_at_position(cellmap, nextUpX, nextUpY);
+		struct dng_cell *next_up_left_cell = dng_cellmap_get_cell_at_position(cellmap, nextUpLeftX, nextUpLeftY);
+		struct dng_cell *next_up_right_cell = dng_cellmap_get_cell_at_position(cellmap, nextUpRightX, nextUpRightY);
+
+		bool is_heading_into_room = next_cell->is_room_perimeter || next_up_cell->is_room_perimeter;
+		bool is_heading_into_tunnel = next_cell->is_tunnel || next_up_cell->is_tunnel;
+		bool is_running_adjacent_to_tunnel = (
+			next_left_cell->is_tunnel ||
+			next_right_cell->is_tunnel ||
+			next_up_left_cell->is_tunnel ||
+			next_up_right_cell->is_tunnel
+		);
+
+		if (!is_heading_into_room && !is_heading_into_tunnel && !is_running_adjacent_to_tunnel)
+			return true;
+	}
+
+	return false;
+}
+
+void dng_cellmap_emplace_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir)
+{
+	struct dng_cell *next_cell = dng_cellmap_get_cell_at_position(cellmap, cell->x + dir.x, cell->y + dir.y);
+	dng_cellmap_mark_as_tunnel(cellmap, cell);
+}
+
+void dng_cellmap_mark_as_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell)
+{
+    cell->is_tunnel = true;
+    cell->was_corridor_tunnel = true;
+}
+
+void dng_get_shuffled_directions(struct tunnel_dir *dirs)
+{
+    int n = 4; // 4 directions
+    for (int i = n - 1; i > 0; --i) {
+	    dirs[i] = dirs[dm_randii(0, i + 1)];
+    }
+}
+// TUNNELS END
+///////////////////////////
+
+
+
+///////////////////////////
 // CELLMAP INSPECTORS START
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*))
 {
@@ -274,8 +416,6 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	cellmap->tunnel_turn_ratio = 0;
 	cellmap->deadend_ratio = 0;
 
-	// TODO tunnel directions list
-
 	// Entrance details
 	cellmap->entrance_count = 1;
 	cellmap->exit_count = 1;
@@ -318,6 +458,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 
 	dng_cellmap_buildground(cellmap);
 	dng_cellmap_buildrooms(cellmap);
+	dng_cellmap_buildtunnels(cellmap);
 
 	//cellMap->buildGround();
 	//cellMap->buildRooms();
