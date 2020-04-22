@@ -273,6 +273,9 @@ bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, 
 	int nextUpLeftX = nextUpX + dir.y;
 	int nextUpLeftY = nextUpY + -dir.x;
 
+	if (cell->room != NULL)
+		return false; // I added this in baleon code, not xogeni
+
 	// Cell two positions over cannot be: outside of margin, room perimeter, another corridor
 	if (next_x >= cellmap->map_padding && next_y >= cellmap->map_padding && next_x < cellmap->width - cellmap->map_padding && next_y < cellmap->height - cellmap->map_padding) {
 		struct dng_cell *next_cell = dng_cellmap_get_cell_at_position(cellmap, next_x, next_y);

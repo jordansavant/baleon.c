@@ -12,7 +12,7 @@ int main(void)
 			int index = r * cellmap->width + c;
 			struct dng_cell *cell = cellmap->cells[index];
 			if (cell->is_tunnel)
-				printf("* ");
+				printf("O ");
 			else if (cell->room != NULL)
 				printf("# ");
 			else
