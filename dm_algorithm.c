@@ -269,16 +269,16 @@ int dm_randii(int a, int b)
 // MATH
 int dm_disti(int x1, int y1, int x2, int y2)
 {
-    double x = (double)(x1 - x2);
-    double y = (double)(y1 - y2);
-    return (int)sqrt(x*x + y*y);
+	double x = (double)(x1 - x2);
+	double y = (double)(y1 - y2);
+	return (int)sqrt(x*x + y*y);
 }
 
 double dm_distf(double x1, double y1, double x2, double y2)
 {
-    double x = x1 - x2;
-    double y = y1 - y2;
-    return sqrt(x*x + y*y);
+	double x = x1 - x2;
+	double y = y1 - y2;
+	return sqrt(x*x + y*y);
 }
 
 
@@ -286,12 +286,15 @@ double dm_distf(double x1, double y1, double x2, double y2)
 
 void dm_astar_reset(struct dm_astarnode* node)
 {
-    node->aStarGCost = 0;
-    node->aStarHCost = 0;
-    node->aStarFCost = 0;
-    node->aStarOpened = false;
-    node->aStarClosed = false;
-    node->aStarParent = NULL;
+	node->aStarGCost = 0;
+	node->aStarHCost = 0;
+	node->aStarFCost = 0;
+	node->aStarOpened = false;
+	node->aStarClosed = false;
+	node->aStarParent = NULL;
+	// update the x and y coords of this astar node
+	node->aStarX = node->get_x(node);
+	node->aStarY = node->get_y(node);
 }
 void dm_astar_clean(struct dm_astarnode* node, unsigned int aStarID)
 {
@@ -353,8 +356,6 @@ void dm_astar(
 	struct dm_astarnode *startNode,
 	struct dm_astarnode *endNode,
 	bool (*is_blocked)(struct dm_astarnode*),
-	int (*get_x)(struct dm_astarnode*),
-	int (*get_y)(struct dm_astarnode*),
 	struct dm_astarnode* (*get_node)(int, int),
 	void (*on_path)(struct dm_astarnode*),
 	bool is_cardinal_only,
@@ -380,12 +381,6 @@ void dm_astar(
 	printf("astar while not there begin\n");
 	// Perform the path search
 
-	// update x/ys of our nodes to match their parents
-	currentNode->aStarX = get_x(currentNode);
-	currentNode->aStarY = get_y(currentNode);
-	endNode->aStarX = get_x(endNode);
-	endNode->aStarY = get_y(endNode);
-
 	while (dm_astar_equals(currentNode, endNode) == false) {
 		// Mechanism for comparing neighbors
 		// TODO this was originally a list you could dynamically define
@@ -407,8 +402,6 @@ void dm_astar(
 
 				printf("  checking neighbor %d %d,%d\n", i, checkNode->aStarX, checkNode->aStarY);
 				dm_astar_clean(checkNode, aStarID);
-				checkNode->aStarX = get_x(checkNode);
-				checkNode->aStarY = get_y(checkNode);
 
 				int xdiff;
 				int ydiff;

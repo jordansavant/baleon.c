@@ -41,15 +41,19 @@ double dm_distf(double x1, double y1, double x2, double y2);
 #define ASTAR_LIST_LENGTH 20
 struct dm_astarnode {
 	unsigned int aStarID;
+	int aStarX;
+	int aStarY;
 	bool aStarClosed;
 	bool aStarOpened;
 	int aStarFCost;
 	int aStarGCost;
 	int aStarHCost;
-	int aStarX;
-	int aStarY;
 	struct dm_astarnode* aStarParent;
+	// helper pointer to something we can reference in the parent world in the getters below
 	void *owner;
+	// getters for parent world to let me update my astar x and y
+	int (*get_x)(struct dm_astarnode*);
+	int (*get_y)(struct dm_astarnode*);
 };
 struct dm_astarlist {
 	unsigned int index;
@@ -67,8 +71,6 @@ void dm_astar(
 	struct dm_astarnode *startNode,
 	struct dm_astarnode *endNode,
 	bool (*is_blocked)(struct dm_astarnode*),
-	int (*get_x)(struct dm_astarnode*),
-	int (*get_y)(struct dm_astarnode*),
 	struct dm_astarnode* (*get_node)(int, int),
 	void (*on_path)(struct dm_astarnode*),
 	bool is_cardinal_only,
