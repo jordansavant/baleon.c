@@ -785,7 +785,6 @@ bool dng_cellmap_are_rooms_connected(struct dng_cellmap *cellmap, struct dng_roo
 		connected = true;
 	}
 	dng_cellmap_get_room_connection_path(cellmap, room_a, room_b, inspect);
-	printf("connected %d\n", connected);
 
 	return connected;
 }
@@ -809,7 +808,6 @@ void dng_cellmap_get_room_connection_path(struct dng_cellmap *cellmap, struct dn
 	}
 	struct dm_astarnode* get_node(int x, int y) {
 		int index = y * cellmap->width + x;
-		//printf("get_node %d %d %d\n", index, x, y);
 		if (x >= 0 && x < cellmap->width && y >= 0 && y < cellmap->height)
 			return cellmap->cells[index]->astar_node;
 		return NULL;
@@ -817,14 +815,10 @@ void dng_cellmap_get_room_connection_path(struct dng_cellmap *cellmap, struct dn
 	void on_path(struct dm_astarnode* node) {
 		struct dng_cell *cell = (struct dng_cell*)node->owner;
 		int index = cell->y * cellmap->width + cell->x;
-		//printf("on_path %d %d,%d\n", index, cell->x, cell->y);
 		inspect(cell); // pass this cell to inspector
 	}
 
-	printf("start astar\n");
 	dm_astar(room_a_center_cell->astar_node, room_b_center_cell->astar_node, is_blocked, get_node, on_path, true, true); // cardinals only, manhattan distance
-	printf("end astar\n");
-	//bit::Astar::pathfind(roomCenterCell, room_bCenterCell, isBlocked, getNeighbors, fill);
 }
 
 void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b, bool stop_on_room)
@@ -832,7 +826,6 @@ void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room
 	struct dng_cell *room_a_center_cell = dng_cellmap_get_cell_at_position(cellmap, room_a->x + room_a->width / 2, room_a->y + room_a->height / 2);
 	struct dng_cell *room_b_center_cell = dng_cellmap_get_cell_at_position(cellmap, room_b->x + room_b->width / 2, room_b->y + room_b->height / 2);
 
-	printf("a %d,%d b %d,%d\n", room_a_center_cell->x, room_a_center_cell->y, room_b_center_cell->x, room_b_center_cell->y);
 	double dirf_x, dirf_y;
 	dm_direction(room_a_center_cell->x, room_a_center_cell->y, room_b_center_cell->x, room_b_center_cell->y, &dirf_x, &dirf_y);
 
@@ -840,13 +833,11 @@ void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room
 
 	int dir_x = (int)dm_round(dirf_x * distance);
 	int dir_y = (int)dm_round(dirf_y * distance);
-	printf("dir %f %f,%f %d,%d \n", distance, dirf_x, dirf_y, dir_x, dir_y);
 
 	int ortho_x = (room_b_center_cell->x - room_a_center_cell->x);
 	int ortho_y = (room_b_center_cell->y - room_a_center_cell->y);
 	int orthodist_x = abs(ortho_x);
 	int orthodist_y = abs(ortho_y);
-	printf("ortho %d,%d %d,%d\n", ortho_x, ortho_y, orthodist_x, orthodist_y);
 
 	// fukn dig a big orthogonal tunnel until we hit another room or something
 	for (int r = 0; r < orthodist_y; r++) {
@@ -861,10 +852,8 @@ void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room
 				pos_y = room_a_center_cell->y + r;
 			else
 				pos_y = room_a_center_cell->y - r;
-			printf("%d,%d\n", pos_x, pos_y);
 
 			struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, pos_x, pos_y);
-			//printf("dig cell %d,%d = %d\n", pos_x, pos_y, cell);
 			if (stop_on_room) {
 				// stop if we reach another room
 				if (cell->room && cell->room != room_a)
@@ -908,6 +897,39 @@ void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_cell *
 	}
 }
 // CLEANUP CONNECTION END
+///////////////////////////
+
+
+///////////////////////////
+// CALCAULTE WEIGHTS START
+
+void dng_cellmap_calc_entrance_weights(struct dng_cellmap *cellmap)
+{
+	for (int i=0; i < cellmap->rooms_length; i++) {
+		// get room weight to entrance room
+		struct dng_room* room = cellmap->rooms[i];
+		int weight = 0;
+		struct dng_room* last_room = NULL;
+		if (room != cellmap->entrance_room) {
+			// get the path
+			// iterate path between rooms and count how many different rooms there are
+			weight++;
+			void inspect(struct dng_cell* cell) {
+				if (cell->room && cell->room != room && cell->room != cellmap->entrance_room && cell->room != last_room) {
+					last_room = cell->room;
+					weight++;
+				}
+			}
+			dng_cellmap_get_room_connection_path(cellmap, room, cellmap->entrance_room, inspect);
+		}
+
+		// save it to the room
+		room->entrance_weight = weight;
+		// dropped the list here i had built in xogeni
+	}
+}
+
+// CALCULATE WEIGHTS END
 ///////////////////////////
 
 
@@ -1062,16 +1084,13 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	printf("build doors\n");
 	dng_cellmap_builddoors(cellmap);
 	printf("build entrance\n");
+	// TODO throw in big dungeon aberration rooms here
 	dng_cellmap_buildentrance(cellmap);
 	printf("clean\n");
 	dng_cellmap_cleanup_connections(cellmap);
+	printf("calc entrance weights");
+	dng_cellmap_calc_entrance_weights(cellmap);
 
-	//cellMap->buildGround();
-	//cellMap->buildRooms();
-	//cellMap->buildTunnels();
-	//cellMap->buildDoors();
-	//cellMap->buildEntrance();
-	//cellMap->cleanupConnections();
 	//cellMap->calculateEntranceWeights();
 	//cellMap->buildExit();
 	//cellMap->buildWalls();
