@@ -285,7 +285,7 @@ double dm_distf(double x1, double y1, double x2, double y2)
 
 ///////////////////////////
 // ASTAR
-#define ASTAR_LIST_LENGTH 1
+#define ASTAR_LIST_LENGTH 25
 
 void dm_astar_reset(struct dm_astarnode* node)
 {
@@ -315,21 +315,6 @@ void dm_astarlist_push(struct dm_astarlist *list, struct dm_astarnode *node)
 	// if out of room expand
 	if (list->length == list->capacity) {
 		list->list = (struct dm_astarnode**)realloc(list->list, (list->capacity + ASTAR_LIST_LENGTH) * sizeof(struct dm_astarnode*));
-		//struct dm_astarnode **new_list = (struct dm_astarnode**)malloc(list->capacity + ASTAR_LIST_LENGTH * sizeof(struct dm_astarnode*));
-		//for (unsigned int i=0; i < list->capacity + ASTAR_LIST_LENGTH; i++) {
-		//	printf("--- loop %d\n", i);
-		//	if (i < list->length) {
-		//		printf("--- astar copy %d\n", i);
-		//		new_list[i] = list->list[i];
-		//	} else {
-		//		printf("--- astar null %d\n", i);
-		//		new_list[i] = NULL;
-		//	}
-		//}
-		//printf("-- prefree old %d new %d\n", list->list, new_list);
-		//free(list->list);
-		//printf("-- pre list assieng\n");
-		//list->list = new_list;
 		list->capacity += ASTAR_LIST_LENGTH;
 	}
 
@@ -339,6 +324,7 @@ void dm_astarlist_push(struct dm_astarlist *list, struct dm_astarnode *node)
 }
 void dm_astarlist_remove(struct dm_astarlist *list, struct dm_astarnode *node)
 {
+	// this does not realloc down, we just shrink the list so new pushes can replace old pushes
 	bool found = false;
 	// find the node and null it
 	// move everything after it one slot back
@@ -393,13 +379,13 @@ void dm_astar(
 	dm_astarlist_push(&open_list, current_node);
 	current_node->astar_opened = true;
 
-	printf("astar while not there begin\n");
+	// printf("astar while not there begin\n");
 	// Perform the path search
 	while (dm_astar_equals(current_node, end_node) == false) {
 		// Mechanism for comparing neighbors
-		// TODO this was originally a list you could dynamically define
+		// This was originally a list you could dynamically define
 		// but I changed it to just look at cardinal and diagonal neighbors to avoid the list
-		printf(" begin %d,%d\n", current_node->astar_x, current_node->astar_y);
+		// printf(" begin %d,%d\n", current_node->astar_x, current_node->astar_y);
 		if (is_cardinal_only) {
 			// cardinal neighbors only
 			struct neighbor neighbors[] = {
@@ -426,7 +412,7 @@ void dm_astar(
 			for (int i=0; i < 8; i++)
 				dm_astar_check(current_node, end_node, neighbors[i].x, neighbors[i].y, &open_list, is_blocked, get_node, is_manhattan);
 		}
-		printf(" end neighbor loop\n");
+		// printf(" end neighbor loop\n");
 
 		// At this point the open list has been updated to reflect new parents and costs
 
@@ -460,13 +446,12 @@ void dm_astar(
 		dm_astarlist_remove(&open_list, cheap_open_node);
 		cheap_open_node->astar_opened = false;
 
-		printf("close push\n");
 		dm_astarlist_push(&closed_list, cheap_open_node);
 		cheap_open_node->astar_closed = true;
 
 		current_node = cheap_open_node;
 	} // A* Complete
-	printf("astar complete\n");
+	// printf("astar complete\n");
 
 	// we have found the end node
 	// Loop from the current/end node moving back through the parents until we reach the start node
@@ -489,7 +474,6 @@ void dm_astar(
 		}
 	}
 
-	//return fill;
 	dm_astarlist_free(&open_list);
 	dm_astarlist_free(&closed_list);
 }
@@ -506,12 +490,12 @@ void dm_astar_check(
 	bool is_manhattan
 )
 {
-	printf("  starting dir %d,%d\n", neighbor_x, neighbor_y);
+	// printf("  starting dir %d,%d\n", neighbor_x, neighbor_y);
 	struct dm_astarnode *check_node = get_node(neighbor_x, neighbor_y);
 	if (!check_node)
 		return;
 
-	printf("  checking neighbor %d,%d\n", check_node->astar_x, check_node->astar_y);
+	// printf("  checking neighbor %d,%d\n", check_node->astar_x, check_node->astar_y);
 	dm_astar_clean(check_node, astar_id);
 
 	int xdiff;
@@ -569,16 +553,16 @@ void dm_astar_check(
 
 	// Skip nodes that are blocked or already closed
 	if (!is_blocked(check_node) && !check_node->astar_closed) {
-		//printf("--- in\n");
+		// printf("--- in\n");
 		if (!check_node->astar_opened) {
-			printf("    astarpush open\n");
+			// printf("    astarpush open\n");
 			// If the connected node is not in the open list, add it to the open list
 			// and set its parent to our current active node
 			check_node->astar_parent = current_node;
 			dm_astarlist_push(open_list, check_node);
 			check_node->astar_opened = true;
 		} else {
-			//printf("--- astarclosed\n");
+			// printf("--- astarclosed\n");
 			// If the connected node is already in the open list, check to see if
 			// the path from our current active node to this node is better
 			// than are current selection

@@ -94,17 +94,11 @@ int main(void)
 	bool is_blocked(struct dm_astarnode* node) {
 		struct cell *cell = (struct cell*)node->owner;
 		int index = cell->y * width + cell->x;
-		bool blocked = map[index] != 1;
-		if (blocked)
-			printf("   is_blocked %d %d,%d\n", index, node->astar_x, node->astar_y);
-		else
-			printf("   isnt_blocked %d %d,%d\n", index, node->astar_x, node->astar_y);
-		return blocked;
+		return map[index] != 1;
 
 	}
 	struct dm_astarnode* get_node(int x, int y) {
 		int index = y * width + x;
-		//printf("   get_node %d %d,%d\n", index, x, y);
 		if (x >= 0 && x < width && y >= 0 && y < height)
 			return celllist[index]->astar_node;
 		return NULL;
@@ -116,8 +110,8 @@ int main(void)
 		path[index] = 1; // todo show path being made?
 	}
 
-	printf("start astar\n");
-	dm_astar(startCell->astar_node, endCell->astar_node, is_blocked, get_node, on_path, true, true);
+	// printf("start astar\n");
+	dm_astar(startCell->astar_node, endCell->astar_node, is_blocked, get_node, on_path, false, true);
 
 	for (int r=0; r < height; r++) {
 		for (int c=0; c < width; c++) {
