@@ -71,5 +71,15 @@ void dm_astar(
 	bool is_cardinal_only,
 	bool is_manhattan
 );
+void dm_astar_check(
+	struct dm_astarnode *current_node,
+	struct dm_astarnode *end_node,
+	int neighbor_x,
+	int neighbor_y,
+	struct dm_astarlist *open_list,
+	bool (*is_blocked)(struct dm_astarnode*),
+	struct dm_astarnode* (*get_node)(int, int),
+	bool is_manhattan
+);
 
 #endif

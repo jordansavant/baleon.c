@@ -397,12 +397,89 @@ void dm_astar(
 			};
 			// Loop to look for best candidate via A*
 			for (int i=0; i < 4; i++) {
-				printf("  starting dir %d %d,%d\n", i, neighbors[i].x, neighbors[i].y);
-				struct dm_astarnode *check_node = get_node(neighbors[i].x, neighbors[i].y);
-				if (!check_node)
-					continue;
+				dm_astar_check(current_node, end_node, neighbors[i].x, neighbors[i].y, &open_list, is_blocked, get_node, is_manhattan);
+			} // End neighbor loop
+		} // end cardinal version TODO
+		printf(" end neighbor loop\n");
 
-				printf("  checking neighbor %d %d,%d\n", i, check_node->astar_x, check_node->astar_y);
+		// At this point the open list has been updated to reflect new parents and costs
+
+		// Find the node in the open list with the lowest F cost,
+		// (the total cost from the current active node to the open node
+		// and the guesstimated cost from the open node to the destination node)
+		struct dm_astarnode *cheap_open_node = NULL;
+		for (int i=0; i < open_list.length; i++) {
+			// Compare the open_list nodes for the lowest F Cost
+			if (cheap_open_node == NULL) {
+				// initialize our cheapest open node
+				cheap_open_node = open_list.list[i];
+				continue;
+			}
+
+			if (open_list.list[i]->astar_fcost < cheap_open_node->astar_fcost) {
+				// we found a cheaper open list node
+				cheap_open_node = open_list.list[i];
+			}
+		}
+
+		// We have run out of options, no shortest path, circumvent and leave
+		if (cheap_open_node == NULL)
+			return;
+
+		// Now we have the node from the open list that has the cheapest F cost
+		// move it to the closed list and set it as the current node
+		dm_astarlist_remove(&open_list, cheap_open_node);
+		cheap_open_node->astar_opened = false;
+
+		dm_astarlist_push(&closed_list, cheap_open_node);
+		cheap_open_node->astar_closed = true;
+
+		current_node = cheap_open_node;
+	} // A* Complete
+	printf("astar complete\n");
+
+	// we have found the end node
+	// Loop from the current/end node moving back through the parents until we reach the start node
+	// add those to the list and we have our path
+	struct dm_astarnode *working_node = current_node;
+	while (true) {
+		// If I have traversed back to the beginning of the linked path
+		if (working_node->astar_parent == NULL) {
+			// Push the final game object
+			on_path(working_node);
+			//fill.push_back(working_node);
+			break;
+		} else {
+			// If I have more traversal to do
+			// Push the current game object
+			on_path(working_node);
+			//fill.push_back(working_node);
+			// Update my working object to my next parent
+			working_node = working_node->astar_parent;
+		}
+	}
+
+	//return fill;
+}
+
+
+void dm_astar_check(
+	struct dm_astarnode *current_node,
+	struct dm_astarnode *end_node,
+	int neighbor_x,
+	int neighbor_y,
+	struct dm_astarlist *open_list,
+	bool (*is_blocked)(struct dm_astarnode*),
+	struct dm_astarnode* (*get_node)(int, int),
+	bool is_manhattan
+)
+{
+				printf("  starting dir %d,%d\n", neighbor_x, neighbor_y);
+				struct dm_astarnode *check_node = get_node(neighbor_x, neighbor_y);
+				if (!check_node)
+					return;
+
+				printf("  checking neighbor %d,%d\n", check_node->astar_x, check_node->astar_y);
 				dm_astar_clean(check_node, astar_id);
 
 				int xdiff;
@@ -466,7 +543,7 @@ void dm_astar(
 						// If the connected node is not in the open list, add it to the open list
 						// and set its parent to our current active node
 						check_node->astar_parent = current_node;
-						dm_astarlist_push(&open_list, check_node);
+						dm_astarlist_push(open_list, check_node);
 						check_node->astar_opened = true;
 					} else {
 						//printf("--- astarclosed\n");
@@ -484,66 +561,4 @@ void dm_astar(
 					}
 				}
 				//printf("  end dir\n");
-			} // End neighbor loop
-		} // end cardinal version TODO
-		printf(" end neighbor loop\n");
-
-		// At this point the open list has been updated to reflect new parents and costs
-
-		// Find the node in the open list with the lowest F cost,
-		// (the total cost from the current active node to the open node
-		// and the guesstimated cost from the open node to the destination node)
-		struct dm_astarnode *cheap_open_node = NULL;
-		for (int i=0; i < open_list.length; i++) {
-			// Compare the open_list nodes for the lowest F Cost
-			if (cheap_open_node == NULL) {
-				// initialize our cheapest open node
-				cheap_open_node = open_list.list[i];
-				continue;
-			}
-
-			if (open_list.list[i]->astar_fcost < cheap_open_node->astar_fcost) {
-				// we found a cheaper open list node
-				cheap_open_node = open_list.list[i];
-			}
-		}
-
-		// We have run out of options, no shortest path, circumvent and leave
-		if (cheap_open_node == NULL)
-			return;
-
-		// Now we have the node from the open list that has the cheapest F cost
-		// move it to the closed list and set it as the current node
-		dm_astarlist_remove(&open_list, cheap_open_node);
-		cheap_open_node->astar_opened = false;
-
-		dm_astarlist_push(&closed_list, cheap_open_node);
-		cheap_open_node->astar_closed = true;
-
-		current_node = cheap_open_node;
-	} // A* Complete
-	printf("astar complete\n");
-
-	// we have found the end node
-	// Loop from the current/end node moving back through the parents until we reach the start node
-	// add those to the list and we have our path
-	struct dm_astarnode *working_node = current_node;
-	while (true) {
-		// If I have traversed back to the beginning of the linked path
-		if (working_node->astar_parent == NULL) {
-			// Push the final game object
-			on_path(working_node);
-			//fill.push_back(working_node);
-			break;
-		} else {
-			// If I have more traversal to do
-			// Push the current game object
-			on_path(working_node);
-			//fill.push_back(working_node);
-			// Update my working object to my next parent
-			working_node = working_node->astar_parent;
-		}
-	}
-
-	//return fill;
 }
