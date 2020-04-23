@@ -5,14 +5,22 @@
 #include "dm_algorithm.h"
 
 
+struct dng_exit {
+        // Exit(unsigned int id, unsigned int x, unsigned int y, unsigned int childMapId = 0, unsigned int childEntranceId = 0);
+        int id;
+        int x, y;
+        bool is_connected_to_child;
+        int child_map_id;
+        int child_entrance_id;
+};
+
 struct dng_entrance {
 	// Entrance(unsigned int id, unsigned int x, unsigned int y, unsigned int parentMapId = 0, unsigned int parentExitId = 0);
 	int id;
 	int x, y;
-	bool isConnectedToParent;
+	bool is_connected_to_parent;
 	int parent_map_id;
-	int parent_exitId;
-
+	int parent_exit_id;
 };
 
 struct dng_sill_data {
@@ -64,7 +72,7 @@ struct dng_cell {
         bool is_entrance_transition;
 	struct dng_entrance *entrance_transition;
         bool is_exit_transition;
-	// struct dng_exit *exit_transition; // TODO
+	struct dng_exit *exit_transition;
 	int transition_dir_x, transition_dir_y;
         int metadata_flood_id;
 
@@ -132,6 +140,7 @@ void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *
 
 // ENTRANCE
 void dng_cellmap_buildentrance(struct dng_cellmap *cellmap);
+void dng_entrance_init(struct dng_entrance *entrance, int id, int x, int y);
 struct dng_cell* dng_cellmap_pick_transition_cell_for_room(struct dng_cellmap *cellmap, struct dng_room *room);
 void dng_cellmap_build_landing_pad(struct dng_cellmap *cellmap, struct dng_cell* start_cell, int entrance_id);
 
@@ -146,6 +155,13 @@ bool dng_cellmap_are_rooms_connected(struct dng_cellmap *cellmap, struct dng_roo
 void dng_cellmap_get_room_connection_path(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b, void (*inspect)(struct dng_cell *cell));
 void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b, bool stop_on_room);
 void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_cell *cell);
+
+// CALC WEIGHTS
+void dng_cellmap_calc_entrance_weights(struct dng_cellmap *cellmap);
+
+// EXIT
+void dng_cellmap_buildexit(struct dng_cellmap *cellmap);
+void dng_exit_init(struct dng_exit *exit, int id, int x, int y);
 
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));

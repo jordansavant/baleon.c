@@ -26,6 +26,8 @@ int main(void)
 					printf("E ");
 				else if (cell->is_entrance)
 					printf("e ");
+				else if (cell->is_exit_transition)
+					printf("X ");
 				else if (cell->is_tunnel)
 					printf("T ");
 				//else if (cell->was_corridor_tunnel)

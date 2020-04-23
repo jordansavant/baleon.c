@@ -570,6 +570,7 @@ void dng_cellmap_buildentrance(struct dng_cellmap *cellmap)
 
 	// Build entrance
 	cellmap->entrance = (struct dng_entrance*)malloc(sizeof(struct dng_entrance));
+	dng_entrance_init(cellmap->entrance, entrance_id, entrance_cell->x, entrance_cell->y);
 	entrance_cell->is_entrance_transition = true;
 	entrance_cell->entrance_transition = cellmap->entrance;
 
@@ -578,6 +579,15 @@ void dng_cellmap_buildentrance(struct dng_cellmap *cellmap)
 
 	// Set our maps entrance room
 	cellmap->entrance_room = room;
+}
+
+void dng_entrance_init(struct dng_entrance *entrance, int id, int x, int y)
+{
+	entrance->id = id;
+	entrance->x = x;
+	entrance->y = y;
+	entrance->parent_map_id = 0;
+	entrance->parent_exit_id = 0;
 }
 
 struct dng_cell* dng_cellmap_pick_transition_cell_for_room(struct dng_cellmap *cellmap, struct dng_room *room)
@@ -589,16 +599,63 @@ struct dng_cell* dng_cellmap_pick_transition_cell_for_room(struct dng_cellmap *c
 
 	// First pick is the northwest corner
 	// It must have a wall to north and to west (TODO, this was because of Isometric map display, does not have to be this)
-	int nw_x = room->x;
-	int nw_y = room->y;
-	struct dng_cell *nw_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y);
-	struct dng_cell *nwn_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y - 1);
-	struct dng_cell *nww_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x - 1, nw_y);
-	if (!nwn_cell->is_door && !nwn_cell->is_tunnel && !nww_cell->is_door && !nww_cell->is_tunnel) {
-		pick = nw_cell;
-		pick->transition_dir_x = 0;
-		pick->transition_dir_y = 1;
-		return pick;
+	switch (dm_randii(0, 4)) {
+	case 0: { // northwest
+			int nw_x = room->x;
+			int nw_y = room->y;
+			struct dng_cell *nw_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y);
+			struct dng_cell *nwn_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y - 1);
+			struct dng_cell *nww_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x - 1, nw_y);
+			if (!nwn_cell->is_door && !nwn_cell->is_tunnel && !nww_cell->is_door && !nww_cell->is_tunnel) {
+				pick = nw_cell;
+				pick->transition_dir_x = 0;
+				pick->transition_dir_y = 1;
+				return pick;
+			}
+		}
+		break;
+	case 1: { // southeast
+			int se_x = room->x + room->width - 1;
+			int se_y = room->y + room->height - 1;
+			struct dng_cell *se_cell = dng_cellmap_get_cell_at_position(cellmap, se_x, se_y);
+			struct dng_cell *ses_cell = dng_cellmap_get_cell_at_position(cellmap, se_x, se_y + 1);
+			struct dng_cell *see_cell = dng_cellmap_get_cell_at_position(cellmap, se_x + 1, se_y);
+			if (!ses_cell->is_door && !ses_cell->is_tunnel && !see_cell->is_door && !see_cell->is_tunnel) {
+				pick = se_cell;
+				pick->transition_dir_x = 0;
+				pick->transition_dir_y = -1;
+				return pick;
+			}
+		break;
+		}
+	case 2: { // northeast
+			int ne_x = room->x + room->width - 1;
+			int ne_y = room->y;
+			struct dng_cell *ne_cell = dng_cellmap_get_cell_at_position(cellmap, ne_x, ne_y);
+			struct dng_cell *nen_cell = dng_cellmap_get_cell_at_position(cellmap, ne_x, ne_y - 1);
+			struct dng_cell *nee_cell = dng_cellmap_get_cell_at_position(cellmap, ne_x + 1, ne_y);
+			if (!nen_cell->is_door && !nen_cell->is_tunnel && !nee_cell->is_door && !nee_cell->is_tunnel) {
+				pick = ne_cell;
+				pick->transition_dir_x = 0;
+				pick->transition_dir_y = 1;
+				return pick;
+			}
+		}
+		break;
+	case 3: { // southwest
+			int sw_x = room->x;
+			int sw_y = room->y + room->height - 1;
+			struct dng_cell *sw_cell = dng_cellmap_get_cell_at_position(cellmap, sw_x, sw_y);
+			struct dng_cell *sws_cell = dng_cellmap_get_cell_at_position(cellmap, sw_x, sw_y - 1);
+			struct dng_cell *sww_cell = dng_cellmap_get_cell_at_position(cellmap, sw_x + 1, sw_y);
+			if (!sws_cell->is_door && !sws_cell->is_tunnel && !sww_cell->is_door && !sww_cell->is_tunnel) {
+				pick = sw_cell;
+				pick->transition_dir_x = 0;
+				pick->transition_dir_y = 1;
+				return pick;
+			}
+		}
+		break;
 	}
 
 	return pick;
@@ -935,6 +992,56 @@ void dng_cellmap_calc_entrance_weights(struct dng_cellmap *cellmap)
 
 
 ///////////////////////////
+// BUILD EXIT START
+
+void dng_cellmap_buildexit(struct dng_cellmap *cellmap)
+{
+	int exit_id = 2; // must not be same as entrance id
+
+	// Pick a random room that is farthest from our entrance
+	// In Baleon I switched this to just pick the furthest room to simplify
+	// TODO make it pick a better random room? maybe put treasure in far rooms too?
+	int weight = 0;
+	struct dng_room* exit_room;
+	for (int i=0; i < cellmap->rooms_length; i++) {
+		struct dng_room* room = cellmap->rooms[i];
+		if (exit_room == NULL || room->entrance_weight > weight) {
+			exit_room = room;
+			weight = room->entrance_weight;
+		}
+	}
+
+	// Pick a good entrance cell
+	struct dng_cell *exit_cell = dng_cellmap_pick_transition_cell_for_room(cellmap, exit_room);
+
+	// Build exit
+	struct dng_exit *exit = (struct dng_exit*)malloc(sizeof(struct dng_exit));
+	dng_exit_init(exit, exit_id, exit_cell->x, exit_cell->y);
+	exit_cell->is_exit_transition = true;
+	exit_cell->exit_transition = exit;
+
+	// build a landing pad here for a reverse exit entrance from a lower floor
+	dng_cellmap_build_landing_pad(cellmap, exit_cell, exit_id);
+
+	// Set our maps exit room
+	cellmap->exit_room = exit_room;
+}
+
+void dng_exit_init(struct dng_exit *exit, int id, int x, int y)
+{
+	exit->id = id;
+	exit->x = x;
+	exit->y = y;
+	exit->child_map_id = 0;
+	exit->child_entrance_id = 0;
+}
+
+// BUILD EXIT END
+///////////////////////////
+
+
+
+///////////////////////////
 // CELLMAP INSPECTORS START
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*))
 {
@@ -1088,11 +1195,11 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	dng_cellmap_buildentrance(cellmap);
 	printf("clean\n");
 	dng_cellmap_cleanup_connections(cellmap);
-	printf("calc entrance weights");
+	printf("calc entrance weights\n");
 	dng_cellmap_calc_entrance_weights(cellmap);
+	printf("build exit\n");
+	dng_cellmap_buildexit(cellmap);
 
-	//cellMap->calculateEntranceWeights();
-	//cellMap->buildExit();
 	//cellMap->buildWalls();
 	//cellMap->buildLights();
 	//cellMap->buildTags();
