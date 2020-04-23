@@ -49,6 +49,7 @@ struct dm_astarnode {
 	int aStarX;
 	int aStarY;
 	struct dm_astarnode* aStarParent;
+	void *owner;
 };
 struct dm_astarlist {
 	unsigned int index;
@@ -66,6 +67,8 @@ void dm_astar(
 	struct dm_astarnode *startNode,
 	struct dm_astarnode *endNode,
 	bool (*is_blocked)(struct dm_astarnode*),
+	int (*get_x)(struct dm_astarnode*),
+	int (*get_y)(struct dm_astarnode*),
 	struct dm_astarnode* (*get_node)(int, int),
 	void (*on_path)(struct dm_astarnode*),
 	bool is_cardinal_only,

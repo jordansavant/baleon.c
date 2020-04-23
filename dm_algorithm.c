@@ -353,6 +353,8 @@ void dm_astar(
 	struct dm_astarnode *startNode,
 	struct dm_astarnode *endNode,
 	bool (*is_blocked)(struct dm_astarnode*),
+	int (*get_x)(struct dm_astarnode*),
+	int (*get_y)(struct dm_astarnode*),
 	struct dm_astarnode* (*get_node)(int, int),
 	void (*on_path)(struct dm_astarnode*),
 	bool is_cardinal_only,
@@ -377,6 +379,13 @@ void dm_astar(
 
 	printf("astar while not there begin\n");
 	// Perform the path search
+
+	// update x/ys of our nodes to match their parents
+	currentNode->aStarX = get_x(currentNode);
+	currentNode->aStarY = get_y(currentNode);
+	endNode->aStarX = get_x(endNode);
+	endNode->aStarY = get_y(endNode);
+
 	while (dm_astar_equals(currentNode, endNode) == false) {
 		// Mechanism for comparing neighbors
 		// TODO this was originally a list you could dynamically define
@@ -398,6 +407,8 @@ void dm_astar(
 
 				printf("  checking neighbor %d %d,%d\n", i, checkNode->aStarX, checkNode->aStarY);
 				dm_astar_clean(checkNode, aStarID);
+				checkNode->aStarX = get_x(checkNode);
+				checkNode->aStarY = get_y(checkNode);
 
 				int xdiff;
 				int ydiff;
