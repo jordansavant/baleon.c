@@ -280,3 +280,245 @@ double dm_distf(double x1, double y1, double x2, double y2)
     return sqrt(x*x + y*y);
 }
 
+
+
+
+struct dm_astarnode {
+	unsigned int aStarID;
+	bool aStarClosed;
+	bool aStarOpened;
+	int aStarFCost;
+	int aStarGCost;
+	int aStarHCost;
+	int aStarX;
+	int aStarY;
+	dm_astarnode* aStarParent;
+};
+void dm_astar_clean(struct dm_astarnode* node, unsigned int aStarID)
+{
+    if (node->aStarID != aStarID) {
+        node->aStarID = aStarID;
+        dm_astar_reset(struct dm_astarnode* node);
+    }
+}
+void dm_astar_reset(struct dm_astarnode* node)
+{
+    node->aStarGCost = 0;
+    node->aStarHCost = 0;
+    node->aStarFCost = 0;
+    node->aStarOpened = false;
+    node->aStarClosed = false;
+    node->aStarParent = NULL;
+}
+void dm_astar_equals(struct dm_astarnode* node_a, struct dm_astarnode* node_b)
+{
+	return node_a->aStarX == node_b->aStarX && node_a->aStarY == node_b->aStarY;
+}
+
+#define ASTAR_LIST_LENGTH = 20
+struct dm_astarlist {
+	unsigned int index;
+	unsigned int length;
+	unsigned int capacity;
+	struct dm_astarnode **list;
+};
+void dm_astarlist_push(struct dm_astarlist *list, struct dm_astarnode *node)
+{
+	// if out of room expand
+	if (list->length == list->capacity) {
+		struct dm_astarnode **new_list = (struct dm_astarnode**)malloc(ASTAR_LIST_LENGTH * sizeof(struct dm_astarnode*));
+		for (unsigned int i=0; i<list->length; i++) {
+			new_list[i] = list->list[i];
+		}
+		list->capacity += ASTAR_LIST_LENGTH;
+	}
+
+	// copy to the next spot
+	list->list[list->length] = node;
+	list->length++;
+}
+
+
+static unsigned int aStarID;
+
+void astar(struct dm_astarnode *startNode, struct dm_astarnode *endNode,
+		bool(*is_blocked)(struct dm_astarnode*), struct dm_astarnode*(get_node)(int, int), void(on_path*)(struct dm_astarnode*),
+		bool is_cardinal_only, bool is_manhattan)
+{
+	aStarID++;
+	dm_astar_clean(startNode, aStarID);
+	dm_astar_clean(endNode, aStarID);
+
+	struct dm_astarlist openList = {0, 0, 0, NULL};
+	struct dm_astarlist closedList = {0, 0, 0, NULL};
+
+	// add start node to open list
+	dm_astarnode* currentNode = startNode;
+	dm_astarlist_push(closedList, currentNode);
+	currentNode->aStarClosed = true;
+
+	// This was gone and made a massive memory leak before, it is vital!
+	dm_astarlist_push(openList, currentNode);
+	currentNode->aStarOpened = true;
+
+	// Perform the path search
+	while (dm_astar_equals(currentNode, endNode) == false) {
+		// Mechanism for comparing neighbors
+		// TODO this was originally a list you could dynamically define
+		// but I changed it to just look at cardinal and diagonal neighbors to avoid the list
+		struct neighbor {
+			int x, int y;
+		};
+		if (is_cardinal_only) {
+			struct neighbor neighbors[] = {
+				{currentNode->aStarX, currentNode->aStarY - 1}, // top
+				{currentNode->aStarX, currentNode->aStarY + 1}, // bottom
+				{currentNode->aStarX - 1, currentNode->aStarY}, // left
+				{currentNode->aStarX + 1, currentNode->aStarY }, // right
+			};
+			// Loop to look for best candidate via A*
+			for (int i=0; i < 4; i++) {
+				struct dm_astarnode *checkNode = get_node(neighbors[i].x, neighbors[i].y);
+				dm_astar_clean(checkNode, aStarID);
+
+				int xdiff;
+				int ydiff;
+				int gcost;
+				int hcost;
+
+				// G cost for this node
+				if (checkNode->aStarGCost == 0) {
+					// G = Cost to move from current active node to this node
+					//     If this is a locked down grid, you can treat horizontal neighbors
+					//     as a straight 10 and diagonal neighbors as a 14
+					//     If this is node mapping is not a locked down grid, perhaps a web
+					//     or something else, then calculate the distance realistically.
+					xdiff = abs(checkNode->aStarX - currentNode->aStarX);
+					ydiff = abs(checkNode->aStarY - currentNode->aStarY);
+					gcost = 0;
+					if (ydiff > 0 && xdiff > 0) {
+						// If diagonal
+						if(manhattan)
+							gcost = (int)((double)(xdiff + ydiff) / 1.4); // 1.4 is rough diagonal length of a square
+						else
+							gcost = (int)sqrt((double)(xdiff * xdiff) + (double)(ydiff * ydiff));
+					} else {
+						// If straight
+						gcost = xdiff + ydiff; // one has to be zero so it is the length of one side
+					}
+
+					checkNode->aStarGCost = gcost;
+				}
+
+				// H cost for this node
+				if (checkNode->aStarHCost == 0) {
+					// H = Cost to move from this node to the destination node.
+					//     Use manhattan distance (total x distance + total y distance)
+					//     Or use real distance squareRoot( x distance ^ 2, y distance ^ 2)
+					//     Or some other heuristic if you are brave
+					xdiff = checkNode->aStarX - endNode->aStarX;
+					ydiff = checkNode->aStarY - endNode->aStarY;
+					if(manhattan)
+						hcost = xdiff + ydiff;
+					else
+						hcost = (int)sqrt((double)(xdiff * xdiff) + (double)(ydiff * ydiff));
+					checkNode->aStarHCost = hcost;
+				}
+
+				// F cost for this node
+				if (checkNode->aStarFCost == 0) {
+					// F = G + H
+					// F = Cost to move from current active node to this node
+					//     plus the cost for this mode to travel to the final node
+					//     (calculated by manhattan distance or real distance etc.)
+					checkNode->aStarFCost = checkNode->aStarGCost + checkNode->aStarHCost;
+				}
+
+				// Skip nodes that are blocked or already closed
+				if (!is_blocked(checkNode) && !checkNode->aStarClosed) {
+					if (!checkNode->aStarOpened) {
+						// If the connected node is not in the open list, add it to the open list
+						// and set its parent to our current active node
+						checkNode->aStarParent = currentNode;
+						dm_astarlist_push(checkNode);
+						checkNode->aStarOpened = true;
+					} else {
+						// If the connected node is already in the open list, check to see if
+						// the path from our current active node to this node is better
+						// than are current selection
+						// Check to see if its current G cost is less than the new G cost of the parent and the old G cost
+						gcost = checkNode->aStarGCost + currentNode->aStarGCost;
+						if (gcost < checkNode->aStarGCost) {
+							// If so, make the current node its new parent and recalculate the gcost, and fcost
+							checkNode->aStarParent = currentNode;
+							checkNode->aStarGCost = gcost;
+							checkNode->aStarFCost = checkNode->aStarGCost + checkNode->aStarHCost;
+						}
+					}
+				}
+			} // End neighbor loop
+		} // end cardinal version TODO
+
+		// At this point the open list has been updated to reflect new parents and costs
+
+		// Find the node in the open list with the lowest F cost,
+		// (the total cost from the current active node to the open node
+		// and the guesstimated cost from the open node to the destination node)
+		struct dm_astarnode cheapOpenNode = NULL;
+		typename std::list<T*>::iterator i;
+		for (int i=0; i < openList->length; i++) {
+			// Compare the openList nodes for the lowest F Cost
+			if (cheapOpenNode == NULL) {
+				// initialize our cheapest open node
+				cheapOpenNode = openList->list[i];
+				continue;
+			}
+
+			if (openList->list[i]->aStarFCost < cheapOpenNode->aStarFCost) {
+				// we found a cheaper open list node
+				cheapOpenNode = openList->list[i];
+			}
+		}
+
+		// We have run out of options, no shortest path, circumvent and leave
+		if (cheapOpenNode == NULL)
+			return;
+
+		// Now we have the node from the open list that has the cheapest F cost
+		// move it to the closed list and set it as the current node
+		dm_astarlist_remove(cheapOpenNode);
+		OpenList.remove(cheapOpenNode);
+		cheapOpenNode->aStarOpened = false;
+
+		ClosedList.push_back(cheapOpenNode);
+		cheapOpenNode->aStarClosed = true;
+
+		currentNode = cheapOpenNode;
+	} // A* Complete
+
+	// we have found the end node
+	// Loop from the current/end node moving back through the parents until we reach the start node
+	// add those to the list and we have our path
+	T* workingNode = currentNode;
+	while (true)
+	{
+		// If I have traversed back to the beginning of the linked path
+		if (workingNode->aStarParent == NULL)
+		{
+			// Push the final game object
+			fill.push_back(workingNode);
+			break;
+		}
+		// If I have more traversal to do
+		else
+		{
+			// Push the current game object
+			fill.push_back(workingNode);
+
+			// Update my working object to my next parent
+			workingNode = static_cast<T*>(workingNode->aStarParent);
+		}
+	}
+
+	return fill;
+}
