@@ -4,13 +4,19 @@
 
 int main(void)
 {
-	int seed = 145;
+	int seed = 146;
 	do {
 		printf("SEED %d\n", seed);
 		dm_seed(seed);
 		struct dng_cellmap *cellmap = dng_genmap(1, 56, 48);
 
+		printf("   ");
+		for (int c=0; c < cellmap->width; c++) {
+			printf("%d ", c %10);
+		}
+		printf("\n");
 		for (int r=0; r < cellmap->height; r++) {
+			printf("%2d-", r);
 			for (int c=0; c < cellmap->width; c++) {
 				int index = r * cellmap->width + c;
 				struct dng_cell *cell = cellmap->cells[index];
