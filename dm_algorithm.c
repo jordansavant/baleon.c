@@ -6,7 +6,7 @@
 #include "dm_algorithm.h"
 #include "dm_debug.h"
 
-#include <stdio.h> // TODO REMOVE
+// #include <stdio.h> // TODO REMOVE
 
 ///////////////////////////
 // SHADOWCASTING
@@ -295,6 +295,7 @@ void dm_astar_reset(struct dm_astarnode* node)
 	node->astar_opened = false;
 	node->astar_closed = false;
 	node->astar_parent = NULL;
+	node->astar_child = NULL;
 	// update the x and y coords of this astar node
 	node->astar_x = node->get_x(node);
 	node->astar_y = node->get_y(node);
@@ -456,21 +457,24 @@ void dm_astar(
 	// we have found the end node
 	// Loop from the current/end node moving back through the parents until we reach the start node
 	// add those to the list and we have our path
-	struct dm_astarnode *working_node = current_node;
+	//
+	// This used to traverse as working node from end back to beginning
+	// I switched it to traverse as working node from beginning to end
+	struct dm_astarnode *working_node = current_node; //start_node;// current_node;
 	while (true) {
 		// If I have traversed back to the beginning of the linked path
 		if (working_node->astar_parent == NULL) {
+		//if (working_node->astar_child == NULL) {
 			// Push the final game object
 			on_path(working_node);
-			//fill.push_back(working_node);
 			break;
 		} else {
 			// If I have more traversal to do
 			// Push the current game object
 			on_path(working_node);
-			//fill.push_back(working_node);
 			// Update my working object to my next parent
 			working_node = working_node->astar_parent;
+			//working_node = working_node->astar_child;
 		}
 	}
 
@@ -559,6 +563,7 @@ void dm_astar_check(
 			// If the connected node is not in the open list, add it to the open list
 			// and set its parent to our current active node
 			check_node->astar_parent = current_node;
+			current_node->astar_child = check_node;
 			dm_astarlist_push(open_list, check_node);
 			check_node->astar_opened = true;
 		} else {
@@ -573,6 +578,7 @@ void dm_astar_check(
 				check_node->astar_parent = current_node;
 				check_node->astar_gcost = gcost;
 				check_node->astar_fcost = check_node->astar_gcost + check_node->astar_hcost;
+				current_node->astar_child = check_node;
 			}
 		}
 	}

@@ -44,6 +44,7 @@ struct dm_astarnode {
 	int astar_gcost;
 	int astar_hcost;
 	struct dm_astarnode* astar_parent;
+	struct dm_astarnode* astar_child;
 	// helper pointer to something we can reference in the parent world in the getters below
 	void *owner;
 	// getters for parent world to let me update my astar x and y
