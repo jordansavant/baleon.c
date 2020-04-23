@@ -74,7 +74,8 @@ void wld_new_item(struct wld_map* map, struct wld_item* item, int x, int y)
 	}
 
 	// nope, time to expand the list
-	struct wld_item **new_items = (struct wld_item**)malloc(map->items_length + MALLOC_ITEM_SIZE * sizeof(struct wld_item*));
+	// TODO UNTESTED AND NEEDS TO USE realloc
+	struct wld_item **new_items = (struct wld_item**)malloc((map->items_length + MALLOC_ITEM_SIZE) * sizeof(struct wld_item*));
 	for (int i=0; i<map->items_length + MALLOC_ITEM_SIZE; i++) {
 		if (i < map->items_length) {
 			new_items[i] = map->items[i]; // copied item

@@ -285,7 +285,7 @@ double dm_distf(double x1, double y1, double x2, double y2)
 
 ///////////////////////////
 // ASTAR
-#define ASTAR_LIST_LENGTH 20
+#define ASTAR_LIST_LENGTH 1
 
 void dm_astar_reset(struct dm_astarnode* node)
 {
@@ -312,19 +312,26 @@ bool dm_astar_equals(struct dm_astarnode* node_a, struct dm_astarnode* node_b)
 }
 void dm_astarlist_push(struct dm_astarlist *list, struct dm_astarnode *node)
 {
-	//printf("astar push %d %d\n", list->length, list->capacity);
 	// if out of room expand
 	if (list->length == list->capacity) {
-		struct dm_astarnode **new_list = (struct dm_astarnode**)malloc(ASTAR_LIST_LENGTH * sizeof(struct dm_astarnode*));
-		for (unsigned int i=0; i<list->length; i++) {
-			printf("astar copy %d\n", i);
-			new_list[i] = list->list[i];
-		}
-		free(list->list);
-		list->list = new_list;
+		list->list = (struct dm_astarnode**)realloc(list->list, (list->capacity + ASTAR_LIST_LENGTH) * sizeof(struct dm_astarnode*));
+		//struct dm_astarnode **new_list = (struct dm_astarnode**)malloc(list->capacity + ASTAR_LIST_LENGTH * sizeof(struct dm_astarnode*));
+		//for (unsigned int i=0; i < list->capacity + ASTAR_LIST_LENGTH; i++) {
+		//	printf("--- loop %d\n", i);
+		//	if (i < list->length) {
+		//		printf("--- astar copy %d\n", i);
+		//		new_list[i] = list->list[i];
+		//	} else {
+		//		printf("--- astar null %d\n", i);
+		//		new_list[i] = NULL;
+		//	}
+		//}
+		//printf("-- prefree old %d new %d\n", list->list, new_list);
+		//free(list->list);
+		//printf("-- pre list assieng\n");
+		//list->list = new_list;
 		list->capacity += ASTAR_LIST_LENGTH;
 	}
-	//printf("astar mallocd %d %d\n", list->length, list->capacity);
 
 	// copy to the next spot
 	list->list[list->length] = node;
@@ -349,8 +356,13 @@ void dm_astarlist_remove(struct dm_astarlist *list, struct dm_astarnode *node)
 		list->length--;
 	}
 }
+void dm_astarlist_free(struct dm_astarlist *list)
+{
+	free(list->list);
+}
 
 static unsigned int astar_id;
+
 struct neighbor {
 	int x, y;
 };
@@ -437,14 +449,18 @@ void dm_astar(
 		}
 
 		// We have run out of options, no shortest path, circumvent and leave
-		if (cheap_open_node == NULL)
+		if (cheap_open_node == NULL) {
+			dm_astarlist_free(&open_list);
+			dm_astarlist_free(&closed_list);
 			return;
+		}
 
 		// Now we have the node from the open list that has the cheapest F cost
 		// move it to the closed list and set it as the current node
 		dm_astarlist_remove(&open_list, cheap_open_node);
 		cheap_open_node->astar_opened = false;
 
+		printf("close push\n");
 		dm_astarlist_push(&closed_list, cheap_open_node);
 		cheap_open_node->astar_closed = true;
 
@@ -474,6 +490,8 @@ void dm_astar(
 	}
 
 	//return fill;
+	dm_astarlist_free(&open_list);
+	dm_astarlist_free(&closed_list);
 }
 
 

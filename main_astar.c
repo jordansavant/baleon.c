@@ -144,6 +144,7 @@ int main(void)
 
 	// free mem
 	for (int i=0; i<ARRAY_SIZE(map); i++) {
+		free(celllist[i]->astar_node);
 		free(celllist[i]);
 	}
 	free(celllist);
