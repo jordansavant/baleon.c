@@ -460,21 +460,31 @@ void dm_astar(
 	//
 	// This used to traverse as working node from end back to beginning
 	// I switched it to traverse as working node from beginning to end
-	struct dm_astarnode *working_node = current_node; //start_node;// current_node;
+	struct dm_astarnode *working_node = current_node; // this is the end node
+	struct dm_astarnode *first_node = NULL;
 	while (true) {
 		// If I have traversed back to the beginning of the linked path
 		if (working_node->astar_parent == NULL) {
-		//if (working_node->astar_child == NULL) {
-			// Push the final game object
-			on_path(working_node);
+			//on_path(working_node);
+			first_node = working_node;
 			break;
 		} else {
 			// If I have more traversal to do
-			// Push the current game object
-			on_path(working_node);
 			// Update my working object to my next parent
+			working_node->astar_parent->astar_child = working_node;
 			working_node = working_node->astar_parent;
-			//working_node = working_node->astar_child;
+		}
+	}
+	// Now iterate path from start to end, instead of end to start and report it out
+	working_node = first_node;
+	while (true) {
+		if (working_node->astar_child == NULL) {
+			// last node
+			on_path(working_node);
+			break;
+		} else {
+			on_path(working_node);
+			working_node = working_node->astar_child;
 		}
 	}
 
@@ -563,7 +573,6 @@ void dm_astar_check(
 			// If the connected node is not in the open list, add it to the open list
 			// and set its parent to our current active node
 			check_node->astar_parent = current_node;
-			current_node->astar_child = check_node;
 			dm_astarlist_push(open_list, check_node);
 			check_node->astar_opened = true;
 		} else {
@@ -578,7 +587,6 @@ void dm_astar_check(
 				check_node->astar_parent = current_node;
 				check_node->astar_gcost = gcost;
 				check_node->astar_fcost = check_node->astar_gcost + check_node->astar_hcost;
-				current_node->astar_child = check_node;
 			}
 		}
 	}
