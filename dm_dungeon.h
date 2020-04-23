@@ -2,6 +2,7 @@
 #define DM_DUNGEON
 
 #include "dm_defines.h"
+#include "dm_algorithm.h"
 
 
 struct dng_entrance {
@@ -66,6 +67,8 @@ struct dng_cell {
 	// struct dng_exit *exit_transition; // TODO
 	int transition_dir_x, transition_dir_y;
         int metadata_flood_id;
+
+	struct dm_astarnode *astar_node;
 };
 
 struct tunnel_dir {
@@ -102,6 +105,8 @@ struct dng_cellmap {
 // CELLMAP BUILDERS
 void dng_cellmap_buildground(struct dng_cellmap*);
 void dng_cell_init(struct dng_cell*);
+int dng_cell_get_x(struct dm_astarnode *astar_node);
+int dng_cell_get_y(struct dm_astarnode *astar_node);
 
 // ROOMS
 void dng_cellmap_buildrooms(struct dng_cellmap*);
@@ -136,6 +141,11 @@ void dng_cellmap_collapse_tunnels(struct dng_cellmap *cellmap);
 int dng_cellmap_count_tunnel_connections(struct dng_cellmap *cellmap, struct dng_cell *tunnel_cell);
 void dng_cellmap_collapse(struct dng_cellmap *cellmap, struct dng_cell *tunnel_cell);
 void dng_cellmap_fix_doors(struct dng_cellmap *cellmap);
+void dng_cellmap_fix_rooms(struct dng_cellmap *cellmap);
+bool dng_cellmap_are_rooms_connected(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b);
+void dng_cellmap_get_room_connection_path(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b, void (*inspect)(struct dng_cell *cell));
+void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b, bool stop_on_room);
+void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_cell *cell);
 
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));

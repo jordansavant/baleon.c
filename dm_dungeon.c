@@ -69,6 +69,23 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->transition_dir_x = 0;
 	cell->transition_dir_y = 0;
 	cell->metadata_flood_id = -1;
+
+	cell->astar_node = (struct dm_astarnode*)malloc(sizeof(struct dm_astarnode));
+	cell->astar_node->owner = (void*)cell;
+	cell->astar_node->get_x = dng_cell_get_x;
+	cell->astar_node->get_y = dng_cell_get_y;
+}
+
+int dng_cell_get_x(struct dm_astarnode *astar_node)
+{
+	struct dng_cell *cell = (struct dng_cell*)astar_node->owner;
+	return cell->x;
+}
+
+int dng_cell_get_y(struct dm_astarnode *astar_node)
+{
+	struct dng_cell *cell = (struct dng_cell*)astar_node->owner;
+	return cell->y;
 }
 
 // GROUND END
@@ -724,11 +741,153 @@ void dng_cellmap_fix_doors(struct dng_cellmap *cellmap)
 			// Else this passes the door tests so give it a door type
 			// TODO door types
 			if (cell->is_door) {
+				// TODO
 			}
 		}
 	}
 }
 
+void dng_cellmap_fix_rooms(struct dng_cellmap *cellmap)
+{
+	//- If more than one room
+	//    - Iterate rooms
+	//        - Iterate all doors connected to room
+	//            - Floodfill tunnel until a room is located
+	//                - If room is not origin room
+	//                    - Increment origin room connections counter
+	//        - If connections is 0
+	//            - OPTION A: delete room
+	//            - OPTION B: find closest room and tunnel toward room
+
+	// Iterate rooms
+	// Astar from their center to the center of every room
+	// Count every other room connected
+	// If any room has no connections it must be fixed
+	if (cellmap->rooms_length > 1) {
+		for (int i=0; i < cellmap->rooms_length; i++) {
+			struct dng_room *room = cellmap->rooms[i];
+			if (!dng_cellmap_are_rooms_connected(cellmap, room, cellmap->entrance_room)) {
+				dng_cellmap_tunnel_rooms(cellmap, room, cellmap->entrance_room, true);
+			}
+		}
+	}
+}
+
+bool dng_cellmap_are_rooms_connected(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b)
+{
+	if (room_a == room_b)
+		return true;
+
+	bool connected = false;
+
+	void inspect(struct dng_cell* cell) {
+		// if inspect runs it means there was a path
+		connected = true;
+	}
+	dng_cellmap_get_room_connection_path(cellmap, room_a, room_b, inspect);
+
+	return connected;
+}
+
+void dng_cellmap_get_room_connection_path(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b, void (*inspect)(struct dng_cell *cell))
+{
+	if (room_a == room_b)
+		return;
+
+	int center_x = room_a->x + room_a->width / 2;
+	int center_y = room_a->y + room_a->height / 2;
+	struct dng_cell *room_a_center_cell = dng_cellmap_get_cell_at_position(cellmap, center_x, center_y);
+
+	unsigned int other_center_x = room_b->x + room_b->width / 2;
+	unsigned int other_center_y = room_b->y + room_b->height / 2;
+	struct dng_cell *room_b_center_cell = dng_cellmap_get_cell_at_position(cellmap, other_center_x, other_center_y);
+
+	bool is_blocked(struct dm_astarnode* node) {
+		struct dng_cell *cell = (struct dng_cell*)node->owner;
+		return cell->room == NULL && !cell->is_tunnel && !cell->is_door;
+	}
+	struct dm_astarnode* get_node(int x, int y) {
+		int index = y * cellmap->width + x;
+		if (x >= 0 && x < cellmap->width && y >= 0 && y < cellmap->height)
+			return cellmap->cells[index]->astar_node;
+		return NULL;
+	}
+	void on_path(struct dm_astarnode* node) {
+		struct dng_cell *cell = (struct dng_cell*)node->owner;
+		int index = cell->y * cellmap->width + cell->x;
+		printf("on_path %d %d,%d\n", index, cell->x, cell->y);
+		inspect(cell); // pass this cell to inspector
+	}
+
+	printf("start astar\n");
+	dm_astar(room_a_center_cell->astar_node, room_b_center_cell->astar_node, is_blocked, get_node, on_path, true, true); // cardinals only, manhattan distance
+	//bit::Astar::pathfind(roomCenterCell, room_bCenterCell, isBlocked, getNeighbors, fill);
+}
+
+void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b, bool stop_on_room)
+{
+	struct dng_cell *room_a_center_cell = dng_cellmap_get_cell_at_position(cellmap, room_a->x + room_a->width / 2, room_a->y + room_a->height / 2);
+	struct dng_cell *room_b_center_cell = dng_cellmap_get_cell_at_position(cellmap, room_b->x + room_b->width / 2, room_b->y + room_b->height / 2);
+
+	double dirf_x, dirf_y;
+	dm_direction(room_a_center_cell->x, room_a_center_cell->y, room_b_center_cell->x, room_b_center_cell->y, &dirf_x, &dirf_y);
+
+	double distance = dm_distf(room_a_center_cell->x, room_a_center_cell->y, room_b_center_cell->x, room_b_center_cell->y);
+
+	double dir_x = dm_round(dirf_x * distance);
+	double dir_y = dm_round(dirf_y * distance);
+
+	int orthodist_x = abs(room_b_center_cell->x - room_a_center_cell->x);
+	int orthodist_y = abs(room_b_center_cell->y - room_a_center_cell->y);
+
+	// fukn dig a big orthogonal tunnel until we hit another room or something
+	for (int r = 0; r < orthodist_y; r++) {
+		for (int c = 0; c < orthodist_x; c++) {
+			int pos_x = room_a_center_cell->x + c;
+			int pos_y = room_a_center_cell->y + r;
+			struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, pos_x, pos_y);
+			if (stop_on_room) {
+				// stop if we reach another room
+				if (cell->room && cell->room != room_a)
+					return;
+				// check to see if we are adjacent to a room
+				// using cardinal directions to check
+				struct dng_cell *north = dng_cellmap_get_cell_at_position_nullable(cellmap, pos_x, pos_y - 1);
+				struct dng_cell *east = dng_cellmap_get_cell_at_position_nullable(cellmap, pos_x + 1, pos_y);
+				struct dng_cell *south = dng_cellmap_get_cell_at_position_nullable(cellmap, pos_x, pos_y + 1);
+				struct dng_cell *west = dng_cellmap_get_cell_at_position_nullable(cellmap, pos_x - 1, pos_y);
+				if ((north && north->room && north->room != room_a) ||
+					(east && east->room && east->room != room_a) ||
+					(south && south->room && south->room != room_a) ||
+					(west && west->room && west->room != room_a)) {
+					// dig this cell and return
+					dng_cellmap_emplace_room_fix(cellmap, cell);
+					return;
+				}
+			}
+
+			if(cell->room && cell->room != room_a && stop_on_room)
+				return;
+
+			dng_cellmap_emplace_room_fix(cellmap, cell);
+		}
+	}
+}
+
+void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_cell *cell)
+{
+	// Make door
+	//if(cell->isRoomPermiter && !cell->isDoor && !cell->isTunnel)
+	//{
+	//    cell->isDoor = true;
+	//}
+	//// Make tunnel
+	//else
+	if (cell->room == NULL && !cell->is_door && !cell->is_tunnel) {
+		cell->is_tunnel = true;
+		cell->was_room_fix_tunnel = true;
+	}
+}
 // CLEANUP CONNECTION END
 ///////////////////////////
 
@@ -788,79 +947,6 @@ struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *c
 	return NULL;
 }
 
-void dng_cellmap_fix_rooms(struct dng_cellmap *cellmap)
-{
-	//- If more than one room
-	//    - Iterate rooms
-	//        - Iterate all doors connected to room
-	//            - Floodfill tunnel until a room is located
-	//                - If room is not origin room
-	//                    - Increment origin room connections counter
-	//        - If connections is 0
-	//            - OPTION A: delete room
-	//            - OPTION B: find closest room and tunnel toward room
-
-	// Iterate rooms
-	// Astar from their center to the center of every room
-	// Count every other room connected
-	// If any room has no connections it must be fixed
-	if (cellmap->rooms_length > 1) {
-		for (int i=0; i < cellmap->rooms_length; i++) {
-			struct dng_room *room = cellmap->rooms[i];
-			if (!dng_cellmap_are_rooms_connected(room, cellmap->entrance_room)) {
-				dng_cellmap_tunnel_rooms(room, cellmap->entrance_room, true);
-			}
-		}
-	}
-}
-
-bool dng_cellmap_are_rooms_connected(struct dng_room *room_a, struct dng_room *room_b)
-{
-	if (room_a == room_b)
-		return true;
-
-	std::vector<Cell*> cellPath;
-	getRoomConnectionPath(room, otherRoom, cellPath);
-
-	if(cellPath.size() != 0)
-	{
-		return true;
-	}
-
-	return false;
-}
-
-void dng_cellmap_get_room_connection_path(struct dng_room *room_a, struct dng_room *room_b, inspect)
-{
-	if (room_a == room_b)
-		return;
-
-	int center_x = room->x + room->width / 2;
-	int center_y = room->y + room->height / 2;
-	struct dng_cell *room_a_center_cell = dng_cellmap_get_cell_at_position(cellmap, center_x, center_y);
-
-	unsigned int other_center_x = room_b->x + room_b->width / 2;
-	unsigned int other_center_y = room_b->y + room_b->height / 2;
-	Cell* room_b_center_cell = getCellAtPosition(other_center_x, other_center_y);
-
-	bool is_blocked(int x, int y) {
-		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
-		if (cell->room == NULL && !cell->is_tunnel && !c->is_door)
-			return true;
-		return false;
-	}
-	void get_neighbors(int x, int y, ...) {
-	}
-	//std::function<void(Cell* c, std::vector<Cell*> &f)> getNeighbors = [&cellMap] (Cell* c, std::vector<Cell*> &f) {
-	//	f.push_back(cellMap->getCellAtPosition(c->x, c->y - 1)); // top
-	//	f.push_back(cellMap->getCellAtPosition(c->x, c->y + 1)); // bottom
-	//	f.push_back(cellMap->getCellAtPosition(c->x + 1, c->y)); // right
-	//	f.push_back(cellMap->getCellAtPosition(c->x - 1, c->y)); // left
-	//};
-
-	dm_astar(room_a_center_cell->x, room_a_center_cell->y, room_b_center_cell->x, room_b_center_cell->y, is_blocked, get_neighbors, ...);
-	//bit::Astar::pathfind(roomCenterCell, room_bCenterCell, isBlocked, getNeighbors, fill);
-}
 // CELLMAP INSPECTORS END
 ///////////////////////////
 
@@ -985,6 +1071,7 @@ void dng_delmap(struct dng_cellmap *cellmap)
 	}
 	free(cellmap->rooms); // free cell list
 	for (int i=0; i < cellmap->cells_length; i++) {
+		free(cellmap->cells[i]->astar_node); // astar node
 		free(cellmap->cells[i]); // free cell
 	}
 	free(cellmap->cells); // free cell list

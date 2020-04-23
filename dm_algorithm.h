@@ -32,6 +32,9 @@ int dm_randii(int a, int b);
 // MATH
 int dm_disti(int x1, int y1, int x2, int y2);
 double dm_distf(double x1, double y1, double x2, double y2);
+void dm_direction(double x1, double y1, double x2, double y2, double *xref, double *yref);
+void dm_normalize(double x, double y, double *xref, double *yref);
+double dm_round(double val);
 
 // ASTAR
 struct dm_astarnode {

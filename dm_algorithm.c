@@ -281,6 +281,28 @@ double dm_distf(double x1, double y1, double x2, double y2)
 	return sqrt(x*x + y*y);
 }
 
+// get the vector direction from point a to point b
+void dm_direction(double x1, double y1, double x2, double y2, double *xref, double *yref)
+{
+	dm_normalize(x2 - x1, y2 - y1, xref, yref);
+}
+
+void dm_normalize(double x, double y, double *xref, double *yref)
+{
+	if (x != 0 || y != 0) {
+		double length = sqrt(x*x + y*y);
+		(*xref) = x / length;
+		(*yref) = y / length;
+	}
+	(*xref) = 0;
+	(*yref) = 0;
+}
+
+double dm_round(double val)
+{
+	return floor(val + 0.5);
+}
+
 
 
 ///////////////////////////
