@@ -389,6 +389,7 @@ void dm_astar(
 		// but I changed it to just look at cardinal and diagonal neighbors to avoid the list
 		printf(" begin %d,%d\n", current_node->astar_x, current_node->astar_y);
 		if (is_cardinal_only) {
+			// cardinal neighbors only
 			struct neighbor neighbors[] = {
 				{current_node->astar_x, current_node->astar_y - 1}, // top
 				{current_node->astar_x, current_node->astar_y + 1}, // bottom
@@ -396,10 +397,23 @@ void dm_astar(
 				{current_node->astar_x + 1, current_node->astar_y }, // right
 			};
 			// Loop to look for best candidate via A*
-			for (int i=0; i < 4; i++) {
+			for (int i=0; i < 4; i++)
 				dm_astar_check(current_node, end_node, neighbors[i].x, neighbors[i].y, &open_list, is_blocked, get_node, is_manhattan);
-			} // End neighbor loop
-		} // end cardinal version TODO
+		} else {
+			// all neighbords
+			struct neighbor neighbors[] = {
+				{current_node->astar_x, current_node->astar_y - 1}, // top
+				{current_node->astar_x, current_node->astar_y + 1}, // bottom
+				{current_node->astar_x - 1, current_node->astar_y}, // left
+				{current_node->astar_x + 1, current_node->astar_y }, // right
+				{current_node->astar_x - 1, current_node->astar_y - 1}, // top left
+				{current_node->astar_x - 1, current_node->astar_y + 1}, // bottom left
+				{current_node->astar_x + 1, current_node->astar_y - 1}, // top right
+				{current_node->astar_x + 1, current_node->astar_y + 1}, // bottom right
+			};
+			for (int i=0; i < 8; i++)
+				dm_astar_check(current_node, end_node, neighbors[i].x, neighbors[i].y, &open_list, is_blocked, get_node, is_manhattan);
+		}
 		printf(" end neighbor loop\n");
 
 		// At this point the open list has been updated to reflect new parents and costs
@@ -474,91 +488,91 @@ void dm_astar_check(
 	bool is_manhattan
 )
 {
-				printf("  starting dir %d,%d\n", neighbor_x, neighbor_y);
-				struct dm_astarnode *check_node = get_node(neighbor_x, neighbor_y);
-				if (!check_node)
-					return;
+	printf("  starting dir %d,%d\n", neighbor_x, neighbor_y);
+	struct dm_astarnode *check_node = get_node(neighbor_x, neighbor_y);
+	if (!check_node)
+		return;
 
-				printf("  checking neighbor %d,%d\n", check_node->astar_x, check_node->astar_y);
-				dm_astar_clean(check_node, astar_id);
+	printf("  checking neighbor %d,%d\n", check_node->astar_x, check_node->astar_y);
+	dm_astar_clean(check_node, astar_id);
 
-				int xdiff;
-				int ydiff;
-				int gcost;
-				int hcost;
+	int xdiff;
+	int ydiff;
+	int gcost;
+	int hcost;
 
-				// G cost for this node
-				if (check_node->astar_gcost == 0) {
-					// G = Cost to move from current active node to this node
-					//     If this is a locked down grid, you can treat horizontal neighbors
-					//     as a straight 10 and diagonal neighbors as a 14
-					//     If this is node mapping is not a locked down grid, perhaps a web
-					//     or something else, then calculate the distance realistically.
-					xdiff = abs(check_node->astar_x - current_node->astar_x);
-					ydiff = abs(check_node->astar_y - current_node->astar_y);
-					gcost = 0;
-					if (ydiff > 0 && xdiff > 0) {
-						// If diagonal
-						if(is_manhattan)
-							gcost = (int)((double)(xdiff + ydiff) / 1.4); // 1.4 is rough diagonal length of a square
-						else
-							gcost = (int)sqrt((double)(xdiff * xdiff) + (double)(ydiff * ydiff));
-					} else {
-						// If straight
-						gcost = xdiff + ydiff; // one has to be zero so it is the length of one side
-					}
+	// G cost for this node
+	if (check_node->astar_gcost == 0) {
+		// G = Cost to move from current active node to this node
+		//     If this is a locked down grid, you can treat horizontal neighbors
+		//     as a straight 10 and diagonal neighbors as a 14
+		//     If this is node mapping is not a locked down grid, perhaps a web
+		//     or something else, then calculate the distance realistically.
+		xdiff = abs(check_node->astar_x - current_node->astar_x);
+		ydiff = abs(check_node->astar_y - current_node->astar_y);
+		gcost = 0;
+		if (ydiff > 0 && xdiff > 0) {
+			// If diagonal
+			if(is_manhattan)
+				gcost = (int)((double)(xdiff + ydiff) / 1.4); // 1.4 is rough diagonal length of a square
+			else
+				gcost = (int)sqrt((double)(xdiff * xdiff) + (double)(ydiff * ydiff));
+		} else {
+			// If straight
+			gcost = xdiff + ydiff; // one has to be zero so it is the length of one side
+		}
 
-					check_node->astar_gcost = gcost;
-				}
+		check_node->astar_gcost = gcost;
+	}
 
-				// H cost for this node
-				if (check_node->astar_hcost == 0) {
-					// H = Cost to move from this node to the destination node.
-					//     Use manhattan distance (total x distance + total y distance)
-					//     Or use real distance squareRoot( x distance ^ 2, y distance ^ 2)
-					//     Or some other heuristic if you are brave
-					xdiff = check_node->astar_x - end_node->astar_x;
-					ydiff = check_node->astar_y - end_node->astar_y;
-					if(is_manhattan)
-						hcost = xdiff + ydiff;
-					else
-						hcost = (int)sqrt((double)(xdiff * xdiff) + (double)(ydiff * ydiff));
-					check_node->astar_hcost = hcost;
-				}
+	// H cost for this node
+	if (check_node->astar_hcost == 0) {
+		// H = Cost to move from this node to the destination node.
+		//     Use manhattan distance (total x distance + total y distance)
+		//     Or use real distance squareRoot( x distance ^ 2, y distance ^ 2)
+		//     Or some other heuristic if you are brave
+		xdiff = check_node->astar_x - end_node->astar_x;
+		ydiff = check_node->astar_y - end_node->astar_y;
+		if(is_manhattan)
+			hcost = xdiff + ydiff;
+		else
+			hcost = (int)sqrt((double)(xdiff * xdiff) + (double)(ydiff * ydiff));
+		check_node->astar_hcost = hcost;
+	}
 
-				// F cost for this node
-				if (check_node->astar_fcost == 0) {
-					// F = G + H
-					// F = Cost to move from current active node to this node
-					//     plus the cost for this mode to travel to the final node
-					//     (calculated by manhattan distance or real distance etc.)
-					check_node->astar_fcost = check_node->astar_gcost + check_node->astar_hcost;
-				}
+	// F cost for this node
+	if (check_node->astar_fcost == 0) {
+		// F = G + H
+		// F = Cost to move from current active node to this node
+		//     plus the cost for this mode to travel to the final node
+		//     (calculated by manhattan distance or real distance etc.)
+		check_node->astar_fcost = check_node->astar_gcost + check_node->astar_hcost;
+	}
 
-				// Skip nodes that are blocked or already closed
-				if (!is_blocked(check_node) && !check_node->astar_closed) {
-					//printf("--- in\n");
-					if (!check_node->astar_opened) {
-						printf("    astarpush open\n");
-						// If the connected node is not in the open list, add it to the open list
-						// and set its parent to our current active node
-						check_node->astar_parent = current_node;
-						dm_astarlist_push(open_list, check_node);
-						check_node->astar_opened = true;
-					} else {
-						//printf("--- astarclosed\n");
-						// If the connected node is already in the open list, check to see if
-						// the path from our current active node to this node is better
-						// than are current selection
-						// Check to see if its current G cost is less than the new G cost of the parent and the old G cost
-						gcost = check_node->astar_gcost + current_node->astar_gcost;
-						if (gcost < check_node->astar_gcost) {
-							// If so, make the current node its new parent and recalculate the gcost, and fcost
-							check_node->astar_parent = current_node;
-							check_node->astar_gcost = gcost;
-							check_node->astar_fcost = check_node->astar_gcost + check_node->astar_hcost;
-						}
-					}
-				}
-				//printf("  end dir\n");
+	// Skip nodes that are blocked or already closed
+	if (!is_blocked(check_node) && !check_node->astar_closed) {
+		//printf("--- in\n");
+		if (!check_node->astar_opened) {
+			printf("    astarpush open\n");
+			// If the connected node is not in the open list, add it to the open list
+			// and set its parent to our current active node
+			check_node->astar_parent = current_node;
+			dm_astarlist_push(open_list, check_node);
+			check_node->astar_opened = true;
+		} else {
+			//printf("--- astarclosed\n");
+			// If the connected node is already in the open list, check to see if
+			// the path from our current active node to this node is better
+			// than are current selection
+			// Check to see if its current G cost is less than the new G cost of the parent and the old G cost
+			gcost = check_node->astar_gcost + current_node->astar_gcost;
+			if (gcost < check_node->astar_gcost) {
+				// If so, make the current node its new parent and recalculate the gcost, and fcost
+				check_node->astar_parent = current_node;
+				check_node->astar_gcost = gcost;
+				check_node->astar_fcost = check_node->astar_gcost + check_node->astar_hcost;
+			}
+		}
+	}
+	//printf("  end dir\n");
 }
