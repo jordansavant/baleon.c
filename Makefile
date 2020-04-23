@@ -22,3 +22,6 @@ valgrind-full: $(BUILD) $(DEPS)
 
 dng: main_testdng.c dm_dungeon.c dm_dungeon.h dm_algorithm.h dm_algorithm.c
 	gcc main_testdng.c dm_dungeon.c dm_algorithm.c mt_rand.c -o main_testdng.out -lm && ./main_testdng.out
+
+astar: main_astar.c dm_algorithm.c dm_algorithm.h
+	gcc main_astar.c dm_algorithm.c mt_rand.c -o main_astar.out -lm && ./main_astar.out

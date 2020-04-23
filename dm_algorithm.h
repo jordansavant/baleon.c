@@ -34,4 +34,42 @@ int dm_disti(int x1, int y1, int x2, int y2);
 double dm_distf(double x1, double y1, double x2, double y2);
 
 
+
+
+
+
+#define ASTAR_LIST_LENGTH 20
+struct dm_astarnode {
+	unsigned int aStarID;
+	bool aStarClosed;
+	bool aStarOpened;
+	int aStarFCost;
+	int aStarGCost;
+	int aStarHCost;
+	int aStarX;
+	int aStarY;
+	struct dm_astarnode* aStarParent;
+};
+struct dm_astarlist {
+	unsigned int index;
+	unsigned int length;
+	unsigned int capacity;
+	struct dm_astarnode **list;
+};
+void dm_astar_reset(struct dm_astarnode* node);
+void dm_astar_clean(struct dm_astarnode* node, unsigned int aStarID);
+bool dm_astar_equals(struct dm_astarnode* node_a, struct dm_astarnode* node_b);
+void dm_astarlist_push(struct dm_astarlist *list, struct dm_astarnode *node);
+void dm_astarlist_remove(struct dm_astarlist *list, struct dm_astarnode *node);
+
+void dm_astar(
+	struct dm_astarnode *startNode,
+	struct dm_astarnode *endNode,
+	bool (*is_blocked)(struct dm_astarnode*),
+	struct dm_astarnode* (*get_node)(int, int),
+	void (*on_path)(struct dm_astarnode*),
+	bool is_cardinal_only,
+	bool is_manhattan
+);
+
 #endif
