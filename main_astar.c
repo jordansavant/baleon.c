@@ -96,9 +96,9 @@ int main(void)
 		int index = cell->y * width + cell->x;
 		bool blocked = map[index] != 1;
 		if (blocked)
-			printf("   is_blocked %d %d,%d\n", index, node->aStarX, node->aStarY);
+			printf("   is_blocked %d %d,%d\n", index, node->astar_x, node->astar_y);
 		else
-			printf("   isnt_blocked %d %d,%d\n", index, node->aStarX, node->aStarY);
+			printf("   isnt_blocked %d %d,%d\n", index, node->astar_x, node->astar_y);
 		return blocked;
 
 	}

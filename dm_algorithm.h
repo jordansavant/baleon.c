@@ -33,22 +33,17 @@ int dm_randii(int a, int b);
 int dm_disti(int x1, int y1, int x2, int y2);
 double dm_distf(double x1, double y1, double x2, double y2);
 
-
-
-
-
-
-#define ASTAR_LIST_LENGTH 20
+// ASTAR
 struct dm_astarnode {
-	unsigned int aStarID;
-	int aStarX;
-	int aStarY;
-	bool aStarClosed;
-	bool aStarOpened;
-	int aStarFCost;
-	int aStarGCost;
-	int aStarHCost;
-	struct dm_astarnode* aStarParent;
+	unsigned int astar_id;
+	int astar_x;
+	int astar_y;
+	bool astar_closed;
+	bool astar_opened;
+	int astar_fcost;
+	int astar_gcost;
+	int astar_hcost;
+	struct dm_astarnode* astar_parent;
 	// helper pointer to something we can reference in the parent world in the getters below
 	void *owner;
 	// getters for parent world to let me update my astar x and y
@@ -62,14 +57,14 @@ struct dm_astarlist {
 	struct dm_astarnode **list;
 };
 void dm_astar_reset(struct dm_astarnode* node);
-void dm_astar_clean(struct dm_astarnode* node, unsigned int aStarID);
+void dm_astar_clean(struct dm_astarnode* node, unsigned int astar_id);
 bool dm_astar_equals(struct dm_astarnode* node_a, struct dm_astarnode* node_b);
 void dm_astarlist_push(struct dm_astarlist *list, struct dm_astarnode *node);
 void dm_astarlist_remove(struct dm_astarlist *list, struct dm_astarnode *node);
 
 void dm_astar(
-	struct dm_astarnode *startNode,
-	struct dm_astarnode *endNode,
+	struct dm_astarnode *start_node,
+	struct dm_astarnode *end_node,
 	bool (*is_blocked)(struct dm_astarnode*),
 	struct dm_astarnode* (*get_node)(int, int),
 	void (*on_path)(struct dm_astarnode*),
