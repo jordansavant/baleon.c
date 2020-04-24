@@ -178,6 +178,7 @@ struct wld_map {
 	struct wld_cursor *cursor;
 
 	// function pointers game subscribes to for events
+	void (*on_player_map_transition)(struct wld_map*, struct wld_mob *mob, bool forward);
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
 	void (*on_playermove)(struct wld_map*, struct wld_mob *, int x, int y, int index);
 
@@ -318,6 +319,7 @@ void wld_setup();
 void wld_teardown();
 struct wld_world* wld_newworld(int seed, int count);
 void wld_delworld(struct wld_world*);
+void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_map *to);
 
 
 ///////////////////////////

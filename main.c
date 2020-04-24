@@ -380,6 +380,7 @@ enum PLAY_STATE {
 	PS_MENU,
 	PS_MAPCHANGE,
 	PS_GAMEOVER,
+	PS_WIN,
 	PS_END, // do not call exit directly
 	PS_EXIT,
 };
@@ -543,12 +544,14 @@ void ui_modeinfo(char *msg)
 
 void ui_loginfo(char *msg)
 {
+	dmlog(msg);
+	char buffer [LOG_LENGTH];
+	strncpy(buffer, msg, LOG_LENGTH);
 	// rotate strings onto log
 	for (int i=0; i < LOG_COUNT - 1; i++) {
 		strcpy(logs[i], logs[i+1]);
 	}
-	strcpy(logs[LOG_COUNT - 1], msg);
-	dmlog(msg);
+	strcpy(logs[LOG_COUNT - 1], buffer);
 }
 void ui_loginfo_s(char *msg, char *msg2)
 {
@@ -781,6 +784,31 @@ void ui_use_item_select(struct wld_mob* player, int item_slot)
 
 ///////////////////////////
 // MAP EVENT SUBSCRIPTIONS
+
+void map_on_player_transition(struct wld_map *map, struct wld_mob *player, bool forward)
+{
+	if (forward) {
+		ui_loginfo("player next map");
+		int map_id = map->id;
+		if (map_id + 1 == world->maps_length) {
+			// end of the maps
+			play_state = PS_WIN;
+		} else {
+			// transition player to next map
+			wld_transition_player(world, map, world->maps[map_id + 1]);
+		}
+	} else {
+		ui_loginfo("player back map");
+		int map_id = map->id;
+		if (map_id == 0) {
+			// no where to go back too
+			ui_loginfo("Though aflame in fear, you cannot retreat.");
+		} else {
+			// transition player to prior map
+			wld_transition_player(world, map, world->maps[map_id - 1]);
+		}
+	}
+}
 
 void map_on_cursormove(struct wld_map *map, int x, int y, int index)
 {
@@ -1142,6 +1170,7 @@ void ps_build_world()
 	// World is large indexed map to start
 	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
 
+	current_map->on_player_map_transition = map_on_player_transition;
 	current_map->on_cursormove = map_on_cursormove;
 	current_map->on_playermove = map_on_playermove;
 
@@ -1471,6 +1500,15 @@ void g_newgame()
 			ps_play_draw();
 
 			getch(); // wait until player does something then quit
+
+			play_state = PS_END;
+		case PS_WIN:
+			ps_play_draw();
+
+			ui_loginfo("Congratulations!");
+			ui_loginfo("After many weary battles you have overcome Baleon.");
+
+			getch();
 
 			play_state = PS_END;
 		case PS_END:

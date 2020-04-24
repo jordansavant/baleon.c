@@ -130,11 +130,20 @@ void wld_new_item(struct wld_map* map, struct wld_item* item, int x, int y)
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob)
 {
+
 	dmlog("MOB ENTER ENTRANCE");
+	if (mob->is_player) {
+		if (map->on_player_map_transition)
+			map->on_player_map_transition(map, mob, false);
+	}
 }
 void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob)
 {
 	dmlog("MOB ENTER EXIT");
+	if (mob->is_player) {
+		if (map->on_player_map_transition)
+			map->on_player_map_transition(map, mob, true);
+	}
 }
 
 
@@ -1262,6 +1271,7 @@ struct wld_map* wld_newmap(int id, int difficulty, int width, int height)
 	map->cursor->index = 0;
 
 	// function events
+	map->on_player_map_transition = NULL;
 	map->on_cursormove = NULL;
 	map->on_playermove = NULL;
 
@@ -1355,6 +1365,12 @@ void wld_delworld(struct wld_world* world)
 	}
 	free(world->maps);
 	free(world);
+}
+
+void wld_transition_player(struct wld_world* world, struct wld_map* from_map, struct wld_map* to_map)
+{
+	// remove player instance from current map and move him to the next map
+	dmlog("MOVE PLAYER");
 }
 
 
