@@ -41,7 +41,9 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->index = 0;
 	cell->x = 0;
 	cell->y = 0;
+
 	cell->is_wall = false;
+	cell->has_structure = false;
 
 	cell->room = NULL;
 	cell->is_room_edge = false;
@@ -1041,6 +1043,54 @@ void dng_exit_init(struct dng_exit *exit, int id, int x, int y)
 
 
 
+
+///////////////////////////
+// BUILD WALLS
+
+void dng_cellmap_buildwalls(struct dng_cellmap *cellmap)
+{
+	struct dir {
+		int x, y;
+	};
+	struct dir dirs[] = {
+		// cardinals
+		{1, 0}, {0, 1}, {-1, 0}, {0, -1},
+		// diagonals
+		{1, 1}, {-1, 1}, {-1, -1}, {1, -1},
+	};
+	int length = 8;
+
+	// Iterate all cells
+	// If I am not a room, door or tunnel
+	// Look at neighbors and count number of: doors, rooms, tunnels
+	// If count is > 0 make me a wall
+	for (int i=0; i < cellmap->width; i++) { // cols
+		for (int j=0; j < cellmap->height; j++) { // rows
+
+			struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, i, j);
+			if (cell->room == NULL && !cell->is_door && !cell->is_tunnel) {
+
+				for (int d=0; d < length; d++) {
+
+					struct dng_cell *neighbor = dng_cellmap_get_cell_at_position_nullable(cellmap, cell->x + dirs[d].x, cell->y + dirs[d].y);
+					if (neighbor && (neighbor->room == NULL || !neighbor->is_door || !neighbor->is_tunnel)) {
+						cell->is_wall = true;
+						cell->has_structure = true;
+						// TODO structure type = WALL; not sure if i need this
+
+					}
+				}
+			}
+
+		}
+	}
+}
+
+// BUILD WALLS
+///////////////////////////
+
+
+
 ///////////////////////////
 // CELLMAP INSPECTORS START
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*))
@@ -1199,6 +1249,8 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	dng_cellmap_calc_entrance_weights(cellmap);
 	printf("build exit\n");
 	dng_cellmap_buildexit(cellmap);
+	printf("build walls\n");
+	dng_cellmap_buildwalls(cellmap);
 
 	//cellMap->buildWalls();
 	//cellMap->buildLights();

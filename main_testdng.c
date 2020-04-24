@@ -36,8 +36,10 @@ int main(void)
 					printf("D ");
 				else if (cell->is_sill)
 					printf("S ");
+				else if (cell->is_wall)
+					printf(". ");
 				else if (cell->room != NULL)
-					printf("- ");
+					printf("  ");
 				else
 					printf("  ");
 			}

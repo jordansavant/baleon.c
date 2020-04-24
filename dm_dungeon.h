@@ -50,6 +50,7 @@ struct dng_cell {
         int x, y;
 
 	bool is_wall;
+	bool has_structure; // TODO was used to indicate structure for xogeni, walls included
 
 	struct dng_room* room;
         bool is_room_edge;
@@ -162,6 +163,9 @@ void dng_cellmap_calc_entrance_weights(struct dng_cellmap *cellmap);
 // EXIT
 void dng_cellmap_buildexit(struct dng_cellmap *cellmap);
 void dng_exit_init(struct dng_exit *exit, int id, int x, int y);
+
+// WALLS
+void dng_cellmap_buildwalls(struct dng_cellmap *cellmap);
 
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));
