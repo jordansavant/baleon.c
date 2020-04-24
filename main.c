@@ -1137,11 +1137,9 @@ void ps_build_world()
 
 	int seed = 123;
 	world = wld_newworld(seed, 2);
-	dmlog("current map");
 	current_map = world->current_map;
 
 	// World is large indexed map to start
-	//current_map = wld_newmap(1);
 	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
 
 	current_map->on_cursormove = map_on_cursormove;

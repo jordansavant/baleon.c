@@ -1,16 +1,18 @@
 TODO:
 
 now
-- tunnels are getting stubbed out in little groups and thus not collapsing
-- room placements in a spiral dont work for "wide maps"
+- map transitions
+- win condition on escape
+- game over condition on death
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items
 - ui: health
 
 later
-- dungeon builder
-- map transitions
+- bug: tunnels are getting stubbed out in little groups and thus not collapsing
+- bug: tunnels can exist in closed loops in the middle of nowhere
+- bug: screen trails on map movement when near edges
 - ui: mob list
 - ui: mob focus
 - ranged point test item

@@ -7,6 +7,7 @@
 #define INVENTORY_SIZE 12
 
 struct wld_item;
+struct wld_mob;
 
 ///////////////////////////
 // TILE STRUCTS
@@ -18,6 +19,8 @@ enum WLD_TILETYPE {
 	TILE_TREE = 3,
 	TILE_STONEWALL = 4,
 	TILE_STONEFLOOR = 5,
+	TILE_ENTRANCE,
+	TILE_EXIT,
 };
 struct wld_tiletype {
 	enum WLD_TILETYPE type;
@@ -39,6 +42,7 @@ struct wld_tile {
 	bool is_visible;
 	bool was_visible;
 	// on_enter, on_leave events
+	void(*on_mob_enter)(struct wld_map*, struct wld_tile*, struct wld_mob*); // TODO left off here
 };
 
 
