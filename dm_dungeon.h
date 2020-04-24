@@ -6,7 +6,6 @@
 
 
 struct dng_exit {
-        // Exit(unsigned int id, unsigned int x, unsigned int y, unsigned int childMapId = 0, unsigned int childEntranceId = 0);
         int id;
         int x, y;
         bool is_connected_to_child;
@@ -15,7 +14,6 @@ struct dng_exit {
 };
 
 struct dng_entrance {
-	// Entrance(unsigned int id, unsigned int x, unsigned int y, unsigned int parentMapId = 0, unsigned int parentExitId = 0);
 	int id;
 	int x, y;
 	bool is_connected_to_parent;
@@ -106,9 +104,15 @@ struct dng_cellmap {
 	// entrance details
 	int entrance_count, exit_count;
 	struct dng_entrance *entrance;
-	//struct dng_exit *exit; TODO
+	struct dng_exit *exit;
 	struct dng_room *entrance_room;
 	struct dng_room *exit_room;
+};
+
+struct dng_dungeon {
+	int seed;
+	struct dng_cellmap** maps;
+	int maps_length;
 };
 
 
@@ -173,6 +177,9 @@ void dng_cellmap_buildwalls(struct dng_cellmap *cellmap);
 void dng_cellmap_buildtags(struct dng_cellmap *cellmap);
 void dng_cellmap_tag_unreachables(struct dng_cellmap *cellmap);
 
+// LINKERS
+void dng_cellmap_link(struct dng_cellmap* child, struct dng_cellmap* parent);
+
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));
 void dng_cellmap_inspect_cells_in_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h, bool (*inspect)(struct dng_cell*));
@@ -180,11 +187,14 @@ bool dng_cellmap_can_house_dimension(struct dng_cellmap *cellmap, int x, int y, 
 struct dng_cell* dng_cellmap_get_cell_at_position(struct dng_cellmap *cellmap, int x, int y);
 struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *cellmap, int x, int y);
 
-
 ///////////////////////////
 // OVERALL DUNGEON
 
-struct dng_cellmap* dng_genmap(int difficulty, int width, int height);
+struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height);
 void dng_delmap(struct dng_cellmap*);
+
+struct dng_dungeon* dng_gendungeon(int seed, int count);
+void dng_deldungeon(struct dng_dungeon*);
+
 
 #endif

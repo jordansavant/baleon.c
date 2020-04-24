@@ -590,8 +590,9 @@ void dng_entrance_init(struct dng_entrance *entrance, int id, int x, int y)
 	entrance->id = id;
 	entrance->x = x;
 	entrance->y = y;
-	entrance->parent_map_id = 0;
-	entrance->parent_exit_id = 0;
+	entrance->parent_map_id = -1;
+	entrance->parent_exit_id = -1;
+	entrance->is_connected_to_parent = false;
 }
 
 struct dng_cell* dng_cellmap_pick_transition_cell_for_room(struct dng_cellmap *cellmap, struct dng_room *room)
@@ -1019,10 +1020,10 @@ void dng_cellmap_buildexit(struct dng_cellmap *cellmap)
 	struct dng_cell *exit_cell = dng_cellmap_pick_transition_cell_for_room(cellmap, exit_room);
 
 	// Build exit
-	struct dng_exit *exit = (struct dng_exit*)malloc(sizeof(struct dng_exit));
-	dng_exit_init(exit, exit_id, exit_cell->x, exit_cell->y);
+	cellmap->exit = (struct dng_exit*)malloc(sizeof(struct dng_exit));
+	dng_exit_init(cellmap->exit, exit_id, exit_cell->x, exit_cell->y);
 	exit_cell->is_exit_transition = true;
-	exit_cell->exit_transition = exit;
+	exit_cell->exit_transition = cellmap->exit;
 
 	// build a landing pad here for a reverse exit entrance from a lower floor
 	dng_cellmap_build_landing_pad(cellmap, exit_cell, exit_id);
@@ -1036,8 +1037,9 @@ void dng_exit_init(struct dng_exit *exit, int id, int x, int y)
 	exit->id = id;
 	exit->x = x;
 	exit->y = y;
-	exit->child_map_id = 0;
-	exit->child_entrance_id = 0;
+	exit->child_map_id = -1;
+	exit->child_entrance_id = -1;
+	exit->is_connected_to_child = false;
 }
 
 // BUILD EXIT END
@@ -1116,10 +1118,27 @@ void dng_cellmap_tag_unreachables(struct dng_cellmap *cellmap)
 ///////////////////////////
 
 
+
+///////////////////////////
+// CONNECTING MAPS START
+void dng_cellmap_link(struct dng_cellmap* child, struct dng_cellmap* parent)
+{
+	child->entrance->is_connected_to_parent = true;
+	child->entrance->parent_map_id = parent->id;
+	child->entrance->parent_exit_id = parent->exit->id;
+
+	parent->exit->is_connected_to_child = true;
+	parent->exit->child_map_id = child->id;
+	parent->exit->child_entrance_id = child->entrance->id;
+}
+// CONNECTING MAPS END
+///////////////////////////
+
+
+
+
 ///////////////////////////
 // CELLMAP INSPECTORS START
-//
-// this function will clamp the x and y so it can spiral out wider
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*))
 {
 	int center_x = cellmap->width / 2;
@@ -1191,10 +1210,10 @@ struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *c
 
 
 
-struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
+struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 {
 	struct dng_cellmap *cellmap = (struct dng_cellmap*)malloc(sizeof(struct dng_cellmap));
-	cellmap->id = 0; // TODO could be index in a list of generated dungeons
+	cellmap->id = id;
 	cellmap->difficulty = difficulty;
 	cellmap->width = width;
 	cellmap->height = height;
@@ -1235,70 +1254,33 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	cellmap->entrance_count = 1;
 	cellmap->exit_count = 1;
 	cellmap->entrance = NULL;
-	//cellmap->exit = NULL; TODO
+	cellmap->exit = NULL;
 	cellmap->entrance_room = NULL;
 	cellmap->exit_room = NULL;
 
-	//mapPadding = 1;
-	//float mapHypSize = sqrtf(width * height);
 
-	//// Room Details
-	//minRoomWidth = 6;
-	//maxRoomWidth = 16;
-	//minRoomHeight = 6;
-	//maxRoomHeight = 16;
-
-	//float hypMinRoomSize = sqrtf(minRoomWidth * minRoomHeight);
-	//float hypMaxRoomSize = sqrtf(maxRoomWidth * maxRoomHeight);
-	//float hypSize = (hypMinRoomSize + hypMaxRoomSize) / 2;
-
-	//float roomDensity = .8;
-	//float maxRoomsPerMap = (mapHypSize / hypSize) * (mapHypSize / hypSize);
-
-	////roomDensity = .5f + (roomDensity / 2);
-	//roomCount = maxRoomsPerMap * roomDensity;
-	//roomAttemptCount = roomCount * 2;
-	//roomScatter = (hypSize * (1 - roomDensity)) + hypSize / 2;
-	//roomScatter = (hypSize / 2) + (hypSize * 10 * (1 - roomDensity)) ;
-
-	//// Tunnel details
-	//minHallWidth = 1;
-	//tunnelTurnRatio = 0;
-	//deadEndRatio = 0;
-
-	//tunnelDirs.push_back(sf::Vector2i(1, 0)); // right
-	//tunnelDirs.push_back(sf::Vector2i(0, 1)); // down
-	//tunnelDirs.push_back(sf::Vector2i(-1, 0)); // left
-	//tunnelDirs.push_back(sf::Vector2i(0, -1)); // up
-
-	//// Exit details
-	//entranceCount = 1;
-	//exitCount = 1;
-
-	printf("build ground\n");
+	//printf("build ground\n");
 	dng_cellmap_buildground(cellmap);
-	printf("build rooms\n");
+	//printf("build rooms\n");
 	dng_cellmap_buildrooms(cellmap);
-	printf("build tunnels\n");
+	//printf("build tunnels\n");
 	dng_cellmap_buildtunnels(cellmap);
-	printf("build doors\n");
+	//printf("build doors\n");
 	dng_cellmap_builddoors(cellmap);
-	printf("build entrance\n");
+	//printf("build entrance\n");
 	// TODO throw in big dungeon aberration rooms here
 	dng_cellmap_buildentrance(cellmap);
-	printf("clean\n");
+	//printf("clean\n");
 	dng_cellmap_cleanup_connections(cellmap);
-	printf("calc entrance weights\n");
+	//printf("calc entrance weights\n");
 	dng_cellmap_calc_entrance_weights(cellmap);
-	printf("build exit\n");
+	//printf("build exit\n");
 	dng_cellmap_buildexit(cellmap);
-	printf("build walls\n");
+	//printf("build walls\n");
 	dng_cellmap_buildwalls(cellmap);
-	printf("build tags\n");
-	dng_cellmap_buildtags(cellmap);
-
 	//cellMap->buildLights();
-	//cellMap->buildTags();
+	//printf("build tags\n");
+	dng_cellmap_buildtags(cellmap);
 	//cellMap->machinate();
 
 	return cellmap;
@@ -1318,3 +1300,44 @@ void dng_delmap(struct dng_cellmap *cellmap)
 	free(cellmap->cells); // free cell list
 	free(cellmap);
 }
+
+struct dng_dungeon* dng_gendungeon(int seed, int count)
+{
+	struct dng_dungeon* dungeon = (struct dng_dungeon*)malloc(sizeof(struct dng_dungeon));
+	dungeon->seed = seed;
+	dungeon->maps_length = count;
+	dungeon->maps = (struct dng_cellmap**)malloc(dungeon->maps_length * sizeof(struct dng_cellmap*));
+
+	dm_seed(seed);
+	int difficulty = 0;
+	int width = 84;
+	int height = 56;
+	struct dng_cellmap *parent_cellmap = NULL;
+
+	for (int map_id = 0; map_id < dungeon->maps_length; map_id++) {
+		//printf("map %d start\n", map_id);
+		struct dng_cellmap *cellmap = dng_genmap(difficulty, map_id, width, height);
+		//printf("map %d end \n", map_id);
+
+		if (parent_cellmap) {
+			dng_cellmap_link(cellmap, parent_cellmap);
+		}
+
+		dungeon->maps[map_id] = cellmap;
+		parent_cellmap = cellmap;
+
+		difficulty++;
+	}
+
+	return dungeon;
+}
+
+void dng_deldungeon(struct dng_dungeon *dungeon)
+{
+	for (int i=0; i < dungeon->maps_length; i++) {
+		dng_delmap(dungeon->maps[i]);
+	}
+	free(dungeon->maps);
+	free(dungeon);
+}
+
