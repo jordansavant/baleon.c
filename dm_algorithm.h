@@ -60,6 +60,7 @@ struct dm_astarlist {
 	unsigned int capacity;
 	struct dm_astarnode **list;
 };
+struct dm_astarnode* dm_astar_newnode();
 void dm_astar_reset(struct dm_astarnode* node);
 void dm_astar_clean(struct dm_astarnode* node, unsigned int astar_id);
 bool dm_astar_equals(struct dm_astarnode* node_a, struct dm_astarnode* node_b);

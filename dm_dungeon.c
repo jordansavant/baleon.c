@@ -74,7 +74,7 @@ void dng_cell_init(struct dng_cell *cell)
 
 	cell->is_tag_unreachable = false;
 
-	cell->astar_node = (struct dm_astarnode*)malloc(sizeof(struct dm_astarnode));
+	cell->astar_node = dm_astar_newnode();
 	cell->astar_node->owner = (void*)cell;
 	cell->astar_node->get_x = dng_cell_get_x;
 	cell->astar_node->get_y = dng_cell_get_y;

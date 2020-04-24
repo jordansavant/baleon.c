@@ -309,6 +309,16 @@ double dm_round(double val)
 // ASTAR
 #define ASTAR_LIST_LENGTH 25
 
+struct dm_astarnode* dm_astar_newnode()
+{
+	struct dm_astarnode* node = (struct dm_astarnode*)malloc(sizeof(struct dm_astarnode));
+	node->astar_id = 0;
+	node->get_x = NULL;
+	node->get_y = NULL;
+	dm_astar_reset(node);
+	return node;
+}
+
 void dm_astar_reset(struct dm_astarnode* node)
 {
 	node->astar_gcost = 0;
@@ -319,8 +329,10 @@ void dm_astar_reset(struct dm_astarnode* node)
 	node->astar_parent = NULL;
 	node->astar_child = NULL;
 	// update the x and y coords of this astar node
-	node->astar_x = node->get_x(node);
-	node->astar_y = node->get_y(node);
+	if (node->get_x)
+		node->astar_x = node->get_x(node);
+	if (node->get_y)
+		node->astar_y = node->get_y(node);
 }
 void dm_astar_clean(struct dm_astarnode* node, unsigned int astar_id)
 {
@@ -370,7 +382,7 @@ void dm_astarlist_free(struct dm_astarlist *list)
 	free(list->list);
 }
 
-static unsigned int astar_id;
+static unsigned int dm_astar_id = 0;
 
 struct neighbor {
 	int x, y;
@@ -386,9 +398,9 @@ void dm_astar(
 	bool is_manhattan
 )
 {
-	astar_id++;
-	dm_astar_clean(start_node, astar_id);
-	dm_astar_clean(end_node, astar_id);
+	dm_astar_id++;
+	dm_astar_clean(start_node, dm_astar_id);
+	dm_astar_clean(end_node, dm_astar_id);
 
 	struct dm_astarlist open_list = {0, 0, 0, NULL};
 	struct dm_astarlist closed_list = {0, 0, 0, NULL};
@@ -538,7 +550,7 @@ void dm_astar_check(
 		return;
 
 	//printf("  checking neighbor %d,%d\n", check_node->astar_x, check_node->astar_y);
-	dm_astar_clean(check_node, astar_id);
+	dm_astar_clean(check_node, dm_astar_id);
 
 	int xdiff;
 	int ydiff;
