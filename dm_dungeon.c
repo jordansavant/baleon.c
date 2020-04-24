@@ -1309,15 +1309,16 @@ struct dng_dungeon* dng_gendungeon(int seed, int count)
 	dungeon->maps = (struct dng_cellmap**)malloc(dungeon->maps_length * sizeof(struct dng_cellmap*));
 
 	dm_seed(seed);
+
 	int difficulty = 0;
-	int width = 84;
-	int height = 56;
 	struct dng_cellmap *parent_cellmap = NULL;
 
 	for (int map_id = 0; map_id < dungeon->maps_length; map_id++) {
-		//printf("map %d start\n", map_id);
+
+		int width = dm_randii(46, 92);
+		int height = dm_randii(38, 56);
+
 		struct dng_cellmap *cellmap = dng_genmap(difficulty, map_id, width, height);
-		//printf("map %d end \n", map_id);
 
 		if (parent_cellmap) {
 			dng_cellmap_link(cellmap, parent_cellmap);
