@@ -1297,6 +1297,8 @@ void dng_delmap(struct dng_cellmap *cellmap)
 		free(cellmap->cells[i]->astar_node); // astar node
 		free(cellmap->cells[i]); // free cell
 	}
+	free(cellmap->exit);
+	free(cellmap->entrance);
 	free(cellmap->cells); // free cell list
 	free(cellmap);
 }
@@ -1317,6 +1319,8 @@ struct dng_dungeon* dng_gendungeon(int seed, int count)
 
 		int width = dm_randii(46, 92);
 		int height = dm_randii(38, 56);
+		width = 56;
+		height = 56; // TODO this was temporary to not solve multiple problems at once while merging dungeon into game
 
 		struct dng_cellmap *cellmap = dng_genmap(difficulty, map_id, width, height);
 

@@ -4,10 +4,10 @@
 
 int main(void)
 {
-	int seed = 146;
+	int seed = 123;
 	do {
 		printf("SEED %d\n", seed);
-		struct dng_dungeon *dungeon = dng_gendungeon(seed, 5);
+		struct dng_dungeon *dungeon = dng_gendungeon(seed, 3);
 
 		for (int i=0; i < dungeon->maps_length; i++) {
 			printf("MAP %d\n", i);

@@ -3,8 +3,9 @@
 #include "dm_algorithm.h"
 #include "dm_debug.h"
 #include <stdlib.h>
-#include "dm_world.h"
 #include <ncurses.h>
+#include "dm_world.h"
+#include "dm_dungeon.h"
 
 ///////////////////////////
 // RAW DATA
@@ -1094,7 +1095,7 @@ int map_data[] = {
 	2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 };
 
-void wld_gentiles(struct wld_map *map)
+void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 {
 	int *tile_map_array = (int*)malloc(map->length * sizeof(int));
 	int *mob_map_array = (int*)malloc(map->length * sizeof(int));
@@ -1103,189 +1104,203 @@ void wld_gentiles(struct wld_map *map)
 	map->tiles = (struct wld_tile*)malloc(map->length * sizeof(struct wld_tile));
 	map->tiles_length = map->length;
 
-	// randomly fill map with grass, water, and trees
-	for (int i=0; i < map->length; i++) {
-		int map_data_type = map_data[i]; // global
+	for (int r = 0; r < cellmap->height; r++) { // rows
+		for (int c=0; c < cellmap->width; c++){ // cols
+			// get cell from map
+			int index = r * cellmap->width + c;
+			struct dng_cell *cell = cellmap->cells[index];
 
-		struct wld_tile *tile = &map->tiles[i];
-		tile->id = i;
-		tile->map = map;
-		tile->map_x = wld_calcx(i, map->cols);
-		tile->map_y = wld_calcy(i, map->cols);
-		tile->map_index = i;
-		tile->map = map;
-		tile->is_visible = false;
-		tile->was_visible = false;
+			// get tile
+			struct wld_tile *tile = &map->tiles[index];
+			tile->id = index;
+			tile->map = map;
+			tile->map_x = wld_calcx(index, map->cols);
+			tile->map_y = wld_calcy(index, map->cols);
+			tile->map_index = index;
+			tile->map = map;
+			tile->is_visible = false;
+			tile->was_visible = false;
 
-		switch (map_data_type) {
-		default:
-		case 1:
-			tile->type_id = TILE_STONEFLOOR;
-			tile->type = &wld_tiletypes[TILE_STONEFLOOR];
-			break;
-		case 2:
-			tile->type_id = TILE_STONEWALL;
-			tile->type = &wld_tiletypes[TILE_STONEWALL];
-			break;
-		case 3:
-			tile->type_id = TILE_GRASS;
-			tile->type = &wld_tiletypes[TILE_GRASS];
-			break;
+			// TODO more
+			if (cell->is_wall) {
+				tile->type_id = TILE_STONEWALL;
+				tile->type = &wld_tiletypes[TILE_STONEWALL];
+			} else if (cell->is_door) {
+				tile->type_id = TILE_GRASS;
+				tile->type = &wld_tiletypes[TILE_GRASS];
+			} else if (cell->is_sill) {
+				tile->type_id = TILE_WATER;
+				tile->type = &wld_tiletypes[TILE_WATER];
+			} else {
+				tile->type_id = TILE_STONEFLOOR;
+				tile->type = &wld_tiletypes[TILE_STONEFLOOR];
+			}
+
+			tile_map_array[index] = tile->id; // set tile map to this tile id
+			mob_map_array[index] = -1; // initialize to -1 for "no mob"
+			item_map_array[index] = -1; // no item
 		}
-
-		tile_map_array[i] = i; // set tile map to this tile id
-		mob_map_array[i] = -1; // initialize to -1 for "no mob"
-		item_map_array[i] = -1; // no item
 	}
+
 	map->tile_map = tile_map_array;
 	map->mob_map = mob_map_array;
 	map->item_map = item_map_array;
 }
-void wld_genmobs(struct wld_map *map)
+void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 {
-	// hardcoded to 3 mobs for now
-	int mob_count = 2;
-	map->mobs = (struct wld_mob**)malloc(mob_count * sizeof(struct wld_mob));
-	map->mobs_length = mob_count;
+	// TODO the cellmap should keep alist of mob counts so we can allocate for it
+	// only the player for now
+	if (map->id == 0) { // level 1
+		int mob_count = 1;
 
-	// setup mobs in mob map
-	for (int i=0; i < mob_count; i++) {
-		// create mob
-		struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-		// create reference to parent map
-		mob->id = i;
-		mob->map = map;
-		mob->state = MS_START;
-		mob->queue_x = 0;
-		mob->queue_y = 0;
-		mob->health = 100;
-		mob->maxhealth = 100; // TODO define based on things
-		mob->ai_wander = NULL;
-		mob->ai_detect_combat = NULL;
-		mob->ai_decide_combat = NULL;
-		mob->ai_player_input = NULL;
-		mob->cursor_target_index = -1;
-		mob->mode = MODE_PLAY;
-		mob->target_mode = TMODE_NONE;
-		mob->is_dead = false;
-		mob->target_x = 0;
-		mob->target_y = 0;
-		mob->active_item = NULL;
+		map->mobs = (struct wld_mob**)malloc(mob_count * sizeof(struct wld_mob));
+		map->mobs_length = mob_count;
 
-		// create inventory (pointers to malloc items)
-		mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
-		for (int j=0; j < INVENTORY_SIZE; j++) {
-			mob->inventory[j] = NULL;
+		int mob_id = 0;
+
+		for (int r = 0; r < cellmap->height; r++) { // rows
+			for (int c=0; c < cellmap->width; c++){ // cols
+				// get cell from map
+				int index = r * cellmap->width + c;
+				struct dng_cell *cell = cellmap->cells[index];
+
+				// TODO if (cell->has_mob) {
+				if (cell->is_entrance_transition) {
+					struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
+					dmlogii("build player %d,%d", c,r);
+					// create reference to parent map
+					mob->id = mob_id;
+					mob->map = map;
+					mob->state = MS_START;
+					mob->queue_x = 0;
+					mob->queue_y = 0;
+					mob->health = 100;
+					mob->maxhealth = 100; // TODO define based on things
+					mob->ai_wander = NULL;
+					mob->ai_detect_combat = NULL;
+					mob->ai_decide_combat = NULL;
+					mob->ai_player_input = NULL;
+					mob->cursor_target_index = -1;
+					mob->mode = MODE_PLAY;
+					mob->target_mode = TMODE_NONE;
+					mob->is_dead = false;
+					mob->target_x = 0;
+					mob->target_y = 0;
+					mob->active_item = NULL;
+
+					// create inventory (pointers to malloc items)
+					mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
+					for (int j=0; j < INVENTORY_SIZE; j++) {
+						mob->inventory[j] = NULL;
+					}
+
+
+					// PLAYER SPECIFICS
+					mob->map_x = c;
+					mob->map_y = r;
+					mob->map_index = index;
+					mob->type_id = MOB_PLAYER;
+					mob->type = &wld_mobtypes[MOB_PLAYER];
+					mob->is_player = true;
+					map->player = mob; // assign to map specifically
+
+					// set cursor nearby
+					map->cursor->x = mob->map_x + 2;
+					map->cursor->y = mob->map_y;
+					map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
+
+					// set mob's id into the mob map
+					map->mob_map[mob->map_index] = mob_id;
+					map->mobs[mob_id] = mob;
+
+					mob_id++;
+				}
+			}
 		}
-
-		// first mob is player
-		if (i == 0) {
-			// hardcoded to center of map until we get a heuristic for map entrance
-			// TBD xogeni!
-			mob->map_x = map->cols / 2;
-			mob->map_y = map->rows / 2;
-			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
-			mob->type_id = MOB_PLAYER;
-			mob->type = &wld_mobtypes[MOB_PLAYER];
-			mob->is_player = true;
-			map->player = mob; // assign to map specifically
-
-			// set cursor nearby
-			map->cursor->x = mob->map_x + 2;
-			map->cursor->y = mob->map_y;
-			map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
-		} else {
-			// TODO this can conflict with the player if we are not careful
-			// hardcoded diagonal positions
-			mob->map_x = 38;
-			mob->map_y = 36;
-			mob->map_index = wld_calcindex(mob->map_x, mob->map_y, map->cols);
-			mob->type_id = MOB_BUGBEAR;
-			mob->type = &wld_mobtypes[MOB_BUGBEAR];
-			mob->is_player = false;
-			mob->ai_wander = ai_default_wander;
-			mob->ai_detect_combat = ai_default_detect_combat;
-			mob->ai_decide_combat = ai_default_decide_combat;
-		}
-
-		// set mob's id into the mob map
-		map->mob_map[mob->map_index] = i;
-		map->mobs[i] = mob;
+	} else {
+		map->mobs = NULL;
+		map->mobs_length = 0;
 	}
 }
-void wld_genitems(struct wld_map *map)
+void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 {
-	// items are malloc'd pointers, not structs in map memory because they need to be moved
-	int item_count = 4;
-	map->items = (struct wld_item**)malloc(MALLOC_ITEM_SIZE * sizeof(struct wld_item*));
-	map->items_length = item_count;
+	map->items = NULL;
+	map->items_length = 0;
 
-	// TODO we need to work on assigning items to players, mobs etc
-	// setup items in item map
-	for (int i=0; i < MALLOC_ITEM_SIZE; i++) {
-		// create item
-		struct wld_item *item;
-		// create reference to parent map
-		if (i == 0) {
-			// put item near player
-			item = (struct wld_item*)malloc(sizeof(struct wld_item));
-			item->id = i;
-			item->map_x = map->cols / 2 + 4;
-			item->map_y = map->rows / 2 + 2;
-			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-			item->type_id = ITEM_WEAPON_SHORTSWORD;
-			item->type = &wld_itemtypes[ITEM_WEAPON_SHORTSWORD];
-			item->has_dropped = false;
-			item->uses = wld_itemtypes[ITEM_WEAPON_SHORTSWORD].base_uses;
-			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-		} else if (i == 1) {
-			item = (struct wld_item*)malloc(sizeof(struct wld_item));
-			item->id = i;
-			item->map_x = map->cols / 2 + 6;
-			item->map_y = map->rows / 2 + 2;
-			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-			item->type_id = ITEM_WEAPON_SHORTBOW;
-			item->type = &wld_itemtypes[ITEM_WEAPON_SHORTBOW];
-			item->has_dropped = false;
-			item->uses = wld_itemtypes[ITEM_WEAPON_SHORTBOW].base_uses;
-			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-		} else if (i == 2) {
-			item = (struct wld_item*)malloc(sizeof(struct wld_item));
-			item->id = i;
-			item->map_x = map->cols / 2 + 7;
-			item->map_y = map->rows / 2 - 1;
-			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-			item->type_id = ITEM_ARMOR_LEATHER;
-			item->type = &wld_itemtypes[ITEM_ARMOR_LEATHER];
-			item->has_dropped = false;
-			item->uses = wld_itemtypes[ITEM_ARMOR_LEATHER].base_uses;
-			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-		} else if (i == 3) {
-			item = (struct wld_item*)malloc(sizeof(struct wld_item));
-			item->id = i;
-			item->map_x = map->cols / 2 + 1;
-			item->map_y = map->rows / 2 + 3;
-			item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-			item->type_id = ITEM_POTION_MINOR_HEAL;
-			item->type = &wld_itemtypes[ITEM_POTION_MINOR_HEAL];
-			item->has_dropped = false;
-			item->uses = wld_itemtypes[ITEM_POTION_MINOR_HEAL].base_uses;
-			wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-		} else {
-			map->items[i] = NULL;
-		}
+	// TODO REBUILD FOR CELLMAP
+	//// items are malloc'd pointers, not structs in map memory because they need to be moved
+	//int item_count = 4;
+	//map->items = (struct wld_item**)malloc(MALLOC_ITEM_SIZE * sizeof(struct wld_item*));
+	//map->items_length = item_count;
 
-	}
+	//// TODO we need to work on assigning items to players, mobs etc
+	//// setup items in item map
+	//for (int i=0; i < MALLOC_ITEM_SIZE; i++) {
+	//	// create item
+	//	struct wld_item *item;
+	//	// create reference to parent map
+	//	if (i == 0) {
+	//		// put item near player
+	//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
+	//		item->id = i;
+	//		item->map_x = map->cols / 2 + 4;
+	//		item->map_y = map->rows / 2 + 2;
+	//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+	//		item->type_id = ITEM_WEAPON_SHORTSWORD;
+	//		item->type = &wld_itemtypes[ITEM_WEAPON_SHORTSWORD];
+	//		item->has_dropped = false;
+	//		item->uses = wld_itemtypes[ITEM_WEAPON_SHORTSWORD].base_uses;
+	//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
+	//	} else if (i == 1) {
+	//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
+	//		item->id = i;
+	//		item->map_x = map->cols / 2 + 6;
+	//		item->map_y = map->rows / 2 + 2;
+	//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+	//		item->type_id = ITEM_WEAPON_SHORTBOW;
+	//		item->type = &wld_itemtypes[ITEM_WEAPON_SHORTBOW];
+	//		item->has_dropped = false;
+	//		item->uses = wld_itemtypes[ITEM_WEAPON_SHORTBOW].base_uses;
+	//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
+	//	} else if (i == 2) {
+	//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
+	//		item->id = i;
+	//		item->map_x = map->cols / 2 + 7;
+	//		item->map_y = map->rows / 2 - 1;
+	//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+	//		item->type_id = ITEM_ARMOR_LEATHER;
+	//		item->type = &wld_itemtypes[ITEM_ARMOR_LEATHER];
+	//		item->has_dropped = false;
+	//		item->uses = wld_itemtypes[ITEM_ARMOR_LEATHER].base_uses;
+	//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
+	//	} else if (i == 3) {
+	//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
+	//		item->id = i;
+	//		item->map_x = map->cols / 2 + 1;
+	//		item->map_y = map->rows / 2 + 3;
+	//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+	//		item->type_id = ITEM_POTION_MINOR_HEAL;
+	//		item->type = &wld_itemtypes[ITEM_POTION_MINOR_HEAL];
+	//		item->has_dropped = false;
+	//		item->uses = wld_itemtypes[ITEM_POTION_MINOR_HEAL].base_uses;
+	//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
+	//	} else {
+	//		map->items[i] = NULL;
+	//	}
+
+	//}
 }
-struct wld_map* wld_newmap(int depth)
+struct wld_map* wld_newmap(int id, int difficulty, int width, int height)
 {
 	struct wld_map *map = (struct wld_map*)malloc(sizeof(struct wld_map));
 
 	// data
-	map->rows = 56;
-	map->cols = 56;
-	map->length = 56 * 56;
-	map->depth = depth;
+	map->id = id;
+	map->rows = height;
+	map->cols = width;
+	map->length = width * height;
+	map->difficulty = difficulty;
+
 	map->tile_map = NULL;
 	map->mob_map = NULL;
 	map->tiles = NULL;
@@ -1319,14 +1334,14 @@ struct wld_map* wld_newmap(int depth)
 	map->on_player_drop_item = NULL;
 	map->on_player_drop_item_fail = NULL;
 
-	// populate tiles
-	wld_gentiles(map);
+	//// populate tiles
+	//wld_gentiles(map);
 
-	// build an populate map with mobs
-	wld_genmobs(map);
+	//// build an populate map with mobs
+	//wld_genmobs(map);
 
-	// build items
-	wld_genitems(map);
+	//// build items
+	//wld_genitems(map);
 
 	return map;
 }
@@ -1567,4 +1582,55 @@ void wld_teardown()
 	free(wld_itemtypes);
 	free(wld_mobtypes);
 	free(wld_tiletypes);
+}
+
+
+
+struct wld_world* wld_newworld(int seed, int count)
+{
+	dm_seed(seed);
+	struct wld_world* world = (struct wld_world*)malloc(sizeof(struct wld_world));
+	world->seed;
+	world->maps_length = count;
+	world->maps = (struct wld_map**)malloc(sizeof(struct wld_map*));
+	dmlog("new world");
+
+	struct dng_dungeon* dungeon = dng_gendungeon(seed, world->maps_length);
+	dmlog("new dung");
+
+	for (int i=0; i < dungeon->maps_length; i++) {
+		// convert dungeon maps to game maps
+		// iterate the cellmap
+		struct dng_cellmap* cellmap = dungeon->maps[i];
+		struct wld_map* map = wld_newmap(i, cellmap->difficulty, cellmap->width, cellmap->height);
+		dmlog("new cellmap");
+
+		wld_gentiles(map, cellmap);
+
+		// TODO pass cellmap into these so they can load their data
+		// build an populate map with mobs
+		wld_genmobs(map, cellmap);
+
+		// build items
+		wld_genitems(map, cellmap);
+
+		world->maps[i] = map;
+
+		if (i==0)
+			world->current_map = map;
+	}
+
+	dng_deldungeon(dungeon);
+	dmlog("del dungon");
+
+	return world;
+}
+
+void wld_delworld(struct wld_world* world)
+{
+	for (int i=0; i < world->maps_length; i++) {
+		wld_delmap(world->maps[i]);
+	}
+	free(world->maps);
+	free(world);
 }

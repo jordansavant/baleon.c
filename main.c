@@ -389,6 +389,7 @@ enum PLAY_STATE play_state = PS_START;
 int map_rows_scale = 1;
 int map_cols_scale = 2;
 WINDOW *map_pad;
+struct wld_world *world;
 struct wld_map *current_map;
 int ui_map_cols;
 int ui_map_rows;
@@ -1133,10 +1134,14 @@ void ps_build_world()
 	clear();
 
 	// set RNG seed (TODO move this to a menu operation?)
-	dm_seed(123);
+
+	int seed = 123;
+	world = wld_newworld(seed, 3);
+	dmlog("current map");
+	current_map = world->current_map;
 
 	// World is large indexed map to start
-	current_map = wld_newmap(1);
+	//current_map = wld_newmap(1);
 	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
 
 	current_map->on_cursormove = map_on_cursormove;
@@ -1163,7 +1168,9 @@ void ps_destroy_world()
 {
 	// THIS HAS NOT BEEN TESTED I CANT FIND DOCS ON HOW TO CLEAN UP PAD MEMORY
 	delwin(map_pad);
-	wld_delmap(current_map);
+	//wld_delmap(current_map);
+
+	wld_delworld(world);
 
 	clear();
 }

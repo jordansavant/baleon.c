@@ -2,6 +2,7 @@
 #define DM_WORLD
 
 #include "dm_defines.h"
+#include "dm_dungeon.h"
 
 #define INVENTORY_SIZE 12
 
@@ -152,10 +153,11 @@ struct wld_cursor {
 	int index;
 };
 struct wld_map {
+	int id;
 	int rows;
 	int cols;
 	int length;
-	int depth;
+	int difficulty;
 	int *tile_map; // array of tile types
 	struct wld_tile *tiles;
 	unsigned int tiles_length;
@@ -196,6 +198,13 @@ struct draw_struct {
 	unsigned long sprite;
 };
 void wld_new_mob(struct wld_map* map, struct wld_mob* mob, int x, int y);
+
+struct wld_world {
+	int seed;
+	struct wld_map **maps;
+	struct wld_map *current_map;
+	int maps_length;
+};
 
 
 ///////////////////////////
@@ -288,10 +297,10 @@ void itm_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile*
 
 ///////////////////////////
 // MAP INITIALIZATION
-void wld_gentiles(struct wld_map *map);
-void wld_genmobs(struct wld_map *map);
-void wld_genitems(struct wld_map *map);
-struct wld_map* wld_newmap(int depth);
+void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap);
+void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap);
+void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap);
+struct wld_map* wld_newmap(int id, int difficulty, int width, int height);
 void wld_delmap(struct wld_map *map);
 
 
@@ -300,6 +309,8 @@ void wld_delmap(struct wld_map *map);
 void wld_log(char* msg);
 void wld_setup();
 void wld_teardown();
+struct wld_world* wld_newworld(int seed, int count);
+void wld_delworld(struct wld_world*);
 
 
 ///////////////////////////
