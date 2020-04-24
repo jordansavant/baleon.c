@@ -8,7 +8,7 @@ int main(void)
 	do {
 		printf("SEED %d\n", seed);
 		dm_seed(seed);
-		struct dng_cellmap *cellmap = dng_genmap(1, 76, 56);
+		struct dng_cellmap *cellmap = dng_genmap(1, 84, 56);
 
 		printf("    ");
 		for (int c=0; c < cellmap->width; c++) {

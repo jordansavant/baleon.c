@@ -1210,6 +1210,9 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	cellmap->max_room_width = 16;
 	cellmap->max_room_height = 16;
 
+	// motifs
+	// min 6x6, max 8x8, density 1 = prison
+
 	double map_hyp_size = sqrt(width * height);
 	double hyp_min_room_size = sqrt(cellmap->min_room_width * cellmap->min_room_height);
 	double hyp_max_room_size = sqrt(cellmap->max_room_width * cellmap->max_room_height);
