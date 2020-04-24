@@ -8,21 +8,23 @@ int main(void)
 	do {
 		printf("SEED %d\n", seed);
 		dm_seed(seed);
-		struct dng_cellmap *cellmap = dng_genmap(1, 56, 48);
+		struct dng_cellmap *cellmap = dng_genmap(1, 76, 56);
 
-		printf("   ");
+		printf("    ");
 		for (int c=0; c < cellmap->width; c++) {
 			printf("%d ", c %10);
 		}
 		printf("\n");
 		for (int r=0; r < cellmap->height; r++) {
-			printf("%2d-", r);
+			printf("%3d-", r);
 			for (int c=0; c < cellmap->width; c++) {
 				int index = r * cellmap->width + c;
 				struct dng_cell *cell = cellmap->cells[index];
 				//if (cell->is_room_perimeter)
 				//	printf("P ");
-				if (cell->is_entrance_transition)
+				if (cell->is_tag_unreachable)
+					printf("U ");
+				else if (cell->is_entrance_transition)
 					printf("E ");
 				else if (cell->is_entrance)
 					printf("e ");

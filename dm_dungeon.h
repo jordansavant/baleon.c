@@ -77,6 +77,8 @@ struct dng_cell {
 	int transition_dir_x, transition_dir_y;
         int metadata_flood_id;
 
+	bool is_tag_unreachable;
+
 	struct dm_astarnode *astar_node;
 };
 
@@ -166,6 +168,10 @@ void dng_exit_init(struct dng_exit *exit, int id, int x, int y);
 
 // WALLS
 void dng_cellmap_buildwalls(struct dng_cellmap *cellmap);
+
+// TAGS
+void dng_cellmap_buildtags(struct dng_cellmap *cellmap);
+void dng_cellmap_tag_unreachables(struct dng_cellmap *cellmap);
 
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));

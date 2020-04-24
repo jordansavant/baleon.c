@@ -67,10 +67,12 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->is_entrance_transition = false;
 	cell->entrance_transition = NULL;
 	cell->is_exit_transition = false;
-	//cell->exit_transition = NULL; // TODO
+	cell->exit_transition = NULL;
 	cell->transition_dir_x = 0;
 	cell->transition_dir_y = 0;
 	cell->metadata_flood_id = -1;
+
+	cell->is_tag_unreachable = false;
 
 	cell->astar_node = (struct dm_astarnode*)malloc(sizeof(struct dm_astarnode));
 	cell->astar_node->owner = (void*)cell;
@@ -1086,23 +1088,62 @@ void dng_cellmap_buildwalls(struct dng_cellmap *cellmap)
 	}
 }
 
-// BUILD WALLS
+// BUILD WALLS END
 ///////////////////////////
 
+
+
+///////////////////////////
+// BUILD TAGS START
+void dng_cellmap_buildtags(struct dng_cellmap *cellmap)
+{
+	// Identify cells that are unreachable
+	dng_cellmap_tag_unreachables(cellmap);
+}
+
+void dng_cellmap_tag_unreachables(struct dng_cellmap *cellmap)
+{
+	for (int i=0; i < cellmap->width; i++) { // cols
+		for (int j=0; j < cellmap->height; j++) { // rows
+			struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, i, j);
+			if (cell->room == NULL && !cell->is_door && !cell->is_tunnel && !cell->is_wall) {
+				cell->is_tag_unreachable = true;
+			}
+		}
+	}
+}
+// BUILD TAGS END
+///////////////////////////
 
 
 ///////////////////////////
 // CELLMAP INSPECTORS START
+//
+// this function will clamp the x and y so it can spiral out wider
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*))
 {
 	int center_x = cellmap->width / 2;
 	int center_y = cellmap->height / 2;
-	struct dm_spiral sp = dm_spiral(-1); // TODO infinie untested
+	struct dm_spiral sp = dm_spiral(-1);
 	do {
 		int current_x = center_x + sp.x;
 		int current_y = center_y + sp.y;
-		if (current_x >= cellmap->width || current_y >= cellmap->height)
+
+		// break out if both dimensions leave our map
+		if ((current_x < 0 || current_x >= cellmap->width) && (current_y < 0 || current_y >= cellmap->height))
 			return;
+
+		// dont break inspection if we spiral off an edge (for non square maps)
+		// instead clamp our values
+		if (current_x < 0)
+			current_x = 0;
+		if (current_y < 0)
+			current_y = 0;
+		if (current_x >= cellmap->width)
+			current_x = cellmap->width - 1;
+		if (current_y >= cellmap->height)
+			current_y = cellmap->height - 1;
+
 		struct dng_cell *current = dng_cellmap_get_cell_at_position(cellmap, current_x, current_y);
 		if (inspect(current))
 			return; // break
@@ -1115,7 +1156,6 @@ void dng_cellmap_inspect_cells_in_dimension(struct dng_cellmap *cellmap, int x, 
 		for (int j = y; j < y + h; j++) { // rows
 			struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, i, j);
 			if (inspect(cell)) {
-				// break; // TODO should this be return?
 				return;
 			}
 		}
@@ -1251,8 +1291,9 @@ struct dng_cellmap* dng_genmap(int difficulty, int width, int height)
 	dng_cellmap_buildexit(cellmap);
 	printf("build walls\n");
 	dng_cellmap_buildwalls(cellmap);
+	printf("build tags\n");
+	dng_cellmap_buildtags(cellmap);
 
-	//cellMap->buildWalls();
 	//cellMap->buildLights();
 	//cellMap->buildTags();
 	//cellMap->machinate();
