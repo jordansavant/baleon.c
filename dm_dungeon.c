@@ -1288,6 +1288,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 
 void dng_delmap(struct dng_cellmap *cellmap)
 {
+	free(cellmap->exit);
 	free(cellmap->entrance);
 	for (int i=0; i < cellmap->rooms_length; i++) {
 		free(cellmap->rooms[i]); // free cell
@@ -1297,8 +1298,6 @@ void dng_delmap(struct dng_cellmap *cellmap)
 		free(cellmap->cells[i]->astar_node); // astar node
 		free(cellmap->cells[i]); // free cell
 	}
-	free(cellmap->exit);
-	free(cellmap->entrance);
 	free(cellmap->cells); // free cell list
 	free(cellmap);
 }

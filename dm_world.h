@@ -147,6 +147,7 @@ struct wld_item {
 ///////////////////////////
 // WORLD STRUCTS
 
+struct wld_world;
 struct wld_cursor {
 	int x;
 	int y;
@@ -158,6 +159,8 @@ struct wld_map {
 	int cols;
 	int length;
 	int difficulty;
+	struct wld_world* world;
+	bool is_first_map;
 	int *tile_map; // array of tile types
 	struct wld_tile *tiles;
 	unsigned int tiles_length;

@@ -1150,7 +1150,7 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 {
 	// TODO the cellmap should keep alist of mob counts so we can allocate for it
 	// only the player for now
-	if (map->id == 0) { // level 1
+	if (map->is_first_map) { // level 1
 		int mob_count = 1;
 
 		map->mobs = (struct wld_mob**)malloc(mob_count * sizeof(struct wld_mob));
@@ -1333,17 +1333,9 @@ struct wld_map* wld_newmap(int id, int difficulty, int width, int height)
 	map->on_player_drop_item = NULL;
 	map->on_player_drop_item_fail = NULL;
 
-	//// populate tiles
-	//wld_gentiles(map);
-
-	//// build an populate map with mobs
-	//wld_genmobs(map);
-
-	//// build items
-	//wld_genitems(map);
-
 	return map;
 }
+
 void wld_delmap(struct wld_map *map)
 {
 	free(map->cursor);
@@ -1369,6 +1361,49 @@ void wld_delmap(struct wld_map *map)
 	free(map->tiles);
 	free(map->tile_map);
 	free(map);
+}
+
+struct wld_world* wld_newworld(int seed, int count)
+{
+	dm_seed(seed);
+	struct wld_world* world = (struct wld_world*)malloc(sizeof(struct wld_world));
+	world->seed;
+	world->maps_length = count;
+	world->maps = (struct wld_map**)malloc(world->maps_length * sizeof(struct wld_map*));
+
+	struct dng_dungeon* dungeon = dng_gendungeon(seed, world->maps_length);
+
+	for (int i=0; i < dungeon->maps_length; i++) {
+		// convert dungeon maps to game maps
+		// iterate the cellmap
+		struct dng_cellmap* cellmap = dungeon->maps[i];
+		struct wld_map* map = wld_newmap(i, cellmap->difficulty, cellmap->width, cellmap->height);
+		map->world = world;
+		map->is_first_map = (i == 0);
+
+		// populate
+		wld_gentiles(map, cellmap);
+		wld_genmobs(map, cellmap);
+		wld_genitems(map, cellmap);
+
+		world->maps[i] = map;
+
+		if (map->is_first_map)
+			world->current_map = map;
+	}
+
+	dng_deldungeon(dungeon);
+
+	return world;
+}
+
+void wld_delworld(struct wld_world* world)
+{
+	for (int i=0; i < world->maps_length; i++) {
+		wld_delmap(world->maps[i]);
+	}
+	free(world->maps);
+	free(world);
 }
 
 
@@ -1585,47 +1620,3 @@ void wld_teardown()
 
 
 
-struct wld_world* wld_newworld(int seed, int count)
-{
-	dm_seed(seed);
-	struct wld_world* world = (struct wld_world*)malloc(sizeof(struct wld_world));
-	world->seed;
-	world->maps_length = count;
-	world->maps = (struct wld_map**)malloc(sizeof(struct wld_map*));
-
-	struct dng_dungeon* dungeon = dng_gendungeon(seed, world->maps_length);
-
-	for (int i=0; i < dungeon->maps_length; i++) {
-		// convert dungeon maps to game maps
-		// iterate the cellmap
-		struct dng_cellmap* cellmap = dungeon->maps[i];
-		struct wld_map* map = wld_newmap(i, cellmap->difficulty, cellmap->width, cellmap->height);
-
-		wld_gentiles(map, cellmap);
-
-		// TODO pass cellmap into these so they can load their data
-		// build an populate map with mobs
-		wld_genmobs(map, cellmap);
-
-		// build items
-		wld_genitems(map, cellmap);
-
-		world->maps[i] = map;
-
-		if (i==0)
-			world->current_map = map;
-	}
-
-	dng_deldungeon(dungeon);
-
-	return world;
-}
-
-void wld_delworld(struct wld_world* world)
-{
-	for (int i=0; i < world->maps_length; i++) {
-		wld_delmap(world->maps[i]);
-	}
-	free(world->maps);
-	free(world);
-}

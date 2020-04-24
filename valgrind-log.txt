@@ -1,0 +1,57 @@
+==17449== Memcheck, a memory error detector
+==17449== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==17449== Using Valgrind-3.13.0 and LibVEX; rerun with -h for copyright info
+==17449== Command: ./main.out
+==17449== Parent PID: 17448
+==17449== 
+==17449== Invalid free() / delete / delete[] / realloc()
+==17449==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==17449==    by 0x117D89: dng_delmap (dm_dungeon.c:1301)
+==17449==    by 0x117EF9: dng_deldungeon (dm_dungeon.c:1343)
+==17449==    by 0x11207E: wld_newworld (dm_world.c:1615)
+==17449==    by 0x10CC44: ps_build_world (main.c:1139)
+==17449==    by 0x10DABD: g_newgame (main.c:1444)
+==17449==    by 0x10DC81: main (main.c:1529)
+==17449==  Address 0x60b1fc0 is 0 bytes inside a block of size 24 free'd
+==17449==    at 0x4C30D3B: free (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==17449==    by 0x117CC0: dng_delmap (dm_dungeon.c:1291)
+==17449==    by 0x117EF9: dng_deldungeon (dm_dungeon.c:1343)
+==17449==    by 0x11207E: wld_newworld (dm_world.c:1615)
+==17449==    by 0x10CC44: ps_build_world (main.c:1139)
+==17449==    by 0x10DABD: g_newgame (main.c:1444)
+==17449==    by 0x10DC81: main (main.c:1529)
+==17449==  Block was alloc'd at
+==17449==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==17449==    by 0x115C4F: dng_cellmap_buildentrance (dm_dungeon.c:576)
+==17449==    by 0x117C62: dng_genmap (dm_dungeon.c:1272)
+==17449==    by 0x117E64: dng_gendungeon (dm_dungeon.c:1325)
+==17449==    by 0x111FA8: wld_newworld (dm_world.c:1597)
+==17449==    by 0x10CC44: ps_build_world (main.c:1139)
+==17449==    by 0x10DABD: g_newgame (main.c:1444)
+==17449==    by 0x10DC81: main (main.c:1529)
+==17449== 
+==17449== 
+==17449== HEAP SUMMARY:
+==17449==     in use at exit: 549,505 bytes in 334 blocks
+==17449==   total heap usage: 16,491 allocs, 16,159 frees, 18,832,417 bytes allocated
+==17449== 
+==17449== 960 bytes in 10 blocks are indirectly lost in loss record 25 of 39
+==17449==    at 0x4C31B25: calloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==17449==    by 0x528D097: new_item (in /usr/lib/x86_64-linux-gnu/libmenu.so.5.9)
+==17449==    by 0x10A854: g_title (main.c:326)
+==17449==    by 0x10DC75: main (main.c:1526)
+==17449== 
+==17449== 1,056 (96 direct, 960 indirect) bytes in 2 blocks are definitely lost in loss record 27 of 39
+==17449==    at 0x4C2FB0F: malloc (in /usr/lib/valgrind/vgpreload_memcheck-amd64-linux.so)
+==17449==    by 0x10A7F9: g_title (main.c:324)
+==17449==    by 0x10DC75: main (main.c:1526)
+==17449== 
+==17449== LEAK SUMMARY:
+==17449==    definitely lost: 96 bytes in 2 blocks
+==17449==    indirectly lost: 960 bytes in 10 blocks
+==17449==      possibly lost: 0 bytes in 0 blocks
+==17449==    still reachable: 0 bytes in 0 blocks
+==17449==         suppressed: 548,449 bytes in 322 blocks
+==17449== 
+==17449== For counts of detected and suppressed errors, rerun with: -v
+==17449== ERROR SUMMARY: 3 errors from 2 contexts (suppressed: 0 from 0)
