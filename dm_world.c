@@ -1167,7 +1167,6 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 				// TODO if (cell->has_mob) {
 				if (cell->is_entrance_transition) {
 					struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-					dmlogii("build player %d,%d", c,r);
 					// create reference to parent map
 					mob->id = mob_id;
 					mob->map = map;
@@ -1593,17 +1592,14 @@ struct wld_world* wld_newworld(int seed, int count)
 	world->seed;
 	world->maps_length = count;
 	world->maps = (struct wld_map**)malloc(sizeof(struct wld_map*));
-	dmlog("new world");
 
 	struct dng_dungeon* dungeon = dng_gendungeon(seed, world->maps_length);
-	dmlog("new dung");
 
 	for (int i=0; i < dungeon->maps_length; i++) {
 		// convert dungeon maps to game maps
 		// iterate the cellmap
 		struct dng_cellmap* cellmap = dungeon->maps[i];
 		struct wld_map* map = wld_newmap(i, cellmap->difficulty, cellmap->width, cellmap->height);
-		dmlog("new cellmap");
 
 		wld_gentiles(map, cellmap);
 
@@ -1621,7 +1617,6 @@ struct wld_world* wld_newworld(int seed, int count)
 	}
 
 	dng_deldungeon(dungeon);
-	dmlog("del dungon");
 
 	return world;
 }

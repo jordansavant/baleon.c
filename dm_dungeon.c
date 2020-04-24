@@ -1007,7 +1007,7 @@ void dng_cellmap_buildexit(struct dng_cellmap *cellmap)
 	// In Baleon I switched this to just pick the furthest room to simplify
 	// TODO make it pick a better random room? maybe put treasure in far rooms too?
 	int weight = 0;
-	struct dng_room* exit_room;
+	struct dng_room* exit_room = NULL;
 	for (int i=0; i < cellmap->rooms_length; i++) {
 		struct dng_room* room = cellmap->rooms[i];
 		if (exit_room == NULL || room->entrance_weight > weight) {
