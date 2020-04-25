@@ -78,6 +78,9 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->astar_node->owner = (void*)cell;
 	cell->astar_node->get_x = dng_cell_get_x;
 	cell->astar_node->get_y = dng_cell_get_y;
+
+	cell->has_mob = false;
+	cell->has_item = false;
 }
 
 int dng_cell_get_x(struct dm_astarnode *astar_node)
@@ -1138,6 +1141,43 @@ void dng_cellmap_link(struct dng_cellmap* child, struct dng_cellmap* parent)
 
 
 ///////////////////////////
+// MACHINATION BEGIN
+void dng_cellmap_machinate(struct dng_cellmap* cellmap)
+{
+	// XoGeni did the following:
+	// 1. machinate_chestKeyTreasure
+	// 2. machinate_boss
+	// 3. foreach rooms pick rooms to be machine rooms and others to not be
+	// 4. for machine rooms build machines
+	// 4. for non machine rooms populate randomly
+
+	// for now just populate one item and one enemy per room for testing
+	for (int i=0; i < cellmap->rooms_length; i++) {
+		struct dng_room* room = cellmap->rooms[i];
+		if (room != cellmap->entrance_room) {
+			// pick a random cell in the room
+			int randx = room->x + dm_randii(1, room->width - 2);
+			int randy = room->y + dm_randii(1, room->height - 2);
+
+			struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, randx, randy);
+			cell->has_mob = true;
+			// TODO, mob types?
+			//
+			randx = room->x + dm_randii(1, room->width - 2);
+			randy = room->y + dm_randii(1, room->height - 2);
+			cell = dng_cellmap_get_cell_at_position(cellmap, randx, randy);
+			cell->has_item = true;
+		}
+	}
+}
+// MACHINATION END
+///////////////////////////
+
+
+
+
+
+///////////////////////////
 // CELLMAP INSPECTORS START
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*))
 {
@@ -1281,6 +1321,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	//cellMap->buildLights();
 	//printf("build tags\n");
 	dng_cellmap_buildtags(cellmap);
+	dng_cellmap_machinate(cellmap);
 	//cellMap->machinate();
 
 	return cellmap;

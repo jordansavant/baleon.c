@@ -26,7 +26,13 @@ int main(void)
 					struct dng_cell *cell = cellmap->cells[index];
 					//if (cell->is_room_perimeter)
 					//	printf("P ");
-					if (cell->is_tag_unreachable)
+					if (false)
+						printf("skip");
+					else if (cell->has_mob)
+						printf("M ");
+					else if (cell->has_item)
+						printf("I ");
+					else if (cell->is_tag_unreachable)
 						printf("U ");
 					else if (cell->is_entrance_transition)
 						printf("E ");

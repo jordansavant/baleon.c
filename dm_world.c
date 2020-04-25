@@ -1215,66 +1215,67 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 	map->mob_map = mob_map_array;
 	map->item_map = item_map_array;
 }
+void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
+{
+	mob->state = MS_START;
+	mob->queue_x = 0;
+	mob->queue_y = 0;
+	mob->health = 100;
+	mob->maxhealth = 100; // TODO define based on things
+	mob->ai_wander = NULL;
+	mob->ai_detect_combat = NULL;
+	mob->ai_decide_combat = NULL;
+	mob->ai_player_input = NULL;
+	mob->cursor_target_index = -1;
+	mob->mode = MODE_PLAY;
+	mob->target_mode = TMODE_NONE;
+	mob->is_dead = false;
+	mob->target_x = 0;
+	mob->target_y = 0;
+	mob->active_item = NULL;
+	mob->type_id = type;
+	mob->type = &wld_mobtypes[type];
+
+	// create inventory (pointers to malloc items)
+	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
+	for (int j=0; j < INVENTORY_SIZE; j++) {
+		mob->inventory[j] = NULL;
+	}
+}
 void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 {
 	// TODO the cellmap should keep alist of mob counts so we can allocate for it
 	// only the player for now
-	if (map->is_first_map) { // level 1
 
-		for (int r = 0; r < cellmap->height; r++) { // rows
-			for (int c=0; c < cellmap->width; c++){ // cols
-				// get cell from map
-				int index = r * cellmap->width + c;
-				struct dng_cell *cell = cellmap->cells[index];
+	for (int r = 0; r < cellmap->height; r++) { // rows
+		for (int c=0; c < cellmap->width; c++){ // cols
+			// get cell from map
+			int index = r * cellmap->width + c;
+			struct dng_cell *cell = cellmap->cells[index];
 
-				// TODO if (cell->has_mob) {
-				if (cell->is_entrance_transition) {
-					struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-					// create reference to parent map
-					// mob->id = mob_id; set by the operation that adds it to the map
-					// mob->map = map; set by the operation that adds it to the map
-					mob->state = MS_START;
-					mob->queue_x = 0;
-					mob->queue_y = 0;
-					mob->health = 100;
-					mob->maxhealth = 100; // TODO define based on things
-					mob->ai_wander = NULL;
-					mob->ai_detect_combat = NULL;
-					mob->ai_decide_combat = NULL;
-					mob->ai_player_input = NULL;
-					mob->cursor_target_index = -1;
-					mob->mode = MODE_PLAY;
-					mob->target_mode = TMODE_NONE;
-					mob->is_dead = false;
-					mob->target_x = 0;
-					mob->target_y = 0;
-					mob->active_item = NULL;
+			// Spawn player and first dungeon entrance
+			if (cell->is_entrance_transition && map->is_first_map) {
+				struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
+				wld_initmob(mob, MOB_PLAYER);
+				wld_map_new_mob(map, mob, c, r);
+				mob->is_player = true;
+				map->player = mob; // assign to map specifically
 
-					// create inventory (pointers to malloc items)
-					mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
-					for (int j=0; j < INVENTORY_SIZE; j++) {
-						mob->inventory[j] = NULL;
-					}
+				// set cursor nearby
+				map->cursor->x = mob->map_x + 2;
+				map->cursor->y = mob->map_y;
+				map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
 
-					// PLAYER SPECIFICS
-					mob->type_id = MOB_PLAYER;
-					mob->type = &wld_mobtypes[MOB_PLAYER];
-					mob->is_player = true;
-
-					wld_map_new_mob(map, mob, c, r);
-					map->player = mob; // assign to map specifically
-
-					// set cursor nearby
-					map->cursor->x = mob->map_x + 2;
-					map->cursor->y = mob->map_y;
-					map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
-
-				}
+			} else if (cell->has_mob) {
+				struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
+				wld_initmob(mob, MOB_BUGBEAR); // TODO make this randomized and tuned for difficulty
+				wld_map_new_mob(map, mob, c, r);
+				mob->is_player = false;
+				mob->ai_wander = ai_default_wander;
+				mob->ai_detect_combat = ai_default_detect_combat;
+				mob->ai_decide_combat = ai_default_decide_combat;
 			}
 		}
-	} else {
-		map->mobs = NULL;
-		map->mobs_length = 0;
 	}
 }
 void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type)

@@ -1,10 +1,8 @@
 TODO:
 
 now
-- test non square maps
-- organize code jabao
-- throw items and bugbear back into starter room
-- bug: screen trails on map movement when near edges
+- throw items and bugbear back into dungeon gen
+- when enemies die we need to be able to walk over them (destroy and mark tile with dead mob type?)
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items

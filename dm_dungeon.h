@@ -78,6 +78,9 @@ struct dng_cell {
 	bool is_tag_unreachable;
 
 	struct dm_astarnode *astar_node;
+
+	bool has_mob;
+	bool has_item;
 };
 
 struct tunnel_dir {
@@ -186,6 +189,9 @@ void dng_cellmap_inspect_cells_in_dimension(struct dng_cellmap *cellmap, int x, 
 bool dng_cellmap_can_house_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h);
 struct dng_cell* dng_cellmap_get_cell_at_position(struct dng_cellmap *cellmap, int x, int y);
 struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *cellmap, int x, int y);
+
+// MACHINATIONS
+void dng_cellmap_machinate(struct dng_cellmap *cellmap);
 
 ///////////////////////////
 // OVERALL DUNGEON

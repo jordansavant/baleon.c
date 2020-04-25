@@ -1199,15 +1199,12 @@ void ps_on_mapchange()
 
 void ps_build_world()
 {
-
 	// set RNG seed (TODO move this to a menu operation?)
-
 	int seed = 123;
-	world = wld_newworld(seed, 1);
+	world = wld_newworld(seed, 2);
 	current_map = world->maps[0];
 
 	ps_on_mapchange();
-
 }
 void ps_destroy_world()
 {
@@ -1342,8 +1339,8 @@ void ps_play_draw()
 
 	// Clear map without flutter
 	for (int padr=0; padr < current_map->rows + ui_map_border*2; padr++) {
-		wmove(map_pad, padr, 0);
-		wclrtoeol(map_pad);
+		//wmove(map_pad, padr, 0);
+		//wclrtoeol(map_pad);
 		// skip borders skip top and bottom rows so they do not screen tear
 		if (padr == 0 || padr == current_map->rows + 1)
 			continue;
