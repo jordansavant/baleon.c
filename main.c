@@ -1339,8 +1339,8 @@ void ps_play_draw()
 
 	// Clear map without flutter
 	for (int padr=0; padr < current_map->rows + ui_map_border*2; padr++) {
-		//wmove(map_pad, padr, 0);
-		//wclrtoeol(map_pad);
+		wmove(map_pad, padr, 0);
+		wclrtoeol(map_pad);
 		// skip borders skip top and bottom rows so they do not screen tear
 		if (padr == 0 || padr == current_map->rows + 1)
 			continue;
@@ -1387,9 +1387,11 @@ void ps_play_draw()
 	}
 
 	// Draw cursor
-	wmove(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale);
+	int yborder = ui_map_border * map_rows_scale;
+	int xborder = ui_map_border * map_cols_scale;
+	wmove(map_pad, current_map->cursor->y * map_rows_scale + yborder, current_map->cursor->x * map_cols_scale + xborder);
 	wattrset(map_pad, COLOR_PAIR(SCOLOR_CURSOR));
-	unsigned long ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale, current_map->cursor->x * map_cols_scale) & A_CHARTEXT;
+	unsigned long ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale + yborder, current_map->cursor->x * map_cols_scale + xborder) & A_CHARTEXT;
 	waddch(map_pad, ch);
 
 	// lets calculate where to offset the pad

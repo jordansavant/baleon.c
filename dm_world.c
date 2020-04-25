@@ -1246,6 +1246,8 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 {
 	// TODO the cellmap should keep alist of mob counts so we can allocate for it
 	// only the player for now
+	map->mobs = NULL;
+	map->mobs_length = 0;
 
 	for (int r = 0; r < cellmap->height; r++) { // rows
 		for (int c=0; c < cellmap->width; c++){ // cols
@@ -1290,59 +1292,33 @@ void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 	map->items = NULL;
 	map->items_length = 0;
 
-	// TODO REBUILD FOR CELLMAP
-	//// items are malloc'd pointers, not structs in map memory because they need to be moved
-	//int item_count = 4;
-	//map->items = (struct wld_item**)malloc(MALLOC_ITEM_SIZE * sizeof(struct wld_item*));
-	//map->items_length = item_count;
+	// TODO we need to work on assigning items to players, mobs etc
+	for (int r = 0; r < cellmap->height; r++) { // rows
+		for (int c=0; c < cellmap->width; c++){ // cols
+			// get cell from map
+			int index = r * cellmap->width + c;
+			struct dng_cell *cell = cellmap->cells[index];
 
-	//// TODO we need to work on assigning items to players, mobs etc
-	//// setup items in item map
-	if (map->player) {
-		for (int i=0; i < 4; i++) {
-			// create item
-			struct wld_item *item;
-			// create reference to parent map
-			if (i == 0) {
-				// put item near player
-				item = (struct wld_item*)malloc(sizeof(struct wld_item));
-				wld_inititem(item, ITEM_WEAPON_SHORTSWORD);
-				wld_map_new_item(map, item, map->player->map_x + 3, map->player->map_y - 1);
-		//	} else if (i == 1) {
-		//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
-		//		item->id = i;
-		//		item->map_x = map->cols / 2 + 6;
-		//		item->map_y = map->rows / 2 + 2;
-		//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-		//		item->type_id = ITEM_WEAPON_SHORTBOW;
-		//		item->type = &wld_itemtypes[ITEM_WEAPON_SHORTBOW];
-		//		item->has_dropped = false;
-		//		item->uses = wld_itemtypes[ITEM_WEAPON_SHORTBOW].base_uses;
-		//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-		//	} else if (i == 2) {
-		//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
-		//		item->id = i;
-		//		item->map_x = map->cols / 2 + 7;
-		//		item->map_y = map->rows / 2 - 1;
-		//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-		//		item->type_id = ITEM_ARMOR_LEATHER;
-		//		item->type = &wld_itemtypes[ITEM_ARMOR_LEATHER];
-		//		item->has_dropped = false;
-		//		item->uses = wld_itemtypes[ITEM_ARMOR_LEATHER].base_uses;
-		//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-		//	} else if (i == 3) {
-		//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
-		//		item->id = i;
-		//		item->map_x = map->cols / 2 + 1;
-		//		item->map_y = map->rows / 2 + 3;
-		//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-		//		item->type_id = ITEM_POTION_MINOR_HEAL;
-		//		item->type = &wld_itemtypes[ITEM_POTION_MINOR_HEAL];
-		//		item->has_dropped = false;
-		//		item->uses = wld_itemtypes[ITEM_POTION_MINOR_HEAL].base_uses;
-		//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-		//	} else {
-		//		map->items[i] = NULL;
+			if (cell->has_item) {
+				struct wld_item* item = (struct wld_item*)malloc(sizeof(struct wld_item));
+				switch (dm_randii(0, 4)) {
+				case 0:
+					wld_inititem(item, ITEM_WEAPON_SHORTSWORD);
+					wld_map_new_item(map, item, c, r);
+					break;
+				case 1:
+					wld_inititem(item, ITEM_WEAPON_SHORTBOW);
+					wld_map_new_item(map, item, c, r);
+					break;
+				case 2:
+					wld_inititem(item, ITEM_POTION_MINOR_HEAL);
+					wld_map_new_item(map, item, c, r);
+					break;
+				case 3:
+					wld_inititem(item, ITEM_ARMOR_LEATHER);
+					wld_map_new_item(map, item, c, r);
+					break;
+				}
 			}
 		}
 	}
