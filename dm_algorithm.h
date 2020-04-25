@@ -35,6 +35,7 @@ double dm_distf(double x1, double y1, double x2, double y2);
 void dm_direction(double x1, double y1, double x2, double y2, double *xref, double *yref);
 void dm_normalize(double x, double y, double *xref, double *yref);
 double dm_round(double val);
+double dm_ceil_out(double val);
 
 // ASTAR
 struct dm_astarnode {

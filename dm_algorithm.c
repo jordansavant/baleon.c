@@ -293,14 +293,23 @@ void dm_normalize(double x, double y, double *xref, double *yref)
 		double length = sqrt(x*x + y*y);
 		(*xref) = x / length;
 		(*yref) = y / length;
+	} else {
+		(*xref) = 0;
+		(*yref) = 0;
 	}
-	(*xref) = 0;
-	(*yref) = 0;
 }
 
 double dm_round(double val)
 {
 	return floor(val + 0.5);
+}
+// ceil positive numbers up, negative down
+double dm_ceil_out(double val)
+{
+	if (val >= 0)
+		return ceil(val);
+	else
+		return floor(val);
 }
 
 

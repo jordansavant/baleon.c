@@ -4,6 +4,7 @@
 #include "dm_debug.h"
 #include <stdlib.h>
 #include <ncurses.h>
+#include <math.h>
 #include "dm_world.h"
 #include "dm_dungeon.h"
 
@@ -420,12 +421,38 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 		// # # b . .
 		// . . . . .
 		struct wld_tile *t = wld_gettileat(map, x, y);
+		double dirf_x, dirf_y;
+		dm_direction((double)mob->map_x, (double)mob->map_y, (double)t->map_x, (double)t->map_y, &dirf_x, &dirf_y);
+		//if (fabs(dirf_x) == fabs(dirf_y)) {
+			// If the tile is a direct diagonal from me dirs will be:
+			// (0.707107 -0.707107) in some combination
+			// eg up and right = (0.707107 -0.707107)
+			// eg check up and right - 1, check up + 1 and right
+			int rx = (int)dm_ceil_out(dirf_x);
+			int ry = (int)dm_ceil_out(dirf_y);
+				dmlogxy("mob", mob->map_x, mob->map_y);
+				dmlogxy("tile", t->map_x, t->map_y);
+				dmlogff("diagonal", dirf_x, dirf_y);
+				dmlogff("r diags", dm_ceil_out(dirf_x), dm_ceil_out(dirf_y));
+				// check 1
+				struct wld_tile *t1 = wld_gettileat(map, x - rx, y);
+				struct wld_tile *t2 = wld_gettileat(map, x, y - ry);
+				dmlogxy("t1", t1->map_x, t1->map_y);
+				dmlogxy("t2", t2->map_x, t2->map_y);
+				if (t1->type->is_block && t2->type->is_block) {
+					dmlog("extra block");
+					return true;
+				}
+				// I need to
+		//}
+
 		return t->type->is_block;
 	}
 	void wld_ss_onvisible(int x, int y, double radius)
 	{
 		on_see(mob, x, y, radius);
 	}
+	dmlog("shadowcast");
 	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 20, wld_ss_isblocked, wld_ss_onvisible);
 }
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)

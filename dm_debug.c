@@ -23,11 +23,6 @@ void dmlogi(char *msg, int i)
 	fprintf(dm_fp, "%s %d \n", msg, i);
 	fflush(dm_fp);
 }
-void dmlogf(char *msg, double f)
-{
-	fprintf(dm_fp, "%s %f \n", msg, f);
-	fflush(dm_fp);
-}
 void dmlogii(char *msg, int i, int j)
 {
 	fprintf(dm_fp, "%s %d %d \n", msg, i, j);
@@ -36,6 +31,16 @@ void dmlogii(char *msg, int i, int j)
 void dmlogiii(char *msg, int i, int j, int k)
 {
 	fprintf(dm_fp, "%s %d %d %d \n", msg, i, j, k);
+	fflush(dm_fp);
+}
+void dmlogf(char *msg, double f)
+{
+	fprintf(dm_fp, "%s %f \n", msg, f);
+	fflush(dm_fp);
+}
+void dmlogff(char *msg, double f1, double f2)
+{
+	fprintf(dm_fp, "%s %f %f \n", msg, f1, f2);
 	fflush(dm_fp);
 }
 void dmlogc(char *msg, char c)
