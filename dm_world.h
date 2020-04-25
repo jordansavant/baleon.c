@@ -171,11 +171,15 @@ struct wld_map {
 	int *mob_map; // array of mob ids in mob listing
 	struct wld_mob **mobs;
 	unsigned int mobs_length;
+	unsigned int mobs_capacity; // to manage list mallocs
 	int *item_map;
 	struct wld_item **items;
 	unsigned int items_length;
+	unsigned int items_capacity; // to manage list mallocs
 	struct wld_mob *player;
 	struct wld_cursor *cursor;
+	struct wld_tile* entrance_tile;
+	struct wld_tile* exit_tile;
 
 	// function pointers game subscribes to for events
 	void (*on_player_map_transition)(struct wld_map*, struct wld_mob *mob, bool forward);
@@ -210,10 +214,12 @@ void wld_new_mob(struct wld_map* map, struct wld_mob* mob, int x, int y);
 struct wld_world {
 	int seed;
 	struct wld_map **maps;
-	struct wld_map *current_map;
 	int maps_length;
 };
 
+void wld_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id);
+void wld_map_new_item(struct wld_map* map, struct wld_item* item, int x, int y);
+void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob);
 
 ///////////////////////////
 // UTILITY METHODS
@@ -319,7 +325,7 @@ void wld_setup();
 void wld_teardown();
 struct wld_world* wld_newworld(int seed, int count);
 void wld_delworld(struct wld_world*);
-void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_map *to);
+void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_map *to, bool at_entrance);
 
 
 ///////////////////////////

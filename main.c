@@ -389,9 +389,10 @@ enum PLAY_STATE play_state = PS_START;
 // MAP SETTINGS / VARS
 int map_rows_scale = 1;
 int map_cols_scale = 2;
-WINDOW *map_pad;
+WINDOW *map_pad = NULL;
 struct wld_world *world;
-struct wld_map *current_map;
+struct wld_map *current_map = NULL;
+struct wld_map *next_map = NULL;
 int ui_map_cols;
 int ui_map_rows;
 int ui_map_padding = 15;
@@ -788,24 +789,26 @@ void ui_use_item_select(struct wld_mob* player, int item_slot)
 void map_on_player_transition(struct wld_map *map, struct wld_mob *player, bool forward)
 {
 	if (forward) {
-		ui_loginfo("player next map");
 		int map_id = map->id;
 		if (map_id + 1 == world->maps_length) {
 			// end of the maps
 			play_state = PS_WIN;
 		} else {
 			// transition player to next map
-			wld_transition_player(world, map, world->maps[map_id + 1]);
+			wld_transition_player(world, map, world->maps[map_id + 1], forward);
+			next_map = world->maps[map_id + 1];
+			play_state = PS_MAPCHANGE;
 		}
 	} else {
-		ui_loginfo("player back map");
 		int map_id = map->id;
 		if (map_id == 0) {
 			// no where to go back too
 			ui_loginfo("Though aflame in fear, you cannot retreat.");
 		} else {
 			// transition player to prior map
-			wld_transition_player(world, map, world->maps[map_id - 1]);
+			wld_transition_player(world, map, world->maps[map_id - 1], forward);
+			next_map = world->maps[map_id - 1];
+			play_state = PS_MAPCHANGE;
 		}
 	}
 }
@@ -1068,7 +1071,6 @@ void ai_player_input(struct wld_mob* player)
 				case KEY_ESC:
 				case KEY_x:
 				case KEY_i:
-					dmlog("inventory > play");
 					ui_clear_win(inventorypanel);
 					player->mode = MODE_PLAY;
 					listen = false;
@@ -1092,7 +1094,6 @@ void ai_player_input(struct wld_mob* player)
 				switch (key) {
 				case KEY_ESC:
 				case KEY_x:
-					dmlog("use > inventory");
 					ui_unset_use();
 					ui_clear_win(usepanel);
 					player->mode = MODE_INVENTORY;
@@ -1157,15 +1158,11 @@ void ai_player_input(struct wld_mob* player)
 ///////////////////////////
 // SETUP PLAY
 
-void ps_build_world()
+// call this when the current map changes
+void ps_on_mapchange()
 {
-	clear();
-
-	// set RNG seed (TODO move this to a menu operation?)
-
-	int seed = 123;
-	world = wld_newworld(seed, 2);
-	current_map = world->current_map;
+	if (map_pad)
+		delwin(map_pad);
 
 	// World is large indexed map to start
 	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
@@ -1190,6 +1187,20 @@ void ps_build_world()
 	current_map->on_player_drop_item_fail = map_on_player_drop_item_fail;
 
 	current_map->player->ai_player_input = ai_player_input;
+
+}
+
+void ps_build_world()
+{
+
+	// set RNG seed (TODO move this to a menu operation?)
+
+	int seed = 123;
+	world = wld_newworld(seed, 2);
+	current_map = world->maps[0];
+
+	ps_on_mapchange();
+
 }
 void ps_destroy_world()
 {
@@ -1494,6 +1505,11 @@ void g_newgame()
 			ps_menu_input();
 			break;
 		case PS_MAPCHANGE:
+			current_map = next_map;
+			next_map = NULL;
+			ps_on_mapchange();
+			play_state = PS_PLAY;
+
 			break;
 		case PS_GAMEOVER:
 			// draw world
@@ -1503,10 +1519,9 @@ void g_newgame()
 
 			play_state = PS_END;
 		case PS_WIN:
-			ps_play_draw();
-
 			ui_loginfo("Congratulations!");
 			ui_loginfo("After many weary battles you have overcome Baleon.");
+			ps_play_draw();
 
 			getch();
 
