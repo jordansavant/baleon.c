@@ -293,29 +293,29 @@ void dng_cellmap_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, stru
 
 bool dng_cellmap_open_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir)
 {
-    if (dng_cellmap_can_tunnel(cellmap, cell, dir)) {
-        dng_cellmap_emplace_tunnel(cellmap, cell, dir);
+    if (dng_cellmap_can_tunnel(cellmap, cell, dir.x, dir.y)) {
+        dng_cellmap_emplace_tunnel(cellmap, cell, dir.x, dir.y);
         return true;
     }
 
     return false;
 }
 
-bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir)
+bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, int dir_x, int dir_y)
 {
-	int next_x = cell->x + dir.x;
-	int next_y = cell->y + dir.y;
-	int next_right_x = next_x + -dir.y;
-	int next_right_y = next_y + dir.x;
-	int next_left_x = next_x + dir.y;
-	int next_left_y = next_y + -dir.x;
+	int next_x = cell->x + dir_x;
+	int next_y = cell->y + dir_y;
+	int next_right_x = next_x + -dir_y;
+	int next_right_y = next_y + dir_x;
+	int next_left_x = next_x + dir_y;
+	int next_left_y = next_y + -dir_x;
 
-	int next_up_x = next_x + dir.x;
-	int next_up_y = next_y + dir.y;
-	int next_up_right_x = next_up_x + -dir.y;
-	int next_up_right_y = next_up_y + dir.x;
-	int next_up_left_x = next_up_x + dir.y;
-	int next_up_left_y = next_up_y + -dir.x;
+	int next_up_x = next_x + dir_x;
+	int next_up_y = next_y + dir_y;
+	int next_up_right_x = next_up_x + -dir_y;
+	int next_up_right_y = next_up_y + dir_x;
+	int next_up_left_x = next_up_x + dir_y;
+	int next_up_left_y = next_up_y + -dir_x;
 
 	if (cell->room != NULL)
 		return false; // I added this in baleon code, not xogeni
@@ -345,9 +345,9 @@ bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, 
 	return false;
 }
 
-void dng_cellmap_emplace_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir)
+void dng_cellmap_emplace_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, int dir_x, int dir_y)
 {
-	struct dng_cell *next_cell = dng_cellmap_get_cell_at_position(cellmap, cell->x + dir.x, cell->y + dir.y);
+	struct dng_cell *next_cell = dng_cellmap_get_cell_at_position(cellmap, cell->x + dir_x, cell->y + dir_y);
 	dng_cellmap_mark_as_tunnel(cellmap, cell);
 }
 
@@ -1318,8 +1318,6 @@ struct dng_dungeon* dng_gendungeon(int seed, int count)
 
 		int width = dm_randii(46, 92);
 		int height = dm_randii(38, 56);
-		width = 56;
-		height = 56; // TODO this was temporary to not solve multiple problems at once while merging dungeon into game
 
 		struct dng_cellmap *cellmap = dng_genmap(difficulty, map_id, width, height);
 

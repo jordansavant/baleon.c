@@ -909,6 +909,12 @@ void ai_player_input(struct wld_mob* player)
 				// If not in a targeting mode then listen for interaction inputs
 				case TMODE_NONE:
 					switch (key) {
+					// CHEATS:
+					case KEY_F(1):
+						// teleport to exit and don't trigger exit
+						wld_cheat_teleport_exit(player->map, player);
+						listen = false;
+						break;
 					// Player movement
 					case KEY_BACKSPACE:
 						play_state = PS_MENU;
@@ -1196,7 +1202,7 @@ void ps_build_world()
 	// set RNG seed (TODO move this to a menu operation?)
 
 	int seed = 123;
-	world = wld_newworld(seed, 2);
+	world = wld_newworld(seed, 1);
 	current_map = world->maps[0];
 
 	ps_on_mapchange();

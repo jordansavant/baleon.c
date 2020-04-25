@@ -34,6 +34,8 @@ int main(void)
 						printf("e ");
 					else if (cell->is_exit_transition)
 						printf("X ");
+					else if (cell->was_room_fix_tunnel)
+						printf("F ");
 					else if (cell->is_tunnel)
 						printf("T ");
 					//else if (cell->was_corridor_tunnel)

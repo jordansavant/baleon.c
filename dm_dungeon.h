@@ -133,8 +133,8 @@ void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room
 void dng_cellmap_buildtunnels(struct dng_cellmap*);
 void dng_cellmap_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir last_dir);
 bool dng_cellmap_open_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir);
-bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir);
-void dng_cellmap_emplace_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, struct tunnel_dir dir);
+bool dng_cellmap_can_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, int dir_x, int dir_y);
+void dng_cellmap_emplace_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell, int dir_x, int dir_y);
 void dng_cellmap_mark_as_tunnel(struct dng_cellmap *cellmap, struct dng_cell *cell);
 void dng_get_shuffled_directions(struct tunnel_dir *dirs);
 

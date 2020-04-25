@@ -1,7 +1,8 @@
 TODO:
 
 now
-- get items malloc worked out
+- test non square maps
+- organize code jabao
 - throw items and bugbear back into starter room
 - bug: screen trails on map movement when near edges
 - aoe test item
@@ -9,6 +10,19 @@ now
 - ui: equipped items
 - ui: health
 - ui: mob list
+
+- bug: dungeons are digging tunnels into corners of rooms?
+               .       S
+               .
+   S   S       .
+ . D . . . . T D S
+   S e e e X . .
+     e e e e . . S
+     e e e e . .
+       e e e . . S
+             . .
+           S . .       S
+
 
 later
 - dungeons need big cellular break ups

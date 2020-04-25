@@ -289,7 +289,36 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 
 	return true;
 }
-void wld_movemob(struct wld_mob *mob, int relx, int rely)
+void wld_teleportmob(struct wld_mob *mob, int x, int y, bool trigger_events)
+{
+	if (wld_canmoveto(mob->map, x, y)) {
+		int old_index = mob->map_index;
+		int new_index = wld_calcindex(x, y, mob->map->cols);
+
+		// update indexes
+		mob->map->mob_map[new_index] = mob->id;
+		mob->map->mob_map[old_index] = -1; // vacated
+
+		// update position
+		mob->map_index = new_index;
+		mob->map_x = x;
+		mob->map_y = y;
+
+		if (trigger_events) {
+			// run tile on enter event
+			struct wld_tile* tile = wld_gettileat(mob->map, mob->map_x, mob->map_y);
+			if (tile->on_mob_enter)
+				tile->on_mob_enter(mob->map, tile, mob);
+
+			// if player, collect items he walks over unless he dropped it before
+			struct wld_item *item = wld_getitemat(mob->map, mob->map_x, mob->map_y);
+			if (mob->is_player && item != NULL && !item->has_dropped && wld_mob_has_inventory(mob)) {
+				wld_mob_pickup_item(mob, item);
+			}
+		}
+	}
+}
+void wld_movemob(struct wld_mob *mob, int relx, int rely, bool trigger_events)
 {
 	// TODO speeds and things could come into play here
 	// TODO need to make sure they do not diagonally move around corners
@@ -310,15 +339,17 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely)
 		mob->map_x = newx;
 		mob->map_y = newy;
 
-		// run tile on enter event
-		struct wld_tile* tile = wld_gettileat(mob->map, mob->map_x, mob->map_y);
-		if (tile->on_mob_enter)
-			tile->on_mob_enter(mob->map, tile, mob);
+		if (trigger_events) {
+			// run tile on enter event
+			struct wld_tile* tile = wld_gettileat(mob->map, mob->map_x, mob->map_y);
+			if (tile->on_mob_enter)
+				tile->on_mob_enter(mob->map, tile, mob);
 
-		// if player, collect items he walks over unless he dropped it before
-		struct wld_item *item = wld_getitemat(mob->map, mob->map_x, mob->map_y);
-		if (mob->is_player && item != NULL && !item->has_dropped && wld_mob_has_inventory(mob)) {
-			wld_mob_pickup_item(mob, item);
+			// if player, collect items he walks over unless he dropped it before
+			struct wld_item *item = wld_getitemat(mob->map, mob->map_x, mob->map_y);
+			if (mob->is_player && item != NULL && !item->has_dropped && wld_mob_has_inventory(mob)) {
+				wld_mob_pickup_item(mob, item);
+			}
 		}
 	}
 }
@@ -382,6 +413,12 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 	struct wld_map* map = mob->map;
 	bool wld_ss_isblocked(int x, int y)
 	{
+		// this currently allows us to see through to diagonally adjacent rooms
+		// it would be best if we could block tiles that are in this setup: S=see, B=block, #=wall
+		// @ s # . ,
+		// s s # . .
+		// # # b . .
+		// . . . . .
 		struct wld_tile *t = wld_gettileat(map, x, y);
 		return t->type->is_block;
 	}
@@ -605,6 +642,14 @@ void wld_mob_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 	wld_mob_inspect_melee(mob, inspect);
 }
 
+
+///////////////////////////
+// CHEATS
+void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob* mob)
+{
+	struct wld_tile* exit_tile = map->exit_tile;
+	wld_teleportmob(mob, exit_tile->map_x, exit_tile->map_y, false);
+}
 
 
 
@@ -942,7 +987,7 @@ ai_rerun:
 
 	// apply changes
 	// TODO maybe this should be a dynamic array?
-	wld_movemob(mob, mob->queue_x, mob->queue_y);
+	wld_movemob(mob, mob->queue_x, mob->queue_y, true);
 	mob->queue_x = 0;
 	mob->queue_y = 0;
 }
@@ -1245,7 +1290,6 @@ void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 	//// TODO we need to work on assigning items to players, mobs etc
 	//// setup items in item map
 	if (map->player) {
-		dmlog("new item");
 		for (int i=0; i < 4; i++) {
 			// create item
 			struct wld_item *item;

@@ -238,7 +238,8 @@ int wld_calcy(int index, int cols);
 
 int wld_distance_mob_tile(struct wld_map *map, struct wld_mob *mob, struct wld_tile *tile);
 bool wld_canmoveto(struct wld_map *map, int x, int y);
-void wld_movemob(struct wld_mob *mob, int relx, int rely);
+void wld_teleportmob(struct wld_mob *mob, int relx, int rely, bool trigger_events); // TODO duplicate code in here from movemob
+void wld_movemob(struct wld_mob *mob, int relx, int rely, bool trigger_events);
 void wld_movecursor(struct wld_map *map, int relx, int rely);
 
 struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y);
@@ -265,6 +266,12 @@ void wld_mob_resolve_item_uses(struct wld_mob* mob, struct wld_item* item);
 bool wld_mob_drop_item(struct wld_mob*, int);
 void wld_mob_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
+
+
+///////////////////////////
+// CHEATS
+void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob*);
+
 
 
 ///////////////////////////
