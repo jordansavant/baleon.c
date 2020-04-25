@@ -326,6 +326,19 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely, bool trigger_events)
 	int newx = mob->map_x + relx;
 	int newy = mob->map_y + rely;
 
+	// we cannot physically move around corners
+	if (relx != 0 && rely != 0) {
+		double dirf_x, dirf_y;
+		dm_direction((double)mob->map_x, (double)mob->map_y, (double)newx, (double)newy, &dirf_x, &dirf_y);
+		int rx = (int)dm_ceil_out(dirf_x);
+		int ry = (int)dm_ceil_out(dirf_y);
+		struct wld_tile *t1 = wld_gettileat(mob->map, newx, newy - ry);
+		struct wld_tile *t2 = wld_gettileat(mob->map, newx - rx, newy);
+		if ((t1 && t1->type->is_block) || (t2 && t2->type->is_block)) {
+			return;
+		}
+	}
+
 	// test if we can do this move
 	if (wld_canmoveto(mob->map, newx, newy)) {
 		int old_index = mob->map_index;

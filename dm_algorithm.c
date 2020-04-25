@@ -103,9 +103,11 @@ bool dm_sc_is_leakageblocked(int x, int y, int ax, int ay, bool (*is_blocked)(in
 	dm_direction((double)x, (double)y, (double)ax, (double)ay, &dirf_x, &dirf_y);
 	int rx = (int)dm_ceil_out(dirf_x);
 	int ry = (int)dm_ceil_out(dirf_y);
+	//if (!is_blocked(ax, ay)) { // uncomment this if you want to show blocked cells, but it hints at things on the map if you do
 	if (is_blocked(ax - rx, ay) && is_blocked(ax, ay - ry)) {
 		return true;
 	}
+	//}
 	return false;
 }
 
