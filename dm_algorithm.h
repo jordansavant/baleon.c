@@ -98,4 +98,8 @@ void dm_astar_check(
 	bool is_manhattan
 );
 
+// CELLULAR AUTOMATA
+void dm_cellular_automata(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int));
+void dm_cellular_automata_detail(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int), double alive_chance, int death_max, int birth_max, int steps);
+
 #endif

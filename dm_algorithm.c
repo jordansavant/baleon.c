@@ -668,3 +668,93 @@ void dm_astar_check(
 	}
 	//printf("  end dir\n");
 }
+
+
+///////////////////////////
+// CELLULAR AUTOMATA
+
+int dm_cella_count_alive_neighbors(int *map, int x, int y, int width, int height)
+{
+	int count = 0;
+	for (int i = -1; i < 2; i++) {
+		for (int j = -1; j < 2; j++) {
+			int nb_x = i+x;
+			int nb_y = j+y;
+			int nb_index = nb_y * width + nb_x;
+			if (i == 0 && j == 0)
+				continue;
+			//If it's at the edges, consider it to be solid (you can try removing the count = count + 1)
+			if (nb_x < 0 || nb_y < 0 || nb_x >= width || nb_y >= height)
+				count = count + 1;
+			else if (map[nb_index] == 1)
+				count = count + 1;
+		}
+	}
+	return count;
+}
+
+
+void dm_cella_simulate(int *map, int width, int height, int deathLimit, int birthLimit)
+{
+	for (int x = 0; x < width; x++) {
+		for (int y = 0; y < height; y++) {
+			int index = y * width + x;
+			int nbs = dm_cella_count_alive_neighbors(map, x, y, width, height);
+			if(map[index] > 0){
+				//See if it should die or stay solid
+				if (nbs < deathLimit)
+					map[index] = 0;
+				else
+					map[index] = 1;
+			} else {
+				//See if it should become solid
+				if (nbs > birthLimit)
+					map[index] = 1;
+				else
+					map[index] = 0;
+			}
+		}
+	}
+}
+
+void dm_cella_init(int *map, int width, int height, double chanceToStartAlive)
+{
+	for (int x=0; x < width; x++) {
+		for (int y=0; y < height; y++) {
+			int index = y * width + x;
+			if (dm_randf() < chanceToStartAlive)
+				//We're using numbers, not booleans, to decide if something is solid here. 0 = not solid
+				map[index] = 1;
+			else
+				map[index] = 0;
+		}
+	}
+}
+
+void dm_cellular_automata_detail(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int), double alive_chance, int death_max, int birth_max, int steps)
+{
+	int map[width * height];
+	dm_cella_init(map, width, height, alive_chance);
+
+	for (int i=0; i<steps; i++) {
+		dm_cella_simulate(map, width, height, death_max, birth_max);
+	}
+
+	for (int x=0; x < width; x++) {
+		for (int y=0; y < height; y++) {
+			if (map[y * width + x] == 0)
+				on_open(x, y);
+			else
+				on_solid(x, y);
+		}
+	}
+}
+void dm_cellular_automata(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int))
+{
+	double alive_chance = 0.4;
+	int death_max = 3;
+	int birth_max = 4;
+	int steps = 2;
+
+	dm_cellular_automata_detail(width, height, on_solid, on_open, alive_chance, death_max, birth_max, steps);
+}
