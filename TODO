@@ -1,23 +1,25 @@
 TODO:
 
 now
-- map transitions
-- win condition on escape
-- game over condition on death
+- get items malloc worked out
+- throw items and bugbear back into starter room
+- bug: screen trails on map movement when near edges
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items
 - ui: health
+- ui: mob list
 
 later
+- dungeons need big cellular break ups
+- dungeons need mobs and items generated
 - bug: tunnels are getting stubbed out in little groups and thus not collapsing
 - bug: tunnels can exist in closed loops in the middle of nowhere
-- bug: screen trails on map movement when near edges
-- ui: mob list
 - ui: mob focus
 - ranged point test item
-- rpg rules
+- rpg rules, visions, aberrations
 - gameover
+- win screen
 
 no use cases yet
 - teleport
