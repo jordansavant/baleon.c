@@ -56,42 +56,94 @@ struct wld_itemtype *wld_itemtypes;
 void wld_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id)
 {
 	int index = wld_calcindex(x, y, map->cols);
+	// assign items properties for the map
 	item->id = id;
+	item->map_x = x;
+	item->map_y = y;
+	item->map_index = index;
+	// assign map the items id and stuff
 	map->items[id] = item;
 	map->item_map[index] = id;
 }
 void wld_map_new_item(struct wld_map* map, struct wld_item* item, int x, int y)
 {
-	int index = wld_calcindex(x, y, map->cols);
-	item->map_index = index;
-	item->map_x = x;
-	item->map_y = y;
+	// if out of room expand
+	if (map->items_length == map->items_capacity) {
+		map->items = (struct wld_item**)realloc(map->items, (map->items_capacity + MALLOC_MOB_SIZE) * sizeof(struct wld_item*));
+		map->items_capacity += MALLOC_MOB_SIZE;
+	}
+	// copy to the next spot
+	map->items[map->items_length] = item;
 
-	// TODO this has to be redone with the expand and shrink method
-	// We expand and realloc space for a new item
-	// When we remove we NULL and shift it all back
-	// see if I have a null spot
+	// update the map to contain the item
+	wld_insert_item(map, item, x, y, map->items_length);
+
+	// increment our list
+	map->items_length++;
+}
+void wld_map_remove_item(struct wld_map* map, struct wld_item* item)
+{
+	bool found = false;
 	for (int i=0; i<map->items_length; i++) {
-		if (map->items[i] == NULL) {
-			wld_insert_item(map, item, x, y, i);
-			return;
+		if (found) {
+			// shift backwards a spot
+			struct wld_item *next_item = map->items[i];
+			item->id = i - 1;
+			map->items[item->id] = item;
+			// his id is at his position in the map, we need to point that to his new id
+			map->item_map[next_item->map_index] = item->id;
+		} else if(map->items[i] == item) {
+			// if we find the item, null his instance and -1 his item map
+			int index = item->map_index;
+			map->items[i] = NULL;
+			map->item_map[index] = -1;
+			found = true;
+
+			item->id = -1;
+			item->map_index = -1;
+			item->map_x = 0;
+			item->map_y = 0;
 		}
 	}
 
-	// nope, time to expand the list
-	// TODO UNTESTED AND NEEDS TO USE realloc
-	struct wld_item **new_items = (struct wld_item**)malloc((map->items_length + MALLOC_ITEM_SIZE) * sizeof(struct wld_item*));
-	for (int i=0; i<map->items_length + MALLOC_ITEM_SIZE; i++) {
-		if (i < map->items_length) {
-			new_items[i] = map->items[i]; // copied item
-		} else if (i ==	map->items_length) {
-			wld_insert_item(map, item, i, x, y);
-		}
-		// else we leav it unitialized garbOGE
+	if (found) {
+		// turn the last index into a null
+		map->items[map->items_length - 1] = NULL;
+		map->items_length--;
 	}
-	free(map->items);
-	map->items = new_items;
-	map->items_length += MALLOC_ITEM_SIZE;
+}
+
+
+// take a mob instance and add him to the mob list
+void wld_insert_mob(struct wld_map* map, struct wld_mob* mob, int x, int y, int id)
+{
+	int index = wld_calcindex(x, y, map->cols);
+	// assign mobs properties for the map
+	mob->id = id;
+	mob->map = map;
+	mob->map_x = x;
+	mob->map_y = y;
+	mob->map_index = index;
+	// assign map the mobs id and stuff
+	map->mobs[id] = mob;
+	map->mob_map[index] = id;
+}
+// This is called when we want the map to take ownership of the mob
+void wld_map_new_mob(struct wld_map* map, struct wld_mob* mob, int x , int y)
+{
+	// if out of room expand
+	if (map->mobs_length == map->mobs_capacity) {
+		map->mobs = (struct wld_mob**)realloc(map->mobs, (map->mobs_capacity + MALLOC_MOB_SIZE) * sizeof(struct wld_mob*));
+		map->mobs_capacity += MALLOC_MOB_SIZE;
+	}
+	// copy to the next spot
+	map->mobs[map->mobs_length] = mob;
+
+	// update the map to contain the mob
+	wld_insert_mob(map, mob, x, y, map->mobs_length);
+
+	// increment our list
+	map->mobs_length++;
 }
 // This is called when we don't want to destroy a mob, just remove it from map ownership
 void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob)
@@ -125,36 +177,6 @@ void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob)
 		map->mobs[map->mobs_length - 1] = NULL;
 		map->mobs_length--;
 	}
-}
-// take a mob instance and add him to the mob list
-void wld_insert_mob(struct wld_map* map, struct wld_mob* mob, int x, int y, int id)
-{
-	int index = wld_calcindex(x, y, map->cols);
-	// assign mobs properties for the map
-	mob->id = id;
-	mob->map = map;
-	mob->map_x = x;
-	mob->map_y = y;
-	mob->map_index = index;
-	// assign map the mobs id and stuff
-	map->mobs[id] = mob;
-	map->mob_map[index] = id;
-}
-void wld_map_new_mob(struct wld_map* map, struct wld_mob* mob, int x , int y)
-{
-	// if out of room expand
-	if (map->mobs_length == map->mobs_capacity) {
-		map->mobs = (struct wld_mob**)realloc(map->mobs, (map->mobs_capacity + MALLOC_MOB_SIZE) * sizeof(struct wld_mob*));
-		map->mobs_capacity += MALLOC_MOB_SIZE;
-	}
-	// copy to the next spot
-	map->mobs[map->mobs_length] = mob;
-
-	// update the map to contain the mob
-	wld_insert_mob(map, mob, x, y, map->mobs_length);
-
-	// increment our list
-	map->mobs_length++;
 }
 
 void wld_map_add_mob_at_entrance(struct wld_map* map, struct wld_mob* mob)
@@ -439,14 +461,9 @@ bool wld_mob_pickup_item(struct wld_mob *m, struct wld_item *i)
 	if (slot != -1) {
 		// set item copy in world to nonexist
 		// move item from world to mob inventory
-		m->map->item_map[i->map_index] = -1;
-		m->map->items[i->id] = NULL;
+		wld_map_remove_item(m->map, i);
 
 		// copy item to mob inventory
-		i->id = -1;
-		i->map_index = -1;
-		i->map_x = -1;
-		i->map_y = -1;
 		m->inventory[slot] = i;
 
 		if (m->is_player && m->map->on_player_pickup_item)
@@ -505,7 +522,6 @@ void wld_mob_resolve_item_uses(struct wld_mob* mob, struct wld_item* item)
 
 bool wld_mob_drop_item(struct wld_mob *mob, int itemslot)
 {
-	// TODO UH OH, HOW DO I RETURN AN ITEM TO THE MAP? LOOK FOR A NULL SLOT AND IF NOT REMALLOC?
 	struct wld_item* item = wld_mob_get_item_in_slot(mob, itemslot);
 	// if this is a real item and there is not one on this slot
 	if (item != NULL && wld_getitemat(mob->map, mob->map_x, mob->map_y) == NULL) {
@@ -1199,6 +1215,7 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 					map->cursor->x = mob->map_x + 2;
 					map->cursor->y = mob->map_y;
 					map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
+
 				}
 			}
 		}
@@ -1206,6 +1223,13 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 		map->mobs = NULL;
 		map->mobs_length = 0;
 	}
+}
+void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type)
+{
+	item->type_id = type;
+	item->type = &wld_itemtypes[type];
+	item->has_dropped = false;
+	item->uses = wld_itemtypes[type].base_uses;
 }
 void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 {
@@ -1220,59 +1244,55 @@ void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 
 	//// TODO we need to work on assigning items to players, mobs etc
 	//// setup items in item map
-	//for (int i=0; i < MALLOC_ITEM_SIZE; i++) {
-	//	// create item
-	//	struct wld_item *item;
-	//	// create reference to parent map
-	//	if (i == 0) {
-	//		// put item near player
-	//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
-	//		item->id = i;
-	//		item->map_x = map->cols / 2 + 4;
-	//		item->map_y = map->rows / 2 + 2;
-	//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-	//		item->type_id = ITEM_WEAPON_SHORTSWORD;
-	//		item->type = &wld_itemtypes[ITEM_WEAPON_SHORTSWORD];
-	//		item->has_dropped = false;
-	//		item->uses = wld_itemtypes[ITEM_WEAPON_SHORTSWORD].base_uses;
-	//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-	//	} else if (i == 1) {
-	//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
-	//		item->id = i;
-	//		item->map_x = map->cols / 2 + 6;
-	//		item->map_y = map->rows / 2 + 2;
-	//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-	//		item->type_id = ITEM_WEAPON_SHORTBOW;
-	//		item->type = &wld_itemtypes[ITEM_WEAPON_SHORTBOW];
-	//		item->has_dropped = false;
-	//		item->uses = wld_itemtypes[ITEM_WEAPON_SHORTBOW].base_uses;
-	//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-	//	} else if (i == 2) {
-	//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
-	//		item->id = i;
-	//		item->map_x = map->cols / 2 + 7;
-	//		item->map_y = map->rows / 2 - 1;
-	//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-	//		item->type_id = ITEM_ARMOR_LEATHER;
-	//		item->type = &wld_itemtypes[ITEM_ARMOR_LEATHER];
-	//		item->has_dropped = false;
-	//		item->uses = wld_itemtypes[ITEM_ARMOR_LEATHER].base_uses;
-	//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-	//	} else if (i == 3) {
-	//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
-	//		item->id = i;
-	//		item->map_x = map->cols / 2 + 1;
-	//		item->map_y = map->rows / 2 + 3;
-	//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
-	//		item->type_id = ITEM_POTION_MINOR_HEAL;
-	//		item->type = &wld_itemtypes[ITEM_POTION_MINOR_HEAL];
-	//		item->has_dropped = false;
-	//		item->uses = wld_itemtypes[ITEM_POTION_MINOR_HEAL].base_uses;
-	//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
-	//	} else {
-	//		map->items[i] = NULL;
-	//	}
-	//}
+	if (map->player) {
+		dmlog("new item");
+		for (int i=0; i < 4; i++) {
+			// create item
+			struct wld_item *item;
+			// create reference to parent map
+			if (i == 0) {
+				// put item near player
+				item = (struct wld_item*)malloc(sizeof(struct wld_item));
+				wld_inititem(item, ITEM_WEAPON_SHORTSWORD);
+				wld_map_new_item(map, item, map->player->map_x + 3, map->player->map_y - 1);
+		//	} else if (i == 1) {
+		//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
+		//		item->id = i;
+		//		item->map_x = map->cols / 2 + 6;
+		//		item->map_y = map->rows / 2 + 2;
+		//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+		//		item->type_id = ITEM_WEAPON_SHORTBOW;
+		//		item->type = &wld_itemtypes[ITEM_WEAPON_SHORTBOW];
+		//		item->has_dropped = false;
+		//		item->uses = wld_itemtypes[ITEM_WEAPON_SHORTBOW].base_uses;
+		//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
+		//	} else if (i == 2) {
+		//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
+		//		item->id = i;
+		//		item->map_x = map->cols / 2 + 7;
+		//		item->map_y = map->rows / 2 - 1;
+		//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+		//		item->type_id = ITEM_ARMOR_LEATHER;
+		//		item->type = &wld_itemtypes[ITEM_ARMOR_LEATHER];
+		//		item->has_dropped = false;
+		//		item->uses = wld_itemtypes[ITEM_ARMOR_LEATHER].base_uses;
+		//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
+		//	} else if (i == 3) {
+		//		item = (struct wld_item*)malloc(sizeof(struct wld_item));
+		//		item->id = i;
+		//		item->map_x = map->cols / 2 + 1;
+		//		item->map_y = map->rows / 2 + 3;
+		//		item->map_index = wld_calcindex(item->map_x, item->map_y, map->cols);
+		//		item->type_id = ITEM_POTION_MINOR_HEAL;
+		//		item->type = &wld_itemtypes[ITEM_POTION_MINOR_HEAL];
+		//		item->has_dropped = false;
+		//		item->uses = wld_itemtypes[ITEM_POTION_MINOR_HEAL].base_uses;
+		//		wld_insert_item(map, item, item->map_x, item->map_y, item->id);
+		//	} else {
+		//		map->items[i] = NULL;
+			}
+		}
+	}
 }
 struct wld_map* wld_newmap(int id, int difficulty, int width, int height)
 {
