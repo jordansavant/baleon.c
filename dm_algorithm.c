@@ -20,7 +20,16 @@ int shadow_multiples[4][8] = {
     {1,  0,  0,  1, -1,  0,  0, -1},
 };
 
-void dm_shadowcast_r(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double), int octant, int row, double start_slope, double end_slope, int xx, int xy, int yx, int yy)
+void dm_shadowcast_r(
+	int x, int y,
+	int xmax, int ymax,
+	unsigned int radius,
+	bool (*is_blocked)(int, int),
+	void (*on_visible)(int, int, double),
+	bool allow_leakage,
+	int octant, int row, double start_slope, double end_slope,
+	int xx, int xy, int yx, int yy
+)
 {
 	// If light start is less than light end, return
 	if (start_slope < end_slope)
@@ -52,30 +61,35 @@ void dm_shadowcast_r(int x, int y, int xmax, int ymax, unsigned int radius, bool
 
 			int ax = x + sax;
 			int ay = y + say;
-			// Commenting this out to remove dependency on Map
-			// looks like bounds checking for perf boost in edget of map
-			//if (ax >= map.shadowcastGetWidth() || ay >= map.shadowcastGetHeight())
+
+			// Dont look out of bounds
 			if (ax >= xmax || ay >= ymax)
 				continue;
 
+			// Todo, check to see if we are leaking through diagonal walls?
+			bool leakage_blocked = false;
+			if (!allow_leakage) {
+				leakage_blocked = dm_sc_is_leakageblocked(x, y, ax, ay, is_blocked);
+			}
+
 			// Our light beam is touching this square; light it
 			int radius2 = radius * radius;
-			if ((int)(dx * dx + dy * dy) < radius2)
+			if ((int)(dx * dx + dy * dy) < radius2 && !leakage_blocked)
 				on_visible(ax, ay, (double)i / (double)radius);
 
 			if (blocked) {
 				// We're scanning a row of blocked squares
-				if (is_blocked(ax, ay)) {
+				if (is_blocked(ax, ay) || leakage_blocked) {
 					next_start_slope = r_slope;
 					continue;
 				} else {
 					blocked = false;
 					start_slope = next_start_slope;
 				}
-			} else if (is_blocked(ax, ay)) {
+			} else if (is_blocked(ax, ay) || leakage_blocked) {
 				blocked = true;
 				next_start_slope = r_slope;
-				dm_shadowcast_r(x, y, xmax, ymax, radius, is_blocked, on_visible, octant, i + 1, start_slope, l_slope, xx, xy, yx, yy);
+				dm_shadowcast_r(x, y, xmax, ymax, radius, is_blocked, on_visible, allow_leakage, octant, i + 1, start_slope, l_slope, xx, xy, yx, yy);
 			}
 		}
 
@@ -83,14 +97,25 @@ void dm_shadowcast_r(int x, int y, int xmax, int ymax, unsigned int radius, bool
 			break;
 	}
 }
+bool dm_sc_is_leakageblocked(int x, int y, int ax, int ay, bool (*is_blocked)(int, int))
+{
+	double dirf_x, dirf_y;
+	dm_direction((double)x, (double)y, (double)ax, (double)ay, &dirf_x, &dirf_y);
+	int rx = (int)dm_ceil_out(dirf_x);
+	int ry = (int)dm_ceil_out(dirf_y);
+	if (is_blocked(ax - rx, ay) && is_blocked(ax, ay - ry)) {
+		return true;
+	}
+	return false;
+}
 
-void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double))
+void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double), bool allow_leakage)
 {
 	shadowcast_id++;
 	on_visible(x, y, 0);
 
 	for (int i = 0; i < 8; i++) {
-		dm_shadowcast_r(x, y, xmax, ymax, radius, is_blocked, on_visible, i, 1, 1.0, 0.0, shadow_multiples[0][i], shadow_multiples[1][i], shadow_multiples[2][i], shadow_multiples[3][i]);
+		dm_shadowcast_r(x, y, xmax, ymax, radius, is_blocked, on_visible, allow_leakage, i, 1, 1.0, 0.0, shadow_multiples[0][i], shadow_multiples[1][i], shadow_multiples[2][i], shadow_multiples[3][i]);
 	}
 }
 
