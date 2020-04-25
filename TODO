@@ -11,18 +11,6 @@ now
 - ui: health
 - ui: mob list
 
-- bug: dungeons are digging tunnels into corners of rooms?
-               .       S
-               .
-   S   S       .
- . D . . . . T D S
-   S e e e X . .
-     e e e e . . S
-     e e e e . .
-       e e e . . S
-             . .
-           S . .       S
-
 
 later
 - dungeons need big cellular break ups

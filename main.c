@@ -396,6 +396,7 @@ struct wld_map *next_map = NULL;
 int ui_map_cols;
 int ui_map_rows;
 int ui_map_padding = 15;
+int ui_map_border = 1;
 
 // PLAY UI PANELS
 WINDOW* cursorpanel;
@@ -1171,7 +1172,7 @@ void ps_on_mapchange()
 		delwin(map_pad);
 
 	// World is large indexed map to start
-	map_pad = newpad(current_map->rows * map_rows_scale, current_map->cols * map_cols_scale);
+	map_pad = newpad(current_map->rows * map_rows_scale + ui_map_border * 2, current_map->cols * map_cols_scale + ui_map_border * 2); // pad extra two for us two draw black around the edges
 
 	current_map->on_player_map_transition = map_on_player_transition;
 	current_map->on_cursormove = map_on_cursormove;
@@ -1303,9 +1304,12 @@ void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
 	t->is_visible = true;
 	t->was_visible = true;
 }
+// r and c are world coords, translate them to map pad with border in mind
 void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold)
 {
-	wmove(map_pad, r * map_rows_scale, c * map_cols_scale); // pads by scaling out
+	int yborder = ui_map_border * map_rows_scale;
+	int xborder = ui_map_border * map_cols_scale;
+	wmove(map_pad, r * map_rows_scale + yborder, c * map_cols_scale + xborder); // pads by scaling out
 	if (bold)
 		wattrset(map_pad, COLOR_PAIR(colorpair) | A_BOLD);
 	else
@@ -1315,7 +1319,7 @@ void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold)
 	// extra padding if we are scaling the columns to make it appear at a better ratio in the terminal
 	if (map_cols_scale > 1 || map_rows_scale > 1) {
 		for (int i=1; i < map_cols_scale; i++) {
-			wmove(map_pad, r * map_rows_scale, c * map_cols_scale + i);
+			wmove(map_pad, r * map_rows_scale + yborder, c * map_cols_scale + i + xborder);
 			wattrset(map_pad, COLOR_PAIR(colorpair));
 			waddch(map_pad, ' '); // pad
 			// TODO, stopped working correctly after shadowcaster
@@ -1337,10 +1341,19 @@ void ps_play_draw()
 	wld_mobvision(current_map->player, ps_play_draw_onvisible);
 
 	// Clear map without flutter
-	for (int r=0; r < current_map->rows; r++) {
-		wmove(map_pad, r, 0);
+	for (int padr=0; padr < current_map->rows + ui_map_border*2; padr++) {
+		wmove(map_pad, padr, 0);
 		wclrtoeol(map_pad);
-		for (int c=0; c < current_map->cols; c++) {
+		// skip borders skip top and bottom rows so they do not screen tear
+		if (padr == 0 || padr == current_map->rows + 1)
+			continue;
+		int r = padr - 1;
+		for (int padc=0; padc < current_map->cols + ui_map_border*2; padc++) {
+			// skip borders
+			if (padc == 0 || padc == current_map->cols + ui_map_border)
+				continue;
+			int c = padc - 1;
+
 			struct wld_tile *t = wld_gettileat(current_map, c, r);
 
 			if (t->is_visible) {
