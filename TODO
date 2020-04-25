@@ -1,7 +1,6 @@
 TODO:
 
 now
-- throw items and bugbear back into dungeon gen
 - when enemies die we need to be able to walk over them (destroy and mark tile with dead mob type?)
 - aoe test item
 - ui: target mode state w/ keyhints

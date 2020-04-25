@@ -25,3 +25,6 @@ dng: main_testdng.c dm_dungeon.c dm_dungeon.h dm_algorithm.h dm_algorithm.c
 
 astar: main_astar.c dm_algorithm.c dm_algorithm.h
 	gcc main_astar.c dm_algorithm.c mt_rand.c -o main_astar.out -lm && ./main_astar.out
+
+cell: main_cellular.c dm_algorithm.c dm_algorithm.h
+	gcc main_cellular.c dm_algorithm.c mt_rand.c -o main_cellular.out -lm && ./main_cellular.out
