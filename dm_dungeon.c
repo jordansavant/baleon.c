@@ -1249,6 +1249,27 @@ struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *c
 
 
 
+void dng_cellmap_cellbomb(struct dng_cellmap* cellmap)
+{
+	// f it do it
+	int width = cellmap->width;
+	int height = cellmap->height;
+	void on_solid(int x, int y) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+		cell->is_wall = false;
+	}
+	void on_open(int x, int y) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+		//cell->is_wall = true;
+	}
+	double alive_chance = 0.4;
+	int death_max = 3;
+	int birth_max = 4;
+	int steps = 2;
+	dm_cellular_automata_detail(width, height, on_solid, on_open, alive_chance, death_max, birth_max, steps);
+}
+
+
 
 struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 {
@@ -1308,7 +1329,6 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	//printf("build doors\n");
 	dng_cellmap_builddoors(cellmap);
 	//printf("build entrance\n");
-	// TODO throw in big dungeon aberration rooms here
 	dng_cellmap_buildentrance(cellmap);
 	//printf("clean\n");
 	dng_cellmap_cleanup_connections(cellmap);
@@ -1320,6 +1340,8 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	dng_cellmap_buildwalls(cellmap);
 	//cellMap->buildLights();
 	//printf("build tags\n");
+	dng_cellmap_cellbomb(cellmap);
+	// TODO throw in big dungeon aberration rooms here
 	dng_cellmap_buildtags(cellmap);
 	dng_cellmap_machinate(cellmap);
 	//cellMap->machinate();
