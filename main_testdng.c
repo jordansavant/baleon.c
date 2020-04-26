@@ -7,6 +7,7 @@ int main(void)
 	int seed = 130;
 	do {
 		char *red = "\033[0;31m";
+		char *blue = "\033[0;34m";
 		char *def = "\033[0m";
 		printf("SEED %d\n", seed);
 		struct dng_dungeon *dungeon = dng_gendungeon(seed, 3);
@@ -30,6 +31,8 @@ int main(void)
 					//	printf("P ");
 					if (false)
 						printf("skip");
+					else if (cell->temp_wall)
+						printf("w ");
 					else if (cell->has_mob)
 						printf("M ");
 					else if (cell->has_item)
@@ -56,6 +59,8 @@ int main(void)
 					//	printf("S ");
 					else if (cell->is_wall)
 						printf(". ");
+					else if (cell->room != NULL && cell->room->is_room_isolated)
+						printf("%s. %s", blue, def);
 					else if (cell->room != NULL)
 						printf("  ");
 					else if (cell->is_cellular_open)

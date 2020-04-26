@@ -60,6 +60,8 @@ void dng_cell_init(struct dng_cell *cell)
         cell->is_door = false;
         cell->was_door = false;
 	cell->door; // TODO? is this ok?
+	cell->door_room = NULL;
+	cell->door_room = NULL;
 
 	cell->is_entrance = false;
 	cell->entrance_id = -1;
@@ -83,6 +85,8 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->has_item = false;
 
 	cell->is_cellular_open = false;
+
+	cell->temp_wall = false;
 }
 
 int dng_cell_get_x(struct dm_astarnode *astar_node)
@@ -172,6 +176,8 @@ void dng_room_init(struct dng_room *room, int x, int y, int w, int h)
 	room->height = h;
 	room->entrance_weight = 0;
 	room->is_machine_room = false;
+	room->is_room_isolated = false;
+	room->door_count = 0;
 }
 
 void dng_cellmap_emplace_room(struct dng_cellmap *cellmap, struct dng_room *room)
@@ -406,7 +412,7 @@ void dng_cellmap_open_room(struct dng_cellmap *cellmap, struct dng_room *room)
 			starter_cell_index = cell_sill->index;
 		// else pick them at random to be a door cell
 		} else if (dm_randii(0, num_openings / 2) == 0)
-			dng_cellmap_emplace_door(cellmap, room, cell_sill);
+			dng_cellmap_emplace_sill_door(cellmap, room, cell_sill, true);
 
 		sill_length++;
 	};
@@ -414,10 +420,10 @@ void dng_cellmap_open_room(struct dng_cellmap *cellmap, struct dng_room *room)
 
 	// ensure we set our door for the first cell we picked
 	struct dng_cell *cell_sill = cellmap->cells[starter_cell_index];
-	dng_cellmap_emplace_door(cellmap, room, cell_sill);
+	dng_cellmap_emplace_sill_door(cellmap, room, cell_sill, true);
 }
 
-void dng_cellmap_emplace_door(struct dng_cellmap* cellmap, struct dng_room *room, struct dng_cell *cell_sill)
+void dng_cellmap_emplace_sill_door(struct dng_cellmap* cellmap, struct dng_room *room, struct dng_cell *cell_sill, bool connect)
 {
 	struct dng_cell *cell_door = dng_cellmap_get_cell_at_position(cellmap, cell_sill->sill_data.door_x, cell_sill->sill_data.door_y);
 	if (!cell_door->is_door) {
@@ -442,14 +448,30 @@ void dng_cellmap_emplace_door(struct dng_cellmap* cellmap, struct dng_room *room
 			cell_door->room,
 			dir_x, dir_y
 		};
-
-		cell_door->is_door = true;
-		cell_door->was_door = true;
 		cell_door->door = roomdoor;
+		dng_cellmap_emplace_door(cellmap, room, cell_door);
 
 		// Help connections
-		dng_cellmap_connect_door(cellmap, &roomdoor);
+		if (connect)
+			dng_cellmap_connect_door(cellmap, &roomdoor);
 	}
+}
+
+void dng_cellmap_emplace_door(struct dng_cellmap* cellmap, struct dng_room *room, struct dng_cell *cell_door)
+{
+	cell_door->is_door = true;
+	cell_door->was_door = true;
+	cell_door->door_room = room;
+	room->door_count++;
+}
+
+void dng_cellmap_remove_door(struct dng_cellmap* cellmap, struct dng_cell *cell)
+{
+	cell->is_door = false;
+	if (cell->door_room) {
+		cell->door_room->door_count--;
+	}
+	cell->door_room = NULL;
 }
 
 // TODO this is hardcoded for square rooms, not round or cavelikes
@@ -675,7 +697,7 @@ void dng_cellmap_build_landing_pad(struct dng_cellmap *cellmap, struct dng_cell*
 {
 	// flood fill outwards picking a landing pad (so we can transition into the area even if entrance is blocked)
 	// this was for multiplayer logic back in the day in RogueZombie but I like the idea still
-	int max_radius = 3;
+	int max_radius = 2;
 	bool is_blocked(int x, int y, int depth) {
 		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
 		int radius = dm_disti(cell->x, cell->y, start_cell->x, start_cell->y);
@@ -698,6 +720,69 @@ void dng_cellmap_build_landing_pad(struct dng_cellmap *cellmap, struct dng_cell*
 }
 // ENTRANCE END
 ///////////////////////////
+
+
+
+
+void dng_cellmap_lockrooms(struct dng_cellmap *cellmap)
+{
+	// pick a random room and lock it
+	int index = dm_randii(0, cellmap->rooms_length);
+
+	struct dng_room* room = cellmap->rooms[index];
+	room->is_room_isolated = true;
+	// temporarily wall off and pick one door we want to keep open
+	bool inspect(struct dng_cell* cell){
+		cell->temp_wall = true; // wall off everything else
+		// dng_cellmap_emplace_wall(cellmap, cell); // force this to be wall
+		return false;
+	}
+	// remove all doors but our picked one
+	dm_cellmap_inspect_room_perimeter(cellmap, room, inspect);
+	//bool inspect2(struct dng_cell* cell){
+	//	if (cell->is_door && cell != random_door_cell || !cell->is_door) {
+	//		if (cell->is_door)
+	//			dng_cellmap_remove_door(cellmap, cell);
+	//		//cell->temp_wall = false;
+	//		//cell->is_wall = true;
+	//	}
+	//	return false;
+	//}
+	//dm_cellmap_inspect_room_perimeter(cellmap, room, inspect2);
+
+
+	//for (int i=0; i < cellmap->rooms_length; i++) {
+	//	struct dng_room *room = cellmap->rooms[i];
+	//	struct dng_cell *random_door_cell = NULL;
+	//	// close all doors except a random one
+	//	bool inspect(struct dng_cell* cell){
+	//		if (cell->is_door) {
+	//			// choose a random door to remain open
+	//			if (random_door_cell == NULL || dm_randii(0, cell->door_room->door_count) == 0) {
+	//				random_door_cell = cell;
+	//			}
+	//		}
+	//		cell->temp_wall = true; // wall off everything else
+	//		return false;
+	//	}
+	//	dm_cellmap_inspect_room_perimeter(cellmap, room, inspect);
+	//	// open up our random door
+	//	if (random_door_cell) {
+	//		random_door_cell->temp_wall = false;
+	//	}
+	//	if (dng_cellmap_is_room_reachable(cellmap, room)) {
+	//		// can be reached with only one door randomly opened
+	//		room->is_room_isolated = true;
+	//	}
+	//	bool inspect2(struct dng_cell* cell){
+	//		cell->temp_wall = false;
+	//		return false;
+	//	}
+	//	dm_cellmap_inspect_room_perimeter(cellmap, room, inspect2);
+	//}
+}
+
+
 
 
 
@@ -792,7 +877,7 @@ void dng_cellmap_fix_doors(struct dng_cellmap *cellmap)
 			if (cell->is_door) {
 				struct dng_cell *neighbor = dng_cellmap_get_cell_at_position(cellmap, cell->x + cell->door.dir_x, cell->y + cell->door.dir_y);
 				if (neighbor->room == NULL && !neighbor->is_door && !neighbor->is_tunnel) {
-					cell->is_door = false;
+					dng_cellmap_remove_door(cellmap, cell);
 				}
 			}
 
@@ -800,7 +885,7 @@ void dng_cellmap_fix_doors(struct dng_cellmap *cellmap)
 			if (cell->is_door) {
 				struct dng_cell *neighbor = dng_cellmap_get_cell_at_position(cellmap, cell->x + cell->door.dir_x, cell->y + cell->door.dir_y);
 				if (neighbor->is_door) {
-					cell->is_door = false;
+					dng_cellmap_remove_door(cellmap, cell);
 					dng_cellmap_mark_as_tunnel(cellmap, cell);
 				}
 			}
@@ -840,6 +925,11 @@ void dng_cellmap_fix_rooms(struct dng_cellmap *cellmap)
 	}
 }
 
+bool dng_cellmap_is_room_reachable(struct dng_cellmap *cellmap, struct dng_room *room)
+{
+	return dng_cellmap_are_rooms_connected(cellmap, room, cellmap->entrance_room);
+}
+
 bool dng_cellmap_are_rooms_connected(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b)
 {
 	if (room_a == room_b)
@@ -871,7 +961,7 @@ void dng_cellmap_get_room_connection_path(struct dng_cellmap *cellmap, struct dn
 
 	bool is_blocked(struct dm_astarnode* node) {
 		struct dng_cell *cell = (struct dng_cell*)node->owner;
-		return cell->room == NULL && !cell->is_tunnel && !cell->is_door && !cell->is_cellular_open;
+		return (cell->room == NULL && !cell->is_tunnel && !cell->is_door && !cell->is_cellular_open) || cell->temp_wall;
 	}
 	struct dm_astarnode* get_node(int x, int y) {
 		int index = y * cellmap->width + x;
@@ -936,7 +1026,7 @@ void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room
 					(south && south->room && south->room != room_a) ||
 					(west && west->room && west->room != room_a)) {
 					// dig this cell and return
-					dng_cellmap_emplace_room_fix(cellmap, cell);
+					dng_cellmap_emplace_room_fix(cellmap, room_a, cell);
 					return;
 				}
 			}
@@ -944,12 +1034,14 @@ void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room
 			if(cell->room && cell->room != room_a && stop_on_room)
 				return;
 
-			dng_cellmap_emplace_room_fix(cellmap, cell);
+			// TODO if we are tunneling out a room taht was forcibly isolated
+			// then make the first cell a door we need to lock
+			dng_cellmap_emplace_room_fix(cellmap, room_a, cell);
 		}
 	}
 }
 
-void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_cell *cell)
+void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_room* parent_room, struct dng_cell *cell)
 {
 	// Make door
 	//if(cell->isRoomPermiter && !cell->isDoor && !cell->isTunnel)
@@ -962,6 +1054,11 @@ void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_cell *
 		cell->is_tunnel = true;
 		cell->was_room_fix_tunnel = true;
 	}
+}
+void dng_cellmap_emplace_room_fix_isolated_door(struct dng_cellmap *cellmap, struct dng_room* parent_room, struct dng_cell *cell)
+{
+	// Make door
+	dng_cellmap_emplace_door(cellmap, parent_room, cell);
 }
 // CLEANUP CONNECTION END
 ///////////////////////////
@@ -1084,8 +1181,7 @@ void dng_cellmap_buildwalls(struct dng_cellmap *cellmap)
 					struct dng_cell *neighbor = dng_cellmap_get_cell_at_position_nullable(cellmap, cell->x + dirs[d].x, cell->y + dirs[d].y);
 					if (neighbor && (neighbor->room == NULL || !neighbor->is_door || !neighbor->is_tunnel)) {
 						if (cell->is_cellular_open == false) {
-							cell->is_wall = true;
-							cell->has_structure = true;
+							dng_cellmap_emplace_wall(cellmap, cell);
 							// TODO structure type = WALL; not sure if i need this
 						}
 					}
@@ -1093,6 +1189,17 @@ void dng_cellmap_buildwalls(struct dng_cellmap *cellmap)
 			}
 
 		}
+	}
+}
+
+void dng_cellmap_emplace_wall(struct dng_cellmap *cellmap, struct dng_cell* cell)
+{
+	cell->is_wall = true;
+	cell->has_structure = true;
+	cell->is_cellular_open = false;
+	cell->is_tunnel = false;
+	if (cell->is_door) {
+		dng_cellmap_remove_door(cellmap, cell);
 	}
 }
 
@@ -1120,6 +1227,7 @@ void dng_cellmap_tag_unreachables(struct dng_cellmap *cellmap)
 		}
 	}
 }
+
 // BUILD TAGS END
 ///////////////////////////
 
@@ -1221,6 +1329,38 @@ void dng_cellmap_inspect_cells_in_dimension(struct dng_cellmap *cellmap, int x, 
 				return;
 			}
 		}
+	}
+}
+
+void dm_cellmap_inspect_room_perimeter(struct dng_cellmap *cellmap, struct dng_room *room, bool (*inspect)(struct dng_cell*))
+{
+	// loop cells above and below
+	for (int c=-1; c < room->width + 1; c++) {
+		// above
+		int x = c + room->x;
+		int y = room->y - 1;
+		struct dng_cell* cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+		if (inspect(cell))
+			return;
+		// bottom
+		y = room->y + room->height;
+		cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+		if (inspect(cell))
+			return;
+	}
+	// loop cells left and right
+	for (int r=0; r < room->height; r++) {
+		// left
+		int x = room->x - 1;
+		int y = room->y + r;
+		struct dng_cell* cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+		if (inspect(cell))
+			return;
+		// right
+		x = room->x + room->width;
+		cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+		if (inspect(cell))
+			return;
 	}
 }
 
@@ -1352,6 +1492,8 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	dng_cellmap_cellbomb(cellmap);
 	//printf("build entrance\n");
 	dng_cellmap_buildentrance(cellmap);
+
+	dng_cellmap_lockrooms(cellmap); // pick some random rooms to wall off completely, when we dig out a tunnel put a locked door on it
 	//printf("clean\n");
 	dng_cellmap_cleanup_connections(cellmap);
 	//printf("calc entrance weights\n");
@@ -1362,8 +1504,8 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	dng_cellmap_buildwalls(cellmap);
 	//cellMap->buildLights();
 	//printf("build tags\n");
-	// TODO throw in big dungeon aberration rooms here
 	dng_cellmap_buildtags(cellmap);
+	//
 	dng_cellmap_machinate(cellmap);
 	//cellMap->machinate();
 

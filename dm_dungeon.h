@@ -35,6 +35,8 @@ struct dng_room {
 	int width, height;
 	int entrance_weight;
 	bool is_machine_room;
+	bool is_room_isolated;
+	int door_count;
 
 	//unsigned int cellCount();
 };
@@ -68,6 +70,7 @@ struct dng_cell {
         bool is_door;
         bool was_door;
 	struct dng_roomdoor door; // TODO was a pointer in xogeni (seems to work as stack based)
+	struct dng_room* door_room;
 
         bool is_entrance;
         int entrance_id;
@@ -87,6 +90,8 @@ struct dng_cell {
 	bool has_item;
 
 	bool is_cellular_open;
+
+	bool temp_wall;
 };
 
 struct tunnel_dir {
@@ -151,7 +156,9 @@ void dng_get_shuffled_directions(struct tunnel_dir *dirs);
 // DOORS
 void dng_cellmap_builddoors(struct dng_cellmap *cellmap);
 void dng_cellmap_open_room(struct dng_cellmap *cellmap, struct dng_room *room);
-void dng_cellmap_emplace_door(struct dng_cellmap* cellmap, struct dng_room *room, struct dng_cell *cell_sill);
+void dng_cellmap_emplace_sill_door(struct dng_cellmap* cellmap, struct dng_room *room, struct dng_cell *cell_sill, bool connect);
+void dng_cellmap_emplace_door(struct dng_cellmap* cellmap, struct dng_room *room, struct dng_cell *cell);
+void dng_cellmap_remove_door(struct dng_cellmap* cellmap, struct dng_cell *cell);
 void dng_cellmap_set_room_sills(struct dng_cellmap* cellmap, struct dng_room *room, void (*on_set)(struct dng_cell*));
 void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *door);
 
@@ -168,10 +175,12 @@ int dng_cellmap_count_tunnel_connections(struct dng_cellmap *cellmap, struct dng
 void dng_cellmap_collapse(struct dng_cellmap *cellmap, struct dng_cell *tunnel_cell);
 void dng_cellmap_fix_doors(struct dng_cellmap *cellmap);
 void dng_cellmap_fix_rooms(struct dng_cellmap *cellmap);
+bool dng_cellmap_is_room_reachable(struct dng_cellmap *cellmap, struct dng_room *room);
 bool dng_cellmap_are_rooms_connected(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b);
 void dng_cellmap_get_room_connection_path(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b, void (*inspect)(struct dng_cell *cell));
 void dng_cellmap_tunnel_rooms(struct dng_cellmap *cellmap, struct dng_room *room_a, struct dng_room *room_b, bool stop_on_room);
-void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_cell *cell);
+void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_room *parent_room, struct dng_cell *cell);
+void dng_cellmap_emplace_room_fix_isolated_door(struct dng_cellmap *cellmap, struct dng_room *parent_room, struct dng_cell *cell);
 
 // CALC WEIGHTS
 void dng_cellmap_calc_entrance_weights(struct dng_cellmap *cellmap);
@@ -182,6 +191,7 @@ void dng_exit_init(struct dng_exit *exit, int id, int x, int y);
 
 // WALLS
 void dng_cellmap_buildwalls(struct dng_cellmap *cellmap);
+void dng_cellmap_emplace_wall(struct dng_cellmap *cellmap, struct dng_cell *cell);
 
 // TAGS
 void dng_cellmap_buildtags(struct dng_cellmap *cellmap);
@@ -193,6 +203,7 @@ void dng_cellmap_link(struct dng_cellmap* child, struct dng_cellmap* parent);
 // INSPECTORS
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));
 void dng_cellmap_inspect_cells_in_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h, bool (*inspect)(struct dng_cell*));
+void dm_cellmap_inspect_room_perimeter(struct dng_cellmap *cellmap, struct dng_room *room, bool (*inspect)(struct dng_cell*));
 bool dng_cellmap_can_house_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h);
 struct dng_cell* dng_cellmap_get_cell_at_position(struct dng_cellmap *cellmap, int x, int y);
 struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *cellmap, int x, int y);
