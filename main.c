@@ -1575,6 +1575,10 @@ void wld_log_it(char* msg, struct wld_item* item)
 {
 	ui_loginfo_s(msg, item->type->title);
 }
+void wld_log_ts(char* msg, struct wld_tile* tile)
+{
+	ui_loginfo_s(msg, tile->type->short_desc);
+}
 
 int main(void)
 {

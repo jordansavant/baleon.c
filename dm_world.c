@@ -1081,7 +1081,7 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 		if (dist > allowed_range)
 			return true;
 
-		return wld_tile_is_blocked_movement(t) || !t->is_visible;
+		return wld_tile_is_blocked_movement(t) || wld_tile_is_blocked_vision(t) || !t->is_visible;
 	}
 	void on_visible(int x, int y) {
 		if (x == start_x && y == start_y) // ignore origin position
@@ -1126,6 +1126,14 @@ void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 			item->type->fn_hit(item, user, wld_gettileat(user->map, x, y));
 			hit_target = true;
 			return true; // stop inspection
+		}
+
+		// if we hit something that blocks movement stop the attack
+		struct wld_tile* tile = wld_gettileat(user->map, x, y);
+		if (wld_tile_is_blocked_movement(tile)) {
+			if (user->is_player)
+				wld_log_ts("It strikes %s.", tile);
+			return true;
 		}
 
 		return false;
@@ -1511,11 +1519,11 @@ void wld_setup()
 		{ TILE_GRASS,           '"', WCLR_BLACK, WCLR_GREEN, '"', WCLR_BLACK, WCLR_BLUE,  false, "a small tuft of grass" },
 		{ TILE_WATER,           ' ', WCLR_BLUE,  WCLR_WHITE, ' ', WCLR_BLACK, WCLR_BLACK, false, "a pool of water glistens" },
 		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  true,  "a large tree" },
-		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true,  "rough stone wall" },
-		{ TILE_STONEFLOOR,	'.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "rough stone floor" },
+		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true,  "a rough stone wall" },
+		{ TILE_STONEFLOOR,	'.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "a rough stone floor" },
 		{ TILE_ENTRANCE,	'>', WCLR_BLACK, WCLR_CYAN,  '>', WCLR_BLACK, WCLR_CYAN,  false, "the entrance back up" },
 		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_CYAN,  false, "an exit further down" },
-		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  false,  "an old stone door" },
+		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  false, "an old stone door" },
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {

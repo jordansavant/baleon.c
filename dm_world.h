@@ -355,5 +355,6 @@ void wld_log(char* msg);
 void wld_log_s(char* msg, char* s2);
 void wld_log_ms(char* msg, struct wld_mob* mob);
 void wld_log_it(char* msg, struct wld_item* item);
+void wld_log_ts(char* msg, struct wld_tile* tile);
 
 #endif
