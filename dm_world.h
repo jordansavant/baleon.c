@@ -8,6 +8,7 @@
 
 struct wld_item;
 struct wld_mob;
+struct wld_mob_type;
 
 ///////////////////////////
 // TILE STRUCTS
@@ -47,6 +48,7 @@ struct wld_tile {
 	bool is_door_open;
 	bool is_door_locked;
 	bool door_lock_id;
+	struct wld_mobtype* dead_mob_type;
 	// on_enter, on_leave events
 	void(*on_mob_enter)(struct wld_map*, struct wld_tile*, struct wld_mob*); // TODO left off here
 };
@@ -111,6 +113,7 @@ struct wld_mob {
 	struct wld_item **inventory;
 	int target_x, target_y;
 	struct wld_item *active_item;
+	bool is_destroy_queued;
 };
 
 
@@ -225,6 +228,8 @@ struct wld_world {
 
 void wld_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id);
 void wld_map_new_item(struct wld_map* map, struct wld_item* item, int x, int y);
+void wld_map_queue_destroy_mob(struct wld_map* map, struct wld_mob* mob);
+void wld_map_destroy_mob(struct wld_map* map, struct wld_mob* mob);
 void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob);
 
 ///////////////////////////
@@ -335,6 +340,7 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap);
 void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap);
 void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap);
 struct wld_map* wld_newmap(int id, int difficulty, int width, int height);
+void wld_delmob(struct wld_mob* mob);
 void wld_delmap(struct wld_map *map);
 
 

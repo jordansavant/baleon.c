@@ -1454,6 +1454,15 @@ void ps_play_update()
 			t->is_visible = false;
 		}
 	}
+
+	// clean up mob graveyard
+	for (int i=0; i < current_map->mobs_length; i++) {
+		struct wld_mob *m = current_map->mobs[i];
+		if (m->is_destroy_queued) {
+			wld_map_destroy_mob(current_map, m);
+			i--; // move iterator back because mob list is now shorter and shifted back
+		}
+	}
 }
 
 

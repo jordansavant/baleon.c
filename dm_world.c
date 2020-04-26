@@ -146,6 +146,19 @@ void wld_map_new_mob(struct wld_map* map, struct wld_mob* mob, int x , int y)
 	// increment our list
 	map->mobs_length++;
 }
+// This is called by other game code and is very specifically not called
+// during any function that runs in the update loop
+void wld_map_queue_destroy_mob(struct wld_map* map, struct wld_mob* mob)
+{
+	mob->is_destroy_queued = true;
+}
+// This is called when we want to remove the map and free it from memory
+// such as when a mob is killed and permanently removed from the game
+void wld_map_destroy_mob(struct wld_map* map, struct wld_mob* mob)
+{
+	wld_map_remove_mob(map, mob);
+	wld_delmob(mob); // frees memory
+}
 // This is called when we don't want to destroy a mob, just remove it from map ownership
 void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob)
 {
@@ -765,6 +778,13 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct
 		aggressor->map->on_mob_kill_player(aggressor->map, aggressor, defender, item);
 	if (aggressor->is_player && aggressor->map->on_player_kill_mob)
 		aggressor->map->on_player_kill_mob(aggressor->map, aggressor, defender, item);
+	// after event executed lets remove the mob and add the dead mob type to the tile floor
+	// TODO drop loot?
+	struct wld_tile* tile = wld_gettileat_index(defender->map, defender->map_index);
+	tile->dead_mob_type = defender->type; // only most recent
+
+	// what would happen if we killed a mob and destroyed them mid loop?
+	wld_map_queue_destroy_mob(defender->map, defender);
 }
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item *item)
 {
@@ -1212,8 +1232,8 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 			tile->is_door_open = false;
 			tile->is_door_locked = false;
 			tile->door_lock_id = -1;
+			tile->dead_mob_type = NULL;
 			tile->on_mob_enter = NULL;
-			tile->is_blocked = false; // allows you to set blocking logic on a tile instance basis, fallback is type
 
 			// TODO more
 			if (cell->is_wall) {
@@ -1273,6 +1293,7 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->target_x = 0;
 	mob->target_y = 0;
 	mob->active_item = NULL;
+	mob->is_destroy_queued = false;
 	mob->type_id = type;
 	mob->type = &wld_mobtypes[type];
 
@@ -1416,6 +1437,15 @@ struct wld_map* wld_newmap(int id, int difficulty, int width, int height)
 	return map;
 }
 
+// frees mob memory
+void wld_delmob(struct wld_mob *mob)
+{
+	for (int j=0; j<INVENTORY_SIZE; j++)
+		if (mob->inventory[j] != NULL)
+			free(mob->inventory[j]);
+	free(mob->inventory);
+	free(mob);
+}
 void wld_delmap(struct wld_map *map)
 {
 	free(map->cursor);
@@ -1426,15 +1456,9 @@ void wld_delmap(struct wld_map *map)
 	free(map->items);
 	free(map->item_map);
 
-	for (int i=0; i<map->mobs_length; i++) {
-		for (int j=0; j<INVENTORY_SIZE; j++)
-			if (map->mobs[i]->inventory[j] != NULL)
-				free(map->mobs[i]->inventory[j]);
-		free(map->mobs[i]->inventory);
-	}
+
 	for (int i=0; i<map->mobs_length; i++)
-		if (map->mobs[i] != NULL)
-			free(map->mobs[i]);
+		wld_delmob(map->mobs[i]);
 	free(map->mobs);
 	free(map->mob_map);
 
