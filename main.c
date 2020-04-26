@@ -513,8 +513,9 @@ void ui_clear_win(WINDOW *win)
 void ui_cursorinfo(char *msg)
 {
 	if (msg[0] != '\0') {
-		char full[CURSOR_INFO_LENGTH] = "ghost: ";
-		ui_write(cursorpanel, 0, strncat(full, msg, CURSOR_INFO_LENGTH - 7));
+		char buffer[CURSOR_INFO_LENGTH];
+		snprintf(buffer, CURSOR_INFO_LENGTH, "ghost :%s", msg);
+		ui_write(cursorpanel, 0, buffer);
 	} else {
 		ui_write(cursorpanel, 0, "--");
 	}
@@ -524,8 +525,9 @@ void ui_cursorinfo(char *msg)
 void ui_positioninfo(char *msg)
 {
 	if (msg[0] != '\0') {
-		char full[CURSOR_INFO_LENGTH] = "@: ";
-		ui_write(cursorpanel, 1, strncat(full, msg, CURSOR_INFO_LENGTH - 7));
+		char buffer[CURSOR_INFO_LENGTH];
+		snprintf(buffer, CURSOR_INFO_LENGTH, "@ :%s", msg);
+		ui_write(cursorpanel, 1, buffer);
 	} else {
 		ui_write(cursorpanel, 1, "--");
 	}
@@ -535,8 +537,9 @@ void ui_positioninfo(char *msg)
 void ui_modeinfo(char *msg)
 {
 	if (msg[0] != '\0') {
-		char full[CURSOR_INFO_LENGTH] = "y: ";
-		ui_write(cursorpanel, 2, strncat(full, msg, CURSOR_INFO_LENGTH - 6));
+		char buffer[CURSOR_INFO_LENGTH];
+		snprintf(buffer, CURSOR_INFO_LENGTH, "y :%s", msg);
+		ui_write(cursorpanel, 2, buffer);
 	} else {
 		ui_write(cursorpanel, 2, "");
 	}
@@ -607,6 +610,10 @@ void ui_update_cursorinfo(struct wld_map *map)
 			ui_cursorinfo(m->type->short_desc);
 		} else if (i != NULL) {
 			ui_cursorinfo(i->type->short_desc);
+		} else if(t->dead_mob_type) {
+			char buffer[CURSOR_INFO_LENGTH];
+			sprintf(buffer, "%s (dead)", t->dead_mob_type->short_desc);
+			ui_cursorinfo(buffer);
 		} else {
 			ui_cursorinfo(t->type->short_desc);
 		}
@@ -625,6 +632,10 @@ void ui_update_positioninfo(struct wld_map *map)
 		struct wld_item *i = wld_getitemat(map, x, y);
 		if (i != NULL) {
 			ui_positioninfo(i->type->short_desc);
+		} else if(t->dead_mob_type) {
+			char buffer[CURSOR_INFO_LENGTH];
+			sprintf(buffer, "%s (dead)", t->dead_mob_type->short_desc);
+			ui_positioninfo(buffer);
 		} else {
 			ui_positioninfo(t->type->short_desc);
 		}
@@ -1355,17 +1366,10 @@ void ps_play_draw()
 
 			if (t->is_visible) {
 				struct draw_struct ds = wld_get_drawstruct(current_map, c, r);
-
-				// if there is a dead mob on this then color it bloody
-				struct wld_mob *m = wld_getmobat_index(current_map, t->map_index);
-				if (m != NULL && m->is_dead)
-					ps_draw_tile(r, c, ds.sprite, SCOLOR_BLOOD, false);
-				else
-					ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
+				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
 
 			} else if (t->was_visible) {
 				struct draw_struct ds = wld_get_memory_drawstruct(current_map, c, r);
-
 				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
 			}
 		}

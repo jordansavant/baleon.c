@@ -252,6 +252,10 @@ struct wld_itemtype* wld_get_itemtype(int id)
 {
 	return &wld_itemtypes[id];
 }
+int wld_cpair(enum WLD_COLOR_INDEX a, enum WLD_COLOR_INDEX b)
+{
+	return WLD_COLOR_BASE + (a * WLD_COLOR_COUNT + b);
+}
 int wld_cpair_tm(int tiletype, int mobtype)
 {
 	struct wld_tiletype *tt = wld_get_tiletype(tiletype);
@@ -490,6 +494,11 @@ struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 		if (i->type->sprite != ' ')
 			cha = i->type->sprite;
 		colorpair = wld_cpair_ti(t->type_id, i->type_id);
+	} else if(t->dead_mob_type != NULL) {
+		// if we have dead mob on this tile use its display
+		// if there is a dead mob on this then color it bloody
+		colorpair = wld_cpair(WCLR_BLACK, WCLR_RED);
+		cha = t->dead_mob_type->sprite;
 	} else {
 		colorpair = wld_cpair_tm(t->type_id, 0);
 	}
