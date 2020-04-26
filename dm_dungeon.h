@@ -59,6 +59,7 @@ struct dng_cell {
 	struct dng_room* room;
         bool is_room_edge;
         bool is_room_perimeter;
+	struct dng_room* perimeter_room;
 
         bool is_tunnel;
         bool was_corridor_tunnel;
@@ -210,6 +211,7 @@ struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *c
 
 // MACHINATIONS
 void dng_cellmap_machinate(struct dng_cellmap *cellmap);
+void dng_cellmap_lockrooms(struct dng_cellmap *cellmap);
 
 ///////////////////////////
 // OVERALL DUNGEON

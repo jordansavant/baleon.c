@@ -4,13 +4,13 @@
 
 int main(void)
 {
-	int seed = 130;
+	int seed = 146;
 	do {
 		char *red = "\033[0;31m";
 		char *blue = "\033[0;34m";
 		char *def = "\033[0m";
 		printf("SEED %d\n", seed);
-		struct dng_dungeon *dungeon = dng_gendungeon(seed, 3);
+		struct dng_dungeon *dungeon = dng_gendungeon(seed, 1);
 
 		for (int i=0; i < dungeon->maps_length; i++) {
 			printf("MAP %d\n", i);
@@ -45,14 +45,14 @@ int main(void)
 						printf("e ");
 					else if (cell->is_exit_transition)
 						printf("X ");
+					else if (cell->is_door)
+						printf("D ");
 					else if (cell->was_room_fix_tunnel)
 						printf("F ");
 					else if (cell->is_tunnel)
 						printf("T ");
 					//else if (cell->was_corridor_tunnel)
 					//	printf("t ");
-					else if (cell->is_door)
-						printf("D ");
 					//else if (cell->was_door)
 					//	printf("d ");
 					//else if (cell->is_sill)
