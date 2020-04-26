@@ -1185,8 +1185,8 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 				tile->type_id = TILE_STONEWALL;
 				tile->type = &wld_tiletypes[TILE_STONEWALL];
 			} else if (cell->is_door) {
-				tile->type_id = TILE_GRASS;
-				tile->type = &wld_tiletypes[TILE_GRASS];
+				tile->type_id = TILE_STONEDOOR;
+				tile->type = &wld_tiletypes[TILE_STONEDOOR];
 			} else if (cell->is_exit_transition || cell->is_entrance_transition) {
 				if (cell->is_entrance_transition) {
 					tile->type_id = TILE_ENTRANCE;
@@ -1481,8 +1481,9 @@ void wld_setup()
 		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  true,  "a large tree" },
 		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true,  "rough stone wall" },
 		{ TILE_STONEFLOOR,	'.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "rough stone floor" },
-		{ TILE_ENTRANCE,	'>', WCLR_BLACK, WCLR_CYAN,  '>', WCLR_BLACK, WCLR_BLUE,  false, "entrance back up" },
-		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_BLUE,  false, "exit further down" },
+		{ TILE_ENTRANCE,	'>', WCLR_BLACK, WCLR_CYAN,  '>', WCLR_BLACK, WCLR_BLUE,  false, "the entrance back up" },
+		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_BLUE,  false, "an exit further down" },
+		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  true,  "an old stone door" },
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {

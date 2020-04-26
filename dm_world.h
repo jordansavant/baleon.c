@@ -21,6 +21,7 @@ enum WLD_TILETYPE {
 	TILE_STONEFLOOR = 5,
 	TILE_ENTRANCE,
 	TILE_EXIT,
+	TILE_STONEDOOR,
 };
 struct wld_tiletype {
 	enum WLD_TILETYPE type;
