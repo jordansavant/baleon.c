@@ -23,6 +23,7 @@ enum WLD_TILETYPE {
 	TILE_ENTRANCE,
 	TILE_EXIT,
 	TILE_STONEDOOR,
+	TILE_DEEPWATER,
 };
 struct wld_tiletype {
 	enum WLD_TILETYPE type;

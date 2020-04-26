@@ -1487,9 +1487,7 @@ void dng_cellmap_decorate_vegetation(struct dng_cellmap *cellmap)
 	}
 	void on_open(int x, int y) {
 		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y );
-		cell->floor_style = 1; // grass
-		if (dm_randii(0, 20) == 0)
-			cell->floor_style = 3; // tree
+		cell->floor_style = DNG_STYLE_GRASS;
 	}
 	double alive_chance = 0.48;
 	int death_max = 3;
@@ -1509,9 +1507,9 @@ void dng_cellmap_decorate_water(struct dng_cellmap *cellmap)
 	}
 	void on_open(int x, int y) {
 		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y );
-		cell->floor_style = 2;
+		cell->floor_style = DNG_STYLE_WATER;
 	}
-	double alive_chance = 0.54;
+	double alive_chance = 0.56;
 	int death_max = 3;
 	int birth_max = 4;
 	int steps = 2;

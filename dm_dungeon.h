@@ -9,6 +9,13 @@ enum DNG_MOTIF {
 	MOTIF_PRISON,
 };
 
+enum DNG_STYLES {
+	DNG_STYLE_VOID,
+	DNG_STYLE_GRASS,
+	DNG_STYLE_WATER,
+	DNG_STYLE_DEEPWATER,
+};
+
 struct dng_exit {
         int id;
         int x, y;

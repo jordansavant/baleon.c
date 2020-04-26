@@ -1270,15 +1270,15 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 					map->exit_tile = tile;
 				}
 			} else {
-				if (cell->floor_style == 1) {
+				if (cell->floor_style == DNG_STYLE_GRASS) {
 					tile->type_id = TILE_GRASS;
 					tile->type = &wld_tiletypes[TILE_GRASS];
-				} else if(cell->floor_style == 2) {
+				} else if(cell->floor_style == DNG_STYLE_WATER) {
 					tile->type_id = TILE_WATER;
 					tile->type = &wld_tiletypes[TILE_WATER];
-				} else if(cell->floor_style == 3) {
-					tile->type_id = TILE_TREE;
-					tile->type = &wld_tiletypes[TILE_TREE];
+				} else if(cell->floor_style == DNG_STYLE_DEEPWATER) {
+					tile->type_id = TILE_DEEPWATER;
+					tile->type = &wld_tiletypes[TILE_DEEPWATER];
 				} else {
 					tile->type_id = TILE_STONEFLOOR;
 					tile->type = &wld_tiletypes[TILE_STONEFLOOR];
@@ -1568,6 +1568,7 @@ void wld_setup()
 		{ TILE_ENTRANCE,	'>', WCLR_BLACK, WCLR_CYAN,  '>', WCLR_BLACK, WCLR_CYAN,  false, "the entrance back up" },
 		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_CYAN,  false, "an exit further down" },
 		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  false, "an old stone door" },
+		{ TILE_DEEPWATER,       ' ', WCLR_BLACK, WCLR_BLACK, '~', WCLR_BLACK, WCLR_BLUE,  false, "an old stone door" },
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
