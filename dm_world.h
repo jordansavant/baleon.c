@@ -44,6 +44,7 @@ struct wld_tile {
 	bool was_visible;
 	bool is_blocked;
 	bool is_door;
+	bool is_door_open;
 	bool is_door_locked;
 	bool door_lock_id;
 	// on_enter, on_leave events
@@ -225,6 +226,13 @@ struct wld_world {
 void wld_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id);
 void wld_map_new_item(struct wld_map* map, struct wld_item* item, int x, int y);
 void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob);
+
+///////////////////////////
+// TILE EVENTS
+void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
+void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
+bool wld_tile_is_blocked_vision(struct wld_tile* tile);
+bool wld_tile_is_blocked_movement(struct wld_tile* tile);
 
 ///////////////////////////
 // UTILITY METHODS

@@ -1,6 +1,13 @@
 TODO:
 
 now
+- door locks were hacked in and need to be finished
+	- block needs to be owned by type but updated at tile
+	- wld_tile_is_blocked()
+	- if parent type is blocked use it, else if tile is blocked use it
+	- doors are not blocked types, but can be blocked tiles until they are interacted with
+	- if you walk against an unlocked door they open and stay open
+	- ? can your close a door ?
 - when enemies die we need to be able to walk over them (destroy and mark tile with dead mob type?)
 - aoe test item
 - ui: target mode state w/ keyhints
@@ -10,7 +17,8 @@ now
 
 
 later
-- dungeons need big cellular break ups
+- dungeon motifs like swathes of grass, water etc
+	- shallow water vs deep water
 - dungeons need mobs and items generated
 - bug: tunnels are getting stubbed out in little groups and thus not collapsing
 - bug: tunnels can exist in closed loops in the middle of nowhere

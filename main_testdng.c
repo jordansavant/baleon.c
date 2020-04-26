@@ -64,7 +64,8 @@ int main(void)
 					else if (cell->room != NULL)
 						printf("  ");
 					else if (cell->is_cellular_open)
-						printf("%s. %s", red, def);
+						//printf("%s. %s", red, def);
+						printf("  ");
 					else
 						printf("  ");
 				}

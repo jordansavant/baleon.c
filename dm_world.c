@@ -206,6 +206,23 @@ void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, stru
 	}
 }
 
+bool wld_tile_is_blocked_vision(struct wld_tile* tile)
+{
+	// door is visually blocked if not open
+	if (tile->is_door)
+		return !tile->is_door_open;
+	// otherwise inherit settings from tile and parent
+	return tile->type->is_block || tile->is_blocked;
+}
+
+bool wld_tile_is_blocked_movement(struct wld_tile* tile)
+{
+	// a door is blocked only if it is clsed and locked
+	if (tile->is_door)
+		return tile->is_door_locked && !tile->is_door_open;
+	// otherwise inherit settings from tile and parent
+	return tile->type->is_block || tile->is_blocked;
+}
 
 ///////////////////////////
 // UTILITY METHODS
@@ -284,8 +301,12 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 	if (mob_id > -1)
 		return false;
 
+	// if this is a door it is blocked if its
+	// door is not open and it is locked
+	// TODO STOPPED HERE
+
 	int tile_id = map->tile_map[map_index];
-	if (map->tiles[tile_id].is_blocked)
+	if (wld_tile_is_blocked_movement(&map->tiles[tile_id]))
 		return false;
 
 	return true;
@@ -334,7 +355,7 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely, bool trigger_events)
 		int ry = (int)dm_ceil_out(dirf_y);
 		struct wld_tile *t1 = wld_gettileat(mob->map, newx, newy - ry);
 		struct wld_tile *t2 = wld_gettileat(mob->map, newx - rx, newy);
-		if ((t1 && t1->is_blocked) || (t2 && t2->is_blocked)) {
+		if ((t1 && wld_tile_is_blocked_movement(t1)) || (t2 && wld_tile_is_blocked_movement(t2))) {
 			return;
 		}
 	}
@@ -428,7 +449,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 	bool wld_ss_isblocked(int x, int y)
 	{
 		struct wld_tile *t = wld_gettileat(map, x, y);
-		return t->is_blocked;
+		return wld_tile_is_blocked_vision(t);
 	}
 	void wld_ss_onvisible(int x, int y, double radius)
 	{
@@ -1060,7 +1081,7 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 		if (dist > allowed_range)
 			return true;
 
-		return t->is_blocked || !t->is_visible;
+		return wld_tile_is_blocked_movement(t) || !t->is_visible;
 	}
 	void on_visible(int x, int y) {
 		if (x == start_x && y == start_y) // ignore origin position
@@ -1180,22 +1201,24 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 			tile->was_visible = false;
 			tile->is_blocked = false;
 			tile->is_door = false;
+			tile->is_door_open = false;
 			tile->is_door_locked = false;
 			tile->door_lock_id = -1;
 			tile->on_mob_enter = NULL;
+			tile->is_blocked = false; // allows you to set blocking logic on a tile instance basis, fallback is type
 
 			// TODO more
 			if (cell->is_wall) {
 				tile->type_id = TILE_STONEWALL;
 				tile->type = &wld_tiletypes[TILE_STONEWALL];
-				tile->is_blocked = tile->type->is_block; // inherit block status from type
 			} else if (cell->is_door) {
 				tile->type_id = TILE_STONEDOOR;
 				tile->type = &wld_tiletypes[TILE_STONEDOOR];
+				tile->is_blocked = true; // cell->is_door_locked; // locked based on cell door quality
 				tile->is_door = true;
+				tile->is_door_open = false;
 				tile->is_door_locked = cell->is_door_locked;
 				tile->door_lock_id = cell->door_lock_id;
-				tile->is_blocked = cell->is_door_locked; // locked based on cell door quality
 			} else if (cell->is_exit_transition || cell->is_entrance_transition) {
 				if (cell->is_entrance_transition) {
 					tile->type_id = TILE_ENTRANCE;
@@ -1209,11 +1232,9 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 					tile->on_mob_enter = wld_tile_on_mob_enter_exit;
 					map->exit_tile = tile;
 				}
-				tile->is_blocked = tile->type->is_block; // inherit block status from type
 			} else {
 				tile->type_id = TILE_STONEFLOOR;
 				tile->type = &wld_tiletypes[TILE_STONEFLOOR];
-				tile->is_blocked = tile->type->is_block; // inherit block status from type
 			}
 
 			tile_map_array[index] = tile->id; // set tile map to this tile id

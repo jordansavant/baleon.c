@@ -592,6 +592,35 @@ void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *
 
 
 
+
+
+void dng_cellmap_cellbomb(struct dng_cellmap* cellmap)
+{
+	// f it do it
+	int width = cellmap->width - 2;
+	int height = cellmap->height - 2;
+	void on_solid(int x, int y) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x + 1, y + 1);
+		cell->is_cellular_open = false;
+	}
+	void on_open(int x, int y) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x + 1, y + 1);
+		cell->is_cellular_open = true;
+		cell->is_tunnel = false;
+		cell->is_door = false;
+	}
+	double alive_chance = 0.48;
+	int death_max = 3;
+	int birth_max = 4;
+	int steps = 2;
+	dm_cellular_automata_detail(width, height, on_solid, on_open, alive_chance, death_max, birth_max, steps);
+}
+
+
+
+
+
+
 ///////////////////////////
 // ENTRANCE START
 //
@@ -1530,28 +1559,6 @@ struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *c
 ///////////////////////////
 
 
-
-void dng_cellmap_cellbomb(struct dng_cellmap* cellmap)
-{
-	// f it do it
-	int width = cellmap->width - 2;
-	int height = cellmap->height - 2;
-	void on_solid(int x, int y) {
-		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x + 1, y + 1);
-		cell->is_cellular_open = false;
-	}
-	void on_open(int x, int y) {
-		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x + 1, y + 1);
-		cell->is_cellular_open = true;
-		cell->is_tunnel = false;
-		cell->is_door = false;
-	}
-	double alive_chance = 0.48;
-	int death_max = 3;
-	int birth_max = 4;
-	int steps = 2;
-	dm_cellular_automata_detail(width, height, on_solid, on_open, alive_chance, death_max, birth_max, steps);
-}
 
 
 
