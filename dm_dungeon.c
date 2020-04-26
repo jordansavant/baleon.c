@@ -871,7 +871,7 @@ void dng_cellmap_get_room_connection_path(struct dng_cellmap *cellmap, struct dn
 
 	bool is_blocked(struct dm_astarnode* node) {
 		struct dng_cell *cell = (struct dng_cell*)node->owner;
-		return cell->room == NULL && !cell->is_tunnel && !cell->is_door;
+		return cell->room == NULL && !cell->is_tunnel && !cell->is_door && !cell->is_cellular_open;
 	}
 	struct dm_astarnode* get_node(int x, int y) {
 		int index = y * cellmap->width + x;
@@ -1287,23 +1287,39 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 
 	// Room details
 	cellmap->map_padding = 1;
-	// mathematically anything smaller than a 6 by 6 can't have sills placed reliably
-	// we required certain spacing between sills and room corners to not have
-	// strange tunneling adjacent to doors
-	cellmap->min_room_width = 6;
-	cellmap->min_room_height = 6;
-	cellmap->max_room_width = 16;
-	cellmap->max_room_height = 16;
 
 	// motifs
 	// min 6x6, max 8x8, density 1 = prison
+	switch (dm_randii(0, 5)) {
+		case 0: cellmap->motif = MOTIF_PRISON; break;
+		default: cellmap->motif = MOTIF_COLLAPSED_DUNGEON; break;
+	}
+
+	// mathematically anything smaller than a 6 by 6 can't have sills placed reliably
+	// we required certain spacing between sills and room corners to not have
+	// strange tunneling adjacent to doors
+	double room_density;
+	switch (cellmap->motif) {
+	case MOTIF_PRISON:
+		room_density = 1;
+		cellmap->min_room_width = 6;
+		cellmap->min_room_height = 6;
+		cellmap->max_room_width = 8;
+		cellmap->max_room_height = 8;
+		break;
+	default:
+		room_density = .8;
+		cellmap->min_room_width = 6;
+		cellmap->min_room_height = 6;
+		cellmap->max_room_width = 16;
+		cellmap->max_room_height = 16;
+		break;
+	}
 
 	double map_hyp_size = sqrt(width * height);
 	double hyp_min_room_size = sqrt(cellmap->min_room_width * cellmap->min_room_height);
 	double hyp_max_room_size = sqrt(cellmap->max_room_width * cellmap->max_room_height);
 	double hyp_size = (hyp_min_room_size + hyp_max_room_size) / 2;
-
-	double room_density = .8;
 	double max_rooms_per_map = (map_hyp_size / hyp_size) * (map_hyp_size / hyp_size);
 
 	cellmap->room_count = max_rooms_per_map * room_density;
@@ -1324,7 +1340,6 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	cellmap->entrance_room = NULL;
 	cellmap->exit_room = NULL;
 
-
 	//printf("build ground\n");
 	dng_cellmap_buildground(cellmap);
 	//printf("build rooms\n");
@@ -1333,8 +1348,9 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	dng_cellmap_buildtunnels(cellmap);
 	//printf("build doors\n");
 	dng_cellmap_builddoors(cellmap);
-	//printf("build entrance\n");
+	// printf("build caves\n");
 	dng_cellmap_cellbomb(cellmap);
+	//printf("build entrance\n");
 	dng_cellmap_buildentrance(cellmap);
 	//printf("clean\n");
 	dng_cellmap_cleanup_connections(cellmap);

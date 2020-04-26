@@ -4,8 +4,10 @@
 
 int main(void)
 {
-	int seed = 123;
+	int seed = 130;
 	do {
+		char *red = "\033[0;31m";
+		char *def = "\033[0m";
 		printf("SEED %d\n", seed);
 		struct dng_dungeon *dungeon = dng_gendungeon(seed, 3);
 
@@ -48,12 +50,16 @@ int main(void)
 					//	printf("t ");
 					else if (cell->is_door)
 						printf("D ");
-					else if (cell->is_sill)
-						printf("S ");
+					//else if (cell->was_door)
+					//	printf("d ");
+					//else if (cell->is_sill)
+					//	printf("S ");
 					else if (cell->is_wall)
 						printf(". ");
 					else if (cell->room != NULL)
 						printf("  ");
+					else if (cell->is_cellular_open)
+						printf("%s. %s", red, def);
 					else
 						printf("  ");
 				}

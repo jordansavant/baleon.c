@@ -4,6 +4,10 @@
 #include "dm_defines.h"
 #include "dm_algorithm.h"
 
+enum DNG_MOTIF {
+	MOTIF_COLLAPSED_DUNGEON,
+	MOTIF_PRISON,
+};
 
 struct dng_exit {
         int id;
@@ -94,6 +98,7 @@ struct dng_cellmap {
 	int width, height, size;
 	struct dng_cell **cells;
 	int cells_length;
+	enum DNG_MOTIF motif;
 
 	// room details
 	int map_padding;

@@ -1200,7 +1200,7 @@ void ps_on_mapchange()
 void ps_build_world()
 {
 	// set RNG seed (TODO move this to a menu operation?)
-	int seed = 123;
+	int seed = 130;
 	world = wld_newworld(seed, 2);
 	current_map = world->maps[0];
 
