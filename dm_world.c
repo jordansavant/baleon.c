@@ -285,7 +285,7 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 		return false;
 
 	int tile_id = map->tile_map[map_index];
-	if (map->tiles[tile_id].type->is_block || map->tiles[tile_id].is_door_locked)
+	if (map->tiles[tile_id].is_blocked)
 		return false;
 
 	return true;
@@ -334,7 +334,7 @@ void wld_movemob(struct wld_mob *mob, int relx, int rely, bool trigger_events)
 		int ry = (int)dm_ceil_out(dirf_y);
 		struct wld_tile *t1 = wld_gettileat(mob->map, newx, newy - ry);
 		struct wld_tile *t2 = wld_gettileat(mob->map, newx - rx, newy);
-		if ((t1 && (t1->type->is_block || t1->is_door_locked)) || (t2 && (t2->type->is_block || t2->is_door_locked))) {
+		if ((t1 && t1->is_blocked) || (t2 && t2->is_blocked)) {
 			return;
 		}
 	}
@@ -428,7 +428,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 	bool wld_ss_isblocked(int x, int y)
 	{
 		struct wld_tile *t = wld_gettileat(map, x, y);
-		return t->type->is_block || t->is_door_locked;
+		return t->is_blocked;
 	}
 	void wld_ss_onvisible(int x, int y, double radius)
 	{
@@ -1060,7 +1060,7 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 		if (dist > allowed_range)
 			return true;
 
-		return t->type->is_block || !t->is_visible || t->is_door_locked;
+		return t->is_blocked || !t->is_visible;
 	}
 	void on_visible(int x, int y) {
 		if (x == start_x && y == start_y) // ignore origin position
@@ -1178,6 +1178,7 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 			tile->map = map;
 			tile->is_visible = false;
 			tile->was_visible = false;
+			tile->is_blocked = false;
 			tile->is_door = false;
 			tile->is_door_locked = false;
 			tile->door_lock_id = -1;
@@ -1187,12 +1188,14 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 			if (cell->is_wall) {
 				tile->type_id = TILE_STONEWALL;
 				tile->type = &wld_tiletypes[TILE_STONEWALL];
+				tile->is_blocked = tile->type->is_block; // inherit block status from type
 			} else if (cell->is_door) {
 				tile->type_id = TILE_STONEDOOR;
 				tile->type = &wld_tiletypes[TILE_STONEDOOR];
 				tile->is_door = true;
 				tile->is_door_locked = cell->is_door_locked;
 				tile->door_lock_id = cell->door_lock_id;
+				tile->is_blocked = cell->is_door_locked; // locked based on cell door quality
 			} else if (cell->is_exit_transition || cell->is_entrance_transition) {
 				if (cell->is_entrance_transition) {
 					tile->type_id = TILE_ENTRANCE;
@@ -1206,9 +1209,11 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 					tile->on_mob_enter = wld_tile_on_mob_enter_exit;
 					map->exit_tile = tile;
 				}
+				tile->is_blocked = tile->type->is_block; // inherit block status from type
 			} else {
 				tile->type_id = TILE_STONEFLOOR;
 				tile->type = &wld_tiletypes[TILE_STONEFLOOR];
+				tile->is_blocked = tile->type->is_block; // inherit block status from type
 			}
 
 			tile_map_array[index] = tile->id; // set tile map to this tile id
