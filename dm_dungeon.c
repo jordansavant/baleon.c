@@ -473,6 +473,9 @@ void dng_cellmap_emplace_door(struct dng_cellmap* cellmap, struct dng_room *room
 	cell_door->was_door = true;
 	cell_door->door_room = room;
 	room->door_count++;
+	cell_door->is_wall = false;
+	cell_door->is_tunnel = false;
+	cell_door->is_cellular_open = false;
 }
 
 void dng_cellmap_remove_door(struct dng_cellmap* cellmap, struct dng_cell *cell)
@@ -1047,6 +1050,7 @@ void dng_cellmap_emplace_room_fix(struct dng_cellmap *cellmap, struct dng_room* 
 	if (cell->room == NULL && !cell->is_door && !cell->is_tunnel && !cell->is_cellular_open) {
 		cell->is_tunnel = true;
 		cell->was_room_fix_tunnel = true;
+		cell->is_wall = false;
 	}
 }
 void dng_cellmap_emplace_room_fix_isolated_door(struct dng_cellmap *cellmap, struct dng_room* parent_room, struct dng_cell *cell)

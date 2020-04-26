@@ -42,6 +42,9 @@ struct wld_tile {
 	struct wld_map *map;
 	bool is_visible;
 	bool was_visible;
+	bool is_door;
+	bool is_door_locked;
+	bool door_lock_id;
 	// on_enter, on_leave events
 	void(*on_mob_enter)(struct wld_map*, struct wld_tile*, struct wld_mob*); // TODO left off here
 };
