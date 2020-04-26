@@ -1264,6 +1264,8 @@ void dng_cellmap_cellbomb(struct dng_cellmap* cellmap)
 	void on_open(int x, int y) {
 		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x + 1, y + 1);
 		cell->is_cellular_open = true;
+		cell->is_tunnel = false;
+		cell->is_door = false;
 	}
 	double alive_chance = 0.52;
 	int death_max = 3;
