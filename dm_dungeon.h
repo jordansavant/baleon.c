@@ -72,6 +72,8 @@ struct dng_cell {
         bool was_door;
 	struct dng_roomdoor door; // TODO was a pointer in xogeni (seems to work as stack based)
 	struct dng_room* door_room;
+	bool is_door_locked;
+	int door_lock_id;
 
         bool is_entrance;
         int entrance_id;
@@ -212,6 +214,8 @@ struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *c
 // MACHINATIONS
 void dng_cellmap_machinate(struct dng_cellmap *cellmap);
 void dng_cellmap_lockrooms(struct dng_cellmap *cellmap);
+void dng_cellmap_machinate_isoroom(struct dng_cellmap *cellmap, struct dng_room *room);
+void dng_cellmap_machinate_isoroom_locknkey(struct dng_cellmap *cellmap, struct dng_room *room);
 
 ///////////////////////////
 // OVERALL DUNGEON

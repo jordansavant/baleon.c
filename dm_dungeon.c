@@ -62,7 +62,8 @@ void dng_cell_init(struct dng_cell *cell)
         cell->was_door = false;
 	cell->door; // TODO? is this ok?
 	cell->door_room = NULL;
-	cell->door_room = NULL;
+	cell->is_door_locked = false;
+	cell->door_lock_id = -1;
 
 	cell->is_entrance = false;
 	cell->entrance_id = -1;
@@ -1282,34 +1283,139 @@ void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 
 void dng_cellmap_lockrooms(struct dng_cellmap *cellmap)
 {
+	// here is the dealio, we want to pick some rooms to isolate
+	// and lock away as secrets or as vaults
+	// but room doors, tunnels and cellular openings are the
+	// pathways for accessing other rooms,
+	// instead of trying to force a room and rebuild it, lets see if
+	// we can find a good candidate
+	//
+	// 1. if we completely wall it off it should not be accessible
+	//    but other rooms should be
+
 	// TODO pick more than one, that is not entrance or exit
 	// pick a random room and lock it
 	// pick a random room amongst rooms that are far away and not an entrance
+	int isolated_count = 0;
+	int isolated_max = 1; // If i do more than one I think attempting to tunnel out and fix one I would break another
+	// the only way I think it would work is if we did at most two rooms and the second one had to be on the opposite
+	// quadrant from the entrance room so it would not be able to forcibly dig into its neighbor
+	struct dng_room* isolated_room_first = NULL;
 	if (cellmap->rooms_length > 2) {
-		int weight = 0;
-		struct dng_room* treasure_room = NULL;
 		for (int i=0; i < cellmap->rooms_length; i++) {
 			struct dng_room* room = cellmap->rooms[i];
-			if (treasure_room == NULL || room->entrance_weight > weight) {
-				if (treasure_room != cellmap->entrance_room) {
-					treasure_room = room;
-					weight = room->entrance_weight;
-				}
-			}
-		}
-		if (treasure_room) {
-			treasure_room->is_room_isolated = true;
-			// temporarily wall off and pick one door we want to keep open
+			struct dng_room* entrance_room = cellmap->entrance_room;
+
+			if (room == cellmap->entrance_room || room == cellmap->exit_room)
+				continue;
+
+			// Test code for more than one treasure room
+			// If we already isolated another room we have an extra stipulation
+			// that our center x and y must be in the opposite quadrant from
+			// in regards to the entrance room
+			//if (isolated_room_first) {
+			//	struct dng_cell *room_center_cell = dng_cellmap_get_cell_at_position(cellmap, room->x + room->width / 2, room->y + room->height / 2);
+			//	struct dng_cell *other_center_cell = dng_cellmap_get_cell_at_position(cellmap, isolated_room_first->x + isolated_room_first->width / 2, isolated_room_first->y + isolated_room_first->height / 2);
+			//	struct dng_cell *entrance_center_cell = dng_cellmap_get_cell_at_position(cellmap, entrance_room->x + entrance_room->width / 2, entrance_room->y + entrance_room->height / 2);
+
+
+			//}
+
+			// temporarily wall off room
 			bool inspect(struct dng_cell* cell){
-				//cell->temp_wall = true; // wall off everything else
-				dng_cellmap_emplace_wall(cellmap, cell); // force this to be wall
+				cell->temp_wall = true;
 				return false;
 			}
-			// remove all doors but our picked one
-			dm_cellmap_inspect_room_perimeter(cellmap, treasure_room, inspect);
+			dm_cellmap_inspect_room_perimeter(cellmap, room, inspect);
+
+			// test all other rooms to make sure they are still reachable
+			bool good_candidate = true;
+			for (int j=0; j < cellmap->rooms_length; j++) {
+				struct dng_room* test = cellmap->rooms[j];
+				// dont check ourself or rooms we already closed off
+				if (test != room && !test->is_room_isolated && !dng_cellmap_is_room_reachable(cellmap, test)) {
+					good_candidate = false;
+					break;
+				}
+			}
+
+			if (good_candidate) {
+				// if its a good candidate lets isolate it and legit wall it off
+				isolated_count++;
+				room->is_room_isolated = true;
+
+				if (!isolated_room_first)
+					isolated_room_first = room;
+
+				// wall it off legit
+				bool inspect2(struct dng_cell* cell){
+					cell->temp_wall = false;
+					dng_cellmap_emplace_wall(cellmap, cell); // force this to be wall
+					return false;
+				}
+				dm_cellmap_inspect_room_perimeter(cellmap, room, inspect2);
+
+				dng_cellmap_machinate_isoroom(cellmap, room);
+
+			} else {
+				// if its not a good cndicate clean up the temp walls
+				// un temporarily wall it
+				bool inspect2(struct dng_cell* cell){
+					cell->temp_wall = false;
+					return false;
+				}
+				dm_cellmap_inspect_room_perimeter(cellmap, room, inspect2);
+			}
+
+			if (isolated_count > 0) {
+				if (isolated_count >= isolated_max || dm_randii(0, isolated_max) == 0)
+					break;
+			}
 		}
 	}
 }
+
+// take an isolated room and give it a locked door with a key somewhere
+void dng_cellmap_machinate_isoroom(struct dng_cellmap *cellmap, struct dng_room *room)
+{
+	// TODO BIG SWITCH ON WAYS TO MACHINATE THE LOCKED ROOM
+	// EG
+	// - locked door with a key to get in
+	// - locked door with secret mechanism to open it
+	// - only accessibly by hidden teleport in the map
+	// - a secret door that must be searched to be spotted
+	switch (dm_randii(0,0)) {
+	case 0:
+		dng_cellmap_machinate_isoroom_locknkey(cellmap, room);
+		break;
+	}
+}
+
+void dng_cellmap_machinate_isoroom_locknkey(struct dng_cellmap *cellmap, struct dng_room *room)
+{
+	// force it to be connected to the outside world
+	dng_cellmap_tunnel_rooms(cellmap, room, cellmap->entrance_room, true);
+
+	// find the forced tunnel it created on its perimeter
+	bool inspect(struct dng_cell* cell){
+		if (cell->was_room_fix_tunnel) {
+			cell->was_room_fix_tunnel = false;
+			cell->is_tunnel = false;
+			dng_cellmap_emplace_door(cellmap, room, cell);
+			cell->is_door_locked = true;
+			cell->door_lock_id = 0; // TODO
+			// TODO lock the door and give it a key id
+			// then put the key in a list that future machinations
+			// must resolve to place somewhere else in the dungeon
+			// that is accessible
+			return true;
+		}
+		return false;
+	}
+	dm_cellmap_inspect_room_perimeter(cellmap, room, inspect);
+}
+
+
 // MACHINATION END
 ///////////////////////////
 
@@ -1436,7 +1542,7 @@ void dng_cellmap_cellbomb(struct dng_cellmap* cellmap)
 		cell->is_tunnel = false;
 		cell->is_door = false;
 	}
-	double alive_chance = 0.52;
+	double alive_chance = 0.48;
 	int death_max = 3;
 	int birth_max = 4;
 	int steps = 2;
@@ -1495,6 +1601,8 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	cellmap->room_attempt_count = cellmap->room_count * 2;
 	cellmap->room_scatter = hyp_size * (1 - room_density) + hyp_size / 2;
 	cellmap->room_scatter = hyp_size / 2 + hyp_size * 10 * (1 - room_density); // TODO why is this overwritten?
+	cellmap->rooms = NULL;
+	cellmap->rooms_length = 0;
 
 	// Tunnel details
 	cellmap->min_hall_width = 1;
