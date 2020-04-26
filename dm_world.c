@@ -155,7 +155,7 @@ void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob)
 			// shift backwards a spot
 			struct wld_mob *next_mob = map->mobs[i];
 			mob->id = i - 1;
-			map->mobs[mob->id] = mob;
+			map->mobs[mob->id] = next_mob;
 			// his id is at his position in the map, we need to point that to his new id
 			map->mob_map[next_mob->map_index] = mob->id;
 		} else if(map->mobs[i] == mob) {
