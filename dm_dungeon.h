@@ -81,6 +81,8 @@ struct dng_cell {
 
 	bool has_mob;
 	bool has_item;
+
+	bool is_cellular_open;
 };
 
 struct tunnel_dir {

@@ -81,6 +81,8 @@ void dng_cell_init(struct dng_cell *cell)
 
 	cell->has_mob = false;
 	cell->has_item = false;
+
+	cell->is_cellular_open = false;
 }
 
 int dng_cell_get_x(struct dm_astarnode *astar_node)
@@ -1081,10 +1083,11 @@ void dng_cellmap_buildwalls(struct dng_cellmap *cellmap)
 
 					struct dng_cell *neighbor = dng_cellmap_get_cell_at_position_nullable(cellmap, cell->x + dirs[d].x, cell->y + dirs[d].y);
 					if (neighbor && (neighbor->room == NULL || !neighbor->is_door || !neighbor->is_tunnel)) {
-						cell->is_wall = true;
-						cell->has_structure = true;
-						// TODO structure type = WALL; not sure if i need this
-
+						if (cell->is_cellular_open == false) {
+							cell->is_wall = true;
+							cell->has_structure = true;
+							// TODO structure type = WALL; not sure if i need this
+						}
 					}
 				}
 			}
@@ -1111,7 +1114,7 @@ void dng_cellmap_tag_unreachables(struct dng_cellmap *cellmap)
 	for (int i=0; i < cellmap->width; i++) { // cols
 		for (int j=0; j < cellmap->height; j++) { // rows
 			struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, i, j);
-			if (cell->room == NULL && !cell->is_door && !cell->is_tunnel && !cell->is_wall) {
+			if (cell->room == NULL && !cell->is_door && !cell->is_tunnel && !cell->is_cellular_open && !cell->is_wall) {
 				cell->is_tag_unreachable = true;
 			}
 		}
@@ -1252,17 +1255,17 @@ struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *c
 void dng_cellmap_cellbomb(struct dng_cellmap* cellmap)
 {
 	// f it do it
-	int width = cellmap->width;
-	int height = cellmap->height;
+	int width = cellmap->width - 2;
+	int height = cellmap->height - 2;
 	void on_solid(int x, int y) {
-		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
-		cell->is_wall = false;
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x + 1, y + 1);
+		cell->is_cellular_open = false;
 	}
 	void on_open(int x, int y) {
-		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
-		//cell->is_wall = true;
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x + 1, y + 1);
+		cell->is_cellular_open = true;
 	}
-	double alive_chance = 0.4;
+	double alive_chance = 0.52;
 	int death_max = 3;
 	int birth_max = 4;
 	int steps = 2;
@@ -1329,6 +1332,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	//printf("build doors\n");
 	dng_cellmap_builddoors(cellmap);
 	//printf("build entrance\n");
+	dng_cellmap_cellbomb(cellmap);
 	dng_cellmap_buildentrance(cellmap);
 	//printf("clean\n");
 	dng_cellmap_cleanup_connections(cellmap);
@@ -1340,7 +1344,6 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	dng_cellmap_buildwalls(cellmap);
 	//cellMap->buildLights();
 	//printf("build tags\n");
-	dng_cellmap_cellbomb(cellmap);
 	// TODO throw in big dungeon aberration rooms here
 	dng_cellmap_buildtags(cellmap);
 	dng_cellmap_machinate(cellmap);

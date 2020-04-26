@@ -90,7 +90,7 @@ void wld_map_remove_item(struct wld_map* map, struct wld_item* item)
 			// shift backwards a spot
 			struct wld_item *next_item = map->items[i];
 			item->id = i - 1;
-			map->items[item->id] = item;
+			map->items[item->id] = next_item;
 			// his id is at his position in the map, we need to point that to his new id
 			map->item_map[next_item->map_index] = item->id;
 		} else if(map->items[i] == item) {
