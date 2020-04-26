@@ -1270,8 +1270,19 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 					map->exit_tile = tile;
 				}
 			} else {
-				tile->type_id = TILE_STONEFLOOR;
-				tile->type = &wld_tiletypes[TILE_STONEFLOOR];
+				if (cell->floor_style == 1) {
+					tile->type_id = TILE_GRASS;
+					tile->type = &wld_tiletypes[TILE_GRASS];
+				} else if(cell->floor_style == 2) {
+					tile->type_id = TILE_WATER;
+					tile->type = &wld_tiletypes[TILE_WATER];
+				} else if(cell->floor_style == 3) {
+					tile->type_id = TILE_TREE;
+					tile->type = &wld_tiletypes[TILE_TREE];
+				} else {
+					tile->type_id = TILE_STONEFLOOR;
+					tile->type = &wld_tiletypes[TILE_STONEFLOOR];
+				}
 			}
 
 			tile_map_array[index] = tile->id; // set tile map to this tile id
@@ -1550,8 +1561,8 @@ void wld_setup()
 	struct wld_tiletype tts[] = { //     bg		 fg		  membg       memfg
 		{ TILE_VOID,            ' ', WCLR_BLACK, WCLR_BLACK, ' ', WCLR_BLACK, WCLR_BLACK, false, "" },
 		{ TILE_GRASS,           '"', WCLR_BLACK, WCLR_GREEN, '"', WCLR_BLACK, WCLR_BLUE,  false, "a small tuft of grass" },
-		{ TILE_WATER,           ' ', WCLR_BLUE,  WCLR_WHITE, ' ', WCLR_BLACK, WCLR_BLACK, false, "a pool of water glistens" },
-		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  true,  "a large tree" },
+		{ TILE_WATER,           ' ', WCLR_BLUE,  WCLR_BLACK, '~', WCLR_BLACK, WCLR_BLUE,  false, "a pool of water glistens" },
+		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  false, "a large tree" },
 		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true,  "a rough stone wall" },
 		{ TILE_STONEFLOOR,	'.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "a rough stone floor" },
 		{ TILE_ENTRANCE,	'>', WCLR_BLACK, WCLR_CYAN,  '>', WCLR_BLACK, WCLR_CYAN,  false, "the entrance back up" },

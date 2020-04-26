@@ -1,7 +1,6 @@
 TODO:
 
 now
-- when enemies die we need to be able to walk over them (destroy and mark tile with dead mob type?)
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items
@@ -12,7 +11,11 @@ now
 later
 - dungeon motifs like swathes of grass, water etc
 	- shallow water vs deep water
-- dungeons need mobs and items generated
+- dungeons more:
+	- keys for the locked rooms
+	- treasure in the locked rooms
+	- swathes of terrain types, grass
+	- shallow water and deep water (impassible)
 - bug: tunnels are getting stubbed out in little groups and thus not collapsing
 - bug: tunnels can exist in closed loops in the middle of nowhere
 - ui: mob focus
@@ -22,6 +25,7 @@ later
 - win screen
 
 no use cases yet
+- mobs drop items?
 - ? can your close a door ?
 - teleport
 - ui: interrupt panel

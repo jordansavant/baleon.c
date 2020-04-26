@@ -95,6 +95,8 @@ struct dng_cell {
 	bool is_cellular_open;
 
 	bool temp_wall;
+
+	int floor_style;
 };
 
 struct tunnel_dir {
@@ -216,6 +218,12 @@ void dng_cellmap_machinate(struct dng_cellmap *cellmap);
 void dng_cellmap_lockrooms(struct dng_cellmap *cellmap);
 void dng_cellmap_machinate_isoroom(struct dng_cellmap *cellmap, struct dng_room *room);
 void dng_cellmap_machinate_isoroom_locknkey(struct dng_cellmap *cellmap, struct dng_room *room);
+
+// DECORATIONS
+void dng_cellmap_decorate(struct dng_cellmap* cellmap);
+void dng_cellmap_decorate_vegetation(struct dng_cellmap *cellmap);
+void dng_cellmap_decorate_water(struct dng_cellmap *cellmap);
+
 
 ///////////////////////////
 // OVERALL DUNGEON

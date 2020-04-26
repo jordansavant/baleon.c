@@ -7,6 +7,7 @@ int main(void)
 	int seed = 146;
 	do {
 		char *red = "\033[0;31m";
+		char *green = "\033[0;32m";
 		char *blue = "\033[0;34m";
 		char *def = "\033[0m";
 		printf("SEED %d\n", seed);
@@ -61,13 +62,17 @@ int main(void)
 						printf(". ");
 					else if (cell->room != NULL && cell->room->is_room_isolated)
 						printf("%s. %s", blue, def);
-					else if (cell->room != NULL)
-						printf("  ");
-					else if (cell->is_cellular_open)
-						//printf("%s. %s", red, def);
-						printf("  ");
-					else
-						printf("  ");
+					else {
+						// cell rooms, cellular openings, default
+						if (cell->floor_style == 1)
+							printf("%s\" %s", green, def);
+						else if (cell->floor_style == 2)
+							printf("%s~ %s", blue, def);
+						else if (cell->floor_style == 3)
+							printf("%sT %s", green, def);
+						else
+							printf("  ");
+					}
 				}
 				printf("\n");
 			}

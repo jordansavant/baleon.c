@@ -89,6 +89,8 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->is_cellular_open = false;
 
 	cell->temp_wall = false;
+
+	cell->floor_style = 0;
 }
 
 int dng_cell_get_x(struct dm_astarnode *astar_node)
@@ -1447,12 +1449,77 @@ void dng_cellmap_machinate_isoroom_locknkey(struct dng_cellmap *cellmap, struct 
 	}
 	dm_cellmap_inspect_room_perimeter(cellmap, room, inspect);
 }
-
-
 // MACHINATION END
 ///////////////////////////
 
 
+
+
+
+
+///////////////////////////
+// DECORATIONS START
+
+void dng_cellmap_decorate(struct dng_cellmap *cellmap)
+{
+	// the dungeon could have an overall motif we would generate decorations for
+	// additionally all walls could fall into this motif like stone or steel
+	// same for doors, traps, etc
+	// For now we are just going to use cellular automata to generate grass
+	// and water
+	dng_cellmap_decorate_vegetation(cellmap);
+	dng_cellmap_decorate_water(cellmap);
+}
+
+void dng_cellmap_decorate_vegetation(struct dng_cellmap *cellmap)
+{
+	// the dungeon could have an overall motif we would generate decorations for
+	// additionally all walls could fall into this motif like stone or steel
+	// same for doors, traps, etc
+	// For now we are just going to use cellular automata to generate grass
+	// and water
+	int width = cellmap->width;
+	int height = cellmap->height;
+
+	// grass
+	void on_solid(int x, int y) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+	}
+	void on_open(int x, int y) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y );
+		cell->floor_style = 1; // grass
+		if (dm_randii(0, 20) == 0)
+			cell->floor_style = 3; // tree
+	}
+	double alive_chance = 0.48;
+	int death_max = 3;
+	int birth_max = 4;
+	int steps = 2;
+	dm_cellular_automata_detail(width, height, on_solid, on_open, alive_chance, death_max, birth_max, steps);
+}
+
+void dng_cellmap_decorate_water(struct dng_cellmap *cellmap)
+{
+	int width = cellmap->width;
+	int height = cellmap->height;
+
+	// water
+	void on_solid(int x, int y) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y);
+	}
+	void on_open(int x, int y) {
+		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y );
+		cell->floor_style = 2;
+	}
+	double alive_chance = 0.54;
+	int death_max = 3;
+	int birth_max = 4;
+	int steps = 2;
+	dm_cellular_automata_detail(width, height, on_solid, on_open, alive_chance, death_max, birth_max, steps);
+}
+
+// DECORATIONS END
+///////////////////////////
 
 
 
@@ -1654,6 +1721,7 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	//
 	dng_cellmap_machinate(cellmap);
 	//cellMap->machinate();
+	dng_cellmap_decorate(cellmap);
 
 	return cellmap;
 }
