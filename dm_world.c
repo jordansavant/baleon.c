@@ -702,7 +702,7 @@ void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob* mob)
 // RPG CALCULATIONS
 int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
 {
-	return 34;
+	return 32;
 }
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender)
 {

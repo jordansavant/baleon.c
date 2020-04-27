@@ -677,39 +677,57 @@ void ui_update_mobpanel(struct wld_map *map)
 			struct wld_mob *mob = wld_getmobat(map, x, y);
 			struct wld_item *item = wld_getitemat(map, x, y);
 
-			bool draw = false;
-			int cpair = 0;
-			unsigned long ch = 0;
-			char *title = NULL;
-			bool dead = false;
 			if (mob) {
-				draw = true;
-				cpair = wld_cpair(mob->type->fg_color, WCLR_BLACK);
-				ch = mob->type->sprite;
-				title = mob->type->title;
-			} else if (item) {
-				draw = true;
-				cpair = wld_cpair(item->type->fg_color, WCLR_BLACK);
-				ch = item->type->sprite;
-				title = item->type->title;
-			} else if(tile->dead_mob_type) {
-				draw = true;
-				cpair = wld_cpair(tile->dead_mob_type->fg_color, WCLR_BLACK);
-				ch = tile->dead_mob_type->sprite;
-				title = tile->dead_mob_type->title;
-				dead = true;
-			}
-
-			if (draw) {
+				// mob name
 				char buffer[VIS_LENGTH];
-				if (dead)
-					snprintf(buffer, VIS_LENGTH, "- %s (dead)", title);
-				else
-					snprintf(buffer, VIS_LENGTH, "- %s", title);
+				snprintf(buffer, VIS_LENGTH, "- %s", mob->type->title);
 				ui_write_rc(mobpanel, i + offy, offx, buffer);
 				// icon
-				wattrset(mobpanel, COLOR_PAIR(cpair));
-				ui_write_char(mobpanel, i + offy, offx, ch);
+				wattrset(mobpanel, COLOR_PAIR(wld_cpair(mob->type->fg_color, WCLR_BLACK)));
+				ui_write_char(mobpanel, i + offy, offx, mob->type->sprite);
+				wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
+				i++;
+				// health bar
+				char hmsg[VIS_LENGTH - 4];
+				snprintf(hmsg, VIS_LENGTH, "%3d/%3d", mob->health, mob->maxhealth);
+				int hpbarsize = VIS_LENGTH - 5;
+				int hpbar = ((double)mob->health / (double)mob->maxhealth) * hpbarsize;
+				int cj = 0;
+				for (int j=0; j < hpbarsize; j++) {
+					// get the character number total to render over the bar
+					char c = ' ';
+					while (c == ' ' && cj < 7) { // loops until next non blank character found (and less than strlen max)
+						c = hmsg[cj];
+						cj++;
+					}
+					// render green front and red bg
+					if (hpbar >= j)
+						wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_BLACK, WCLR_GREEN)));
+					else
+						wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_BLACK, WCLR_RED)));
+					// render character
+					ui_write_char(mobpanel, i + offy, j + offx + 2, c);
+					wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
+				}
+				i++;
+			} else if (item) {
+				// item name
+				char buffer[VIS_LENGTH];
+				snprintf(buffer, VIS_LENGTH, "- %s", item->type->title);
+				ui_write_rc(mobpanel, i + offy, offx, buffer);
+				// icon
+				wattrset(mobpanel, COLOR_PAIR(wld_cpair(item->type->fg_color, WCLR_BLACK)));
+				ui_write_char(mobpanel, i + offy, offx, item->type->sprite);
+				wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
+				i++;
+			} else if(tile->dead_mob_type) {
+				// dead mob
+				char buffer[VIS_LENGTH];
+				snprintf(buffer, VIS_LENGTH, "- %s (dead)", tile->dead_mob_type->title);
+				ui_write_rc(mobpanel, i + offy, offx, buffer);
+				// icon
+				wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_BLACK, WCLR_RED)));
+				ui_write_char(mobpanel, i + offy, offx, tile->dead_mob_type->sprite);
 				wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				i++;
 			}

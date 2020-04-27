@@ -7,7 +7,6 @@ now
 - ui: health
 - ui: mob list
 	- tab to iterate through mob list
-- shadowcast duplicates scans
 
 
 later
