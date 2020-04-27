@@ -89,10 +89,10 @@ void wld_map_remove_item(struct wld_map* map, struct wld_item* item)
 		if (found) {
 			// shift backwards a spot
 			struct wld_item *next_item = map->items[i];
-			item->id = i - 1;
-			map->items[item->id] = next_item;
+			next_item->id = i - 1;
+			map->items[next_item->id] = next_item;
 			// his id is at his position in the map, we need to point that to his new id
-			map->item_map[next_item->map_index] = item->id;
+			map->item_map[next_item->map_index] = next_item->id;
 		} else if(map->items[i] == item) {
 			// if we find the item, null his instance and -1 his item map
 			int index = item->map_index;
@@ -167,10 +167,10 @@ void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob)
 		if (found) {
 			// shift backwards a spot
 			struct wld_mob *next_mob = map->mobs[i];
-			mob->id = i - 1;
-			map->mobs[mob->id] = next_mob;
+			next_mob->id = i - 1;
+			map->mobs[next_mob->id] = next_mob;
 			// his id is at his position in the map, we need to point that to his new id
-			map->mob_map[next_mob->map_index] = mob->id;
+			map->mob_map[next_mob->map_index] = next_mob->id;
 		} else if(map->mobs[i] == mob) {
 			// if we find the mob, null his instance and -1 his mob map
 			int index = mob->map_index;
