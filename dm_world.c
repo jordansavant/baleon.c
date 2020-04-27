@@ -458,9 +458,13 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 		struct wld_tile *t = wld_gettileat(map, x, y);
 		return wld_tile_is_blocked_vision(t);
 	}
-	void wld_ss_onvisible(int x, int y, double radius)
+	void wld_ss_onvisible(int x, int y, double radius, unsigned int ss_id)
 	{
-		on_see(mob, x, y, radius);
+		struct wld_tile *t = wld_gettileat(map, x, y);
+		if (t->dm_ss_id != ss_id) {
+			on_see(mob, x, y, radius);
+			t->dm_ss_id = ss_id;
+		}
 	}
 	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 20, wld_ss_isblocked, wld_ss_onvisible, false); // no leakage allowed
 }
@@ -1233,6 +1237,7 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 			tile->door_lock_id = -1;
 			tile->dead_mob_type = NULL;
 			tile->on_mob_enter = NULL;
+			tile->dm_ss_id = 0;
 
 			// TODO more
 			if (cell->is_wall) {

@@ -63,6 +63,7 @@ struct wld_tile {
 	struct wld_mobtype* dead_mob_type;
 	// on_enter, on_leave events
 	void(*on_mob_enter)(struct wld_map*, struct wld_tile*, struct wld_mob*); // TODO left off here
+	unsigned int dm_ss_id; // shadowcast id
 };
 
 
