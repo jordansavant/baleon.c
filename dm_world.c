@@ -13,16 +13,6 @@
 
 #define WLD_COLOR_BASE 100
 #define WLD_COLOR_COUNT 8
-enum WLD_COLOR_INDEX {
-	WCLR_BLACK,   // 0
-	WCLR_GREEN,   // 1
-	WCLR_WHITE,   // 2
-	WCLR_RED,     // 3
-	WCLR_BLUE,    // 4
-	WCLR_CYAN,    // 5
-	WCLR_YELLOW,  // 6
-	WCLR_MAGENTA, // 7
-};
 int curses_colors[] = {
 	COLOR_BLACK,   // 0
 	COLOR_GREEN,   // 1

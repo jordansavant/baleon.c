@@ -419,6 +419,7 @@ int use_item_slot = -1;
 #define INV_LENGTH 48
 #define INV_ITEM_LENGTH 46
 #define USE_LENGTH 58
+#define VIS_LENGTH 30
 char logs[LOG_COUNT][LOG_LENGTH];
 
 void ui_box_color(WINDOW* win, int colorpair)
@@ -435,6 +436,11 @@ void ui_box(WINDOW* win)
 	ui_box_color(win, TCOLOR_PURPLE);
 }
 
+void ui_clear(WINDOW *win, int row)
+{
+	wmove(win, row + 1, 0);
+	wclrtoeol(win);
+}
 // helper to write to a row in a panel we boxed
 void ui_write_rc_len(WINDOW *win, int row, int col, char *msg, int length)
 {
@@ -652,11 +658,66 @@ void ui_update_logpanel(struct wld_map *map)
 	ui_box(logpanel);
 	wrefresh(logpanel);
 }
+int last_mob_list_length = 0;
 void ui_update_mobpanel(struct wld_map *map)
 {
 	// probably just need to do a shadowcast event each turn to get mobs in vision
 	if (map->player->mode == MODE_PLAY) {
 		ui_write(mobpanel, 0, "-------- Visible ---------");
+		int offx = 1;
+		int offy = 2;
+		for (int i =0; i < last_mob_list_length; i++) {
+			ui_clear(mobpanel, i + offy);
+		}
+		// brute force method is another mobvision call
+		// better version is to hook into the primary mobvision call in main draw
+		int i=0;
+		void onvisible(struct wld_mob* player, int x, int y, double radius) {
+			struct wld_tile *tile = wld_gettileat(map, x, y);
+			struct wld_mob *mob = wld_getmobat(map, x, y);
+			struct wld_item *item = wld_getitemat(map, x, y);
+
+			bool draw = false;
+			int cpair = 0;
+			unsigned long ch = 0;
+			char *title = NULL;
+			bool dead = false;
+			if (mob) {
+				draw = true;
+				cpair = wld_cpair(mob->type->fg_color, WCLR_BLACK);
+				ch = mob->type->sprite;
+				title = mob->type->title;
+			} else if (item) {
+				draw = true;
+				cpair = wld_cpair(item->type->fg_color, WCLR_BLACK);
+				ch = item->type->sprite;
+				title = item->type->title;
+			} else if(tile->dead_mob_type) {
+				draw = true;
+				cpair = wld_cpair(tile->dead_mob_type->fg_color, WCLR_BLACK);
+				ch = tile->dead_mob_type->sprite;
+				title = tile->dead_mob_type->title;
+				dead = true;
+			}
+
+			if (draw) {
+				char buffer[VIS_LENGTH];
+				if (dead)
+					snprintf(buffer, VIS_LENGTH, "- %s (dead)", title);
+				else
+					snprintf(buffer, VIS_LENGTH, "- %s", title);
+				ui_write_rc(mobpanel, i + offy, offx, buffer);
+				// icon
+				wattrset(mobpanel, COLOR_PAIR(cpair));
+				ui_write_char(mobpanel, i + offy, offx, ch);
+				wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
+				i++;
+			}
+		}
+		wld_mobvision(current_map->player, onvisible);
+		last_mob_list_length = i;
+
+		// render frame
 		ui_box(mobpanel);
 		wrefresh(mobpanel);
 	}
@@ -1242,7 +1303,7 @@ void ps_layout_ui()
 	// anchor mobpanel to right side
 	// TODO make this fit the right side
 	// TODO scrollable?
-	int mobpanel_cols = 30;
+	int mobpanel_cols = VIS_LENGTH + 2;
 	int mobpanel_rows = sy - logpanel_rows;
 	ui_anchor_ur(mobpanel, mobpanel_rows, mobpanel_cols);
 	ui_box(mobpanel);

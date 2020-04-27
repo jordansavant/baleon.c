@@ -6,6 +6,17 @@
 
 #define INVENTORY_SIZE 12
 
+enum WLD_COLOR_INDEX {
+	WCLR_BLACK,   // 0
+	WCLR_GREEN,   // 1
+	WCLR_WHITE,   // 2
+	WCLR_RED,     // 3
+	WCLR_BLUE,    // 4
+	WCLR_CYAN,    // 5
+	WCLR_YELLOW,  // 6
+	WCLR_MAGENTA, // 7
+};
+
 struct wld_item;
 struct wld_mob;
 struct wld_mob_type;
@@ -246,6 +257,7 @@ struct wld_tiletype* wld_get_tiletype(int id);
 struct wld_mobtype* wld_get_mobtype(int id);
 struct wld_itemtype* wld_get_itemtype(int id);
 
+int wld_cpair(enum WLD_COLOR_INDEX a, enum WLD_COLOR_INDEX b);
 int wld_cpair_tm(int tiletype, int mobtype);
 int wld_cpair_ti(int tiletype, int itemtype);
 int wld_cpairmem(int tiletype);

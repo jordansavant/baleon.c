@@ -1,13 +1,13 @@
 TODO:
 
 now
-- BUG: killing first bugbear i take over his body!
-	- Is this an issue with deleting him and I become him!? 966abe39bf21780054c2ef998053055cc1819e94
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items
 - ui: health
 - ui: mob list
+	- tab to iterate through mob list
+- shadowcast duplicates scans
 
 
 later
