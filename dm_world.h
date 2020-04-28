@@ -361,7 +361,9 @@ void itm_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile*
 ///////////////////////////
 // MAP INITIALIZATION
 void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap);
+void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type);
 void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap);
+void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type);
 void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap);
 struct wld_map* wld_newmap(int id, int difficulty, int width, int height);
 void wld_delmob(struct wld_mob* mob);

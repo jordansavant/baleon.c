@@ -547,7 +547,8 @@ bool wld_mob_pickup_item(struct wld_mob *m, struct wld_item *i)
 	if (slot != -1) {
 		// set item copy in world to nonexist
 		// move item from world to mob inventory
-		wld_map_remove_item(m->map, i);
+		if (i->id != -1) // if in the map remove it
+			wld_map_remove_item(m->map, i);
 
 		// copy item to mob inventory
 		m->inventory[slot] = i;
@@ -1429,12 +1430,24 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->type_id = type;
 	mob->type = &wld_mobtypes[type];
 
+	// create inventory (pointers to malloc items)
+	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
+	for (int j=0; j < INVENTORY_SIZE; j++) {
+		mob->inventory[j] = NULL;
+	}
+
 	// stats TODO roll these in some sort of character rolling menu?
 	switch (type) {
 	case MOB_PLAYER:
 		mob->stat_strength = dm_randii(5, 16);
 		mob->stat_dexterity = dm_randii(5, 16);
 		mob->stat_constitution = dm_randii(5, 16);
+
+		// lets give him some items for playtesting
+		dmlog("add weapon");
+		mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
+		wld_inititem(mob->inventory[0], ITEM_WEAPON_SHORTSWORD);
+		dmlog("add weapon end");
 		break;
 	default:
 		mob->stat_strength = dm_randii(3, 16);
@@ -1446,11 +1459,6 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->health = conf * mob->type->base_health;
 	mob->maxhealth = conf * mob->type->base_health;
 
-	// create inventory (pointers to malloc items)
-	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
-	for (int j=0; j < INVENTORY_SIZE; j++) {
-		mob->inventory[j] = NULL;
-	}
 }
 void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 {
@@ -1495,6 +1503,10 @@ void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type)
 	item->type = &wld_itemtypes[type];
 	item->has_dropped = false;
 	item->uses = wld_itemtypes[type].base_uses;
+	item->id = -1;
+	item->map_index = -1;
+	item->map_x = 0;
+	item->map_y = 0;
 }
 void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 {
