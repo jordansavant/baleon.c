@@ -843,8 +843,22 @@ void ai_default_decide_combat(struct wld_mob *self) // melee approach, melee att
 			int diri_x = -dm_round(dirf_x);
 			int diri_y = -dm_round(dirf_y);
 			// move away from closest enemy
-			self->queue_x += diri_x;
-			self->queue_y += diri_y;
+			if (wld_canmoveto(self->map, self->map_x + diri_x, self->map_y + diri_y)) {
+				self->queue_x += diri_x;
+				self->queue_y += diri_y;
+			} else if(wld_canmoveto(self->map, self->map_x + diri_x, self->map_y)) {
+				self->queue_x += diri_x;
+				self->queue_y;
+			} else if(wld_canmoveto(self->map, self->map_x, self->map_y + diri_y)) {
+				self->queue_x;
+				self->queue_y += diri_y;
+			} else {
+				// trapped run randomly
+				int dirx = dm_randii(0, 3) - 1;
+				int diry = dm_randii(0, 3) - 1;
+				self->queue_x += dirx;
+				self->queue_y += diry;
+			}
 		}
 	}
 }
