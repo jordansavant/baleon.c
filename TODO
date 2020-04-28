@@ -1,8 +1,7 @@
 TODO:
 
 now
-- ai better attack and flee for bugbear
-	- flees after first form of damage
+- dungeon: generate key for locked room somewhere
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items
@@ -13,6 +12,11 @@ now
 
 
 later
+- rpg:
+	- dex based coh?
+	- weapon dmg ranges?
+	- ui? coh on mob panel?
+- ui: stat panel?
 - ui: interrupt panel
 	- game over, major event interrupts
 - dungeon motifs like swathes of grass, water etc
