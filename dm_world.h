@@ -101,6 +101,7 @@ enum TARGET_MODE {
 };
 struct wld_mobtype {
 	enum WLD_MOBTYPE type;
+	int base_health;
 	unsigned long sprite;
 	int fg_color;
 	char *short_desc;
@@ -132,6 +133,7 @@ struct wld_mob {
 
 	int stat_strength;
 	int stat_dexterity;
+	int stat_constitution;
 };
 
 

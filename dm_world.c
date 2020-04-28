@@ -706,6 +706,7 @@ void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob* mob)
 // RPG CALCULATIONS
 #define STAT_STR_BASE 10
 #define STAT_DEX_BASE 10
+#define STAT_CON_BASE 10
 // fist melee
 int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
 {
@@ -1397,9 +1398,7 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->state = MS_START;
 	mob->queue_x = 0;
 	mob->queue_y = 0;
-	mob->health = 100;
-	mob->maxhealth = 100; // TODO define based on things
-	mob->basevision = 20;
+	mob->basevision = 20; // TODO define based on things
 	mob->vision = mob->basevision;
 	mob->ai_wander = NULL;
 	mob->ai_is_hostile = NULL;
@@ -1422,12 +1421,17 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	case MOB_PLAYER:
 		mob->stat_strength = dm_randii(5, 16);
 		mob->stat_dexterity = dm_randii(5, 16);
+		mob->stat_constitution = dm_randii(5, 16);
 		break;
 	default:
 		mob->stat_strength = dm_randii(3, 16);
 		mob->stat_dexterity = dm_randii(3, 16);
+		mob->stat_constitution = dm_randii(3, 16);
 		break;
 	}
+	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
+	mob->health = conf * mob->type->base_health;
+	mob->maxhealth = conf * mob->type->base_health;
 
 	// create inventory (pointers to malloc items)
 	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
@@ -1696,13 +1700,15 @@ void wld_setup()
 
 	// copy mob types into malloc
 	struct wld_mobtype mts [] = {
-		{ MOB_VOID,	' ', WCLR_BLACK,   "" },
-		{ MOB_PLAYER,	'@', WCLR_MAGENTA, "yourself", "You"},
-		{ MOB_BUGBEAR,	'b', WCLR_RED,     "a small bugbear", "small bugbear" },
+		// hp, sprite, color, desc, title
+		{ MOB_VOID,	  0, ' ', WCLR_BLACK,   "" },
+		{ MOB_PLAYER,	100, '@', WCLR_MAGENTA, "yourself", "You"},
+		{ MOB_BUGBEAR,	 35, 'b', WCLR_RED,     "a small bugbear", "small bugbear" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
 		wld_mobtypes[i].type = mts[i].type;
+		wld_mobtypes[i].base_health = mts[i].base_health;
 		wld_mobtypes[i].sprite = mts[i].sprite;
 		wld_mobtypes[i].fg_color = mts[i].fg_color;
 		wld_mobtypes[i].short_desc = mts[i].short_desc;
