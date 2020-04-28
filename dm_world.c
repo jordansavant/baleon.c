@@ -754,7 +754,6 @@ bool ai_default_detect_combat(struct wld_mob *mob)
 	// I need to see if I can see an enemy that is a threat to me
 	// This is expensive to run on a bunch of mobs
 	// So it should maybe be optimized in som manner?
-	return false;
 	if (!mob->ai_is_hostile)
 		return false;
 
@@ -1039,9 +1038,16 @@ void wld_update_mob(struct wld_mob *mob)
 	// if player
 	if (!mob->is_player) {
 //ai_rerun:
+		// performance helper to see if we are within a certain range
+		// of the player before we run heavy computes
+		int player_dist = 0;
+		if (mob->map->player)
+			player_dist = dm_disti(mob->map_x, mob->map_y, mob->map->player->map_x, mob->map->player->map_y);
+		bool worth_it = player_dist < (mob->vision * 1.5);
+
 		switch (mob->state) {
 		case MS_WANDER:
-			if (mob->ai_detect_combat != NULL && mob->ai_detect_combat(mob)) {
+			if (mob->ai_detect_combat != NULL && worth_it && mob->ai_detect_combat(mob)) {
 				// enter combat
 				mob->state = MS_COMBAT;
 				//goto ai_rerun;
@@ -1359,8 +1365,6 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 }
 void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 {
-	// TODO the cellmap should keep alist of mob counts so we can allocate for it
-	// only the player for now
 	map->mobs = NULL;
 	map->mobs_length = 0;
 
@@ -1385,7 +1389,7 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 
 			} else if (cell->has_mob) {
 				struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-				wld_initmob(mob, MOB_BUGBEAR); // TODO make this randomized and tuned for difficulty
+				wld_initmob(mob, MOB_BUGBEAR);
 				wld_map_new_mob(map, mob, c, r);
 				mob->is_player = false;
 				mob->ai_wander = ai_default_wander;

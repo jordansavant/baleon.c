@@ -1329,7 +1329,7 @@ void ps_build_world()
 {
 	dm_seed(time(NULL));
 	int seed = dm_randi();
-	//seed = 146;
+	seed = 146;
 	dmlogi("SEED", seed);
 	world = wld_newworld(seed, 1);
 	current_map = world->maps[0];
@@ -1571,12 +1571,22 @@ void ps_play_update()
 	// depending on input change and trigger various updates
 
 	// loop over map mobs and run their update routines
+	// update the player first, then others
+	// why? because we do not draw until after
+	// everything has updated, so we if pause
+	// for player input in the middle of the list
+	// mobs before us can trigger_world process
+	// then not be drawn, while others after are
+	// not triggered, and the result is that mobs
+	// before do not visually update in real time
+	if (current_map->player) {
+		wld_update_mob(current_map->player);
+	}
 	for (int i=0; i < current_map->mobs_length; i++) {
 		struct wld_mob *m = current_map->mobs[i];
-		if (m->is_player)
+		if (trigger_world && !m->is_player) {
 			wld_update_mob(m);
-		else if (trigger_world)
-			wld_update_mob(m);
+		}
 	}
 
 	// reset map elements
