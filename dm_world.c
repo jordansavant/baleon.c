@@ -704,8 +704,11 @@ void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob* mob)
 
 ///////////////////////////
 // RPG CALCULATIONS
+#define STAT_STR_BASE 10
+#define STAT_DEX_BASE 10
 int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
 {
+	// a factor of your strength out of 10
 	return 32;
 }
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender)
@@ -734,6 +737,24 @@ int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range)
 ///////////////////////////
 // MOB AI
 
+struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self)
+{
+	struct wld_mob* closest_enemy = NULL;
+	int closest_dist = 0;
+	void invision(struct wld_mob *myself, int x, int y, double radius) {
+		struct wld_mob *visible_mob = wld_getmobat(myself->map, x, y);
+		if (visible_mob) {
+			int dist = dm_disti(myself->map_x, myself->map_y, visible_mob->map_x, visible_mob->map_y);
+			if(myself->ai_is_hostile && myself->ai_is_hostile(myself, visible_mob) && (closest_enemy == NULL || dist < closest_dist)) {
+				closest_enemy = visible_mob;
+				closest_dist = dist;
+			}
+		}
+	}
+	wld_mobvision(self, invision);
+	return closest_enemy;
+}
+
 void ai_default_wander(struct wld_mob *mob)
 {
 	// todo pick random destinations to walk to?
@@ -745,16 +766,16 @@ void ai_default_wander(struct wld_mob *mob)
 		mob->queue_y += diry;
 	}
 }
-bool ai_default_is_hostile(struct wld_mob *mob, struct wld_mob *target)
+bool ai_default_is_hostile(struct wld_mob *self, struct wld_mob *target)
 {
-	return target->is_player && !target->is_dead && mob != target;
+	return target->is_player && !target->is_dead && self != target;
 }
-bool ai_default_detect_combat(struct wld_mob *mob)
+bool ai_default_detect_combat(struct wld_mob *self)
 {
 	// I need to see if I can see an enemy that is a threat to me
 	// This is expensive to run on a bunch of mobs
 	// So it should maybe be optimized in som manner?
-	if (!mob->ai_is_hostile)
+	if (!self->ai_is_hostile)
 		return false;
 
 	bool detect_enemy = false;
@@ -764,27 +785,51 @@ bool ai_default_detect_combat(struct wld_mob *mob)
 			detect_enemy = true;
 		}
 	}
-	wld_mobvision(mob, on_visible);
+	wld_mobvision(self, on_visible);
 	return detect_enemy;
 }
-void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee attack
+void ai_default_decide_combat(struct wld_mob *self) // melee approach, melee attack
 {
-	// GET PLAYER (TODO in visible range, if can see, etc)
-	if (wld_mob_nextto_mob(mob, mob->map->player)) {
-		// attack target
-		ai_mob_melee_mob(mob, mob->map->player);
-	} else {
-		int x = mob->map->player->map_x;
-		int y = mob->map->player->map_y;
-		// move to target
-		if (x < mob->map_x)
-			mob->queue_x += -1;
-		else if (x > mob->map_x)
-			mob->queue_x += 1;
-		if (y < mob->map_y)
-			mob->queue_y += -1;
-		else if (y > mob->map_y)
-			mob->queue_y += 1;
+	// Basic melee combat to attack hostile neighbors
+	// if health is above 50%, otherwise it flees
+	double hp = (double)self->health / (double)self->maxhealth;
+	if (hp > .5) { // healthy enough to fight
+		struct wld_mob* hostile_neighbor = NULL;
+		void inspect(int x, int y) {
+			struct wld_mob *neighbor = wld_getmobat(self->map, x, y);
+			if(neighbor && self->ai_is_hostile(self, neighbor))
+				hostile_neighbor = neighbor;
+		}
+		wld_mob_inspect_melee(self, inspect);
+
+		if (hostile_neighbor) {
+			// attack target
+			ai_mob_melee_mob(self, hostile_neighbor);
+		} else {
+			int x = self->map->player->map_x;
+			int y = self->map->player->map_y;
+			// move to target
+			if (x < self->map_x)
+				self->queue_x += -1;
+			else if (x > self->map_x)
+				self->queue_x += 1;
+			if (y < self->map_y)
+				self->queue_y += -1;
+			else if (y > self->map_y)
+				self->queue_y += 1;
+		}
+	} else { // badly hurt, gonna go lick my wounds
+		// find closest
+		struct wld_mob* closest_enemy = ai_get_closest_visible_enemy(self);
+		if (closest_enemy) {
+			double dirf_x, dirf_y;
+			dm_direction((double)self->map_x, (double)self->map_y, (double)closest_enemy->map_x, (double)closest_enemy->map_y, &dirf_x, &dirf_y);
+			int diri_x = -dm_round(dirf_x);
+			int diri_y = -dm_round(dirf_y);
+			// move away from closest enemy
+			self->queue_x += diri_x;
+			self->queue_y += diri_y;
+		}
 	}
 }
 void ai_decide_combat_easy_flee(struct wld_mob *mob)
@@ -1043,7 +1088,7 @@ void wld_update_mob(struct wld_mob *mob)
 		int player_dist = 0;
 		if (mob->map->player)
 			player_dist = dm_disti(mob->map_x, mob->map_y, mob->map->player->map_x, mob->map->player->map_y);
-		bool worth_it = player_dist < (mob->vision * 1.5);
+		bool worth_it = player_dist < (mob->vision * 2);
 
 		switch (mob->state) {
 		case MS_WANDER:
