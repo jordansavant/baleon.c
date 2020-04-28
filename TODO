@@ -1,15 +1,22 @@
 TODO:
 
 now
+- Game Over state segfaults
+- ui mob list render dead mob under your feet
+- ai better attack and flee for bugbear
+	- flees after first form of damage
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items
-- ui: health
-- ui: mob list
-	- tab to iterate through mob list
+- reorganize code
+	- make sure world funcs are in world h
+	- game.h and game.c?
+		- game_ui ?
 
 
 later
+- ui: interrupt panel
+	- game over, major event interrupts
 - dungeon motifs like swathes of grass, water etc
 	- shallow water vs deep water
 - dungeons more:
@@ -19,21 +26,27 @@ later
 	- shallow water and deep water (impassible)
 - bug: tunnels are getting stubbed out in little groups and thus not collapsing
 - bug: tunnels can exist in closed loops in the middle of nowhere
-- ui: mob focus
 - ranged point test item
 - rpg rules, visions, aberrations
 - gameover
 - win screen
+- seed in menu
+- version in menu
 
 no use cases yet
 - mobs drop items?
 - ? can your close a door ?
 - teleport
-- ui: interrupt panel
+- game effects
+	- during call back loop special function that renders tile changes
+	- runs in a small timer loop for effects
+	- damage, projectiles, explosions
+- destructable terrain?
 
 scope creep
 - input recorder?
 - return of mouse cursor?
+	- i think this was alleviated with tab controls
 
 
 

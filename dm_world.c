@@ -480,9 +480,9 @@ struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 	int item_id = map->item_map[t->map_index];
 
 	int colorpair;
-	if (mob_id > -1) {
+	struct wld_mob *m = wld_getmobat(map, x, y);
+	if (m && !m->is_dead) { // player is dead and not removed
 		// if mob use its fg sprite and fg color
-		struct wld_mob *m = wld_getmobat(map, x, y);
 		if (m->type->sprite != ' ')
 			cha = m->type->sprite;
 		colorpair = wld_cpair_tm(t->type_id, m->type_id);
@@ -741,7 +741,7 @@ void ai_default_wander(struct wld_mob *mob)
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
 	// TODO
-	return false && !mob->map->player->is_dead;
+	return !mob->map->player->is_dead;
 }
 void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee attack
 {
@@ -790,8 +790,9 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct
 	struct wld_tile* tile = wld_gettileat_index(defender->map, defender->map_index);
 	tile->dead_mob_type = defender->type; // only most recent
 
-	// what would happen if we killed a mob and destroyed them mid loop?
-	wld_map_queue_destroy_mob(defender->map, defender);
+	// set this mob up to be destroyed if its not the player
+	if (!defender->is_player)
+		wld_map_queue_destroy_mob(defender->map, defender);
 }
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item *item)
 {

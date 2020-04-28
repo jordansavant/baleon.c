@@ -3,6 +3,7 @@
 #include <ncurses.h>
 #include <menu.h>
 #include <signal.h>
+#include <time.h>
 
 #include "dm_defines.h"
 #include "dm_debug.h"
@@ -707,7 +708,7 @@ void ui_update_mobpanel(struct wld_map *map)
 			struct wld_mob *mob = wld_getmobat(map, x, y);
 			struct wld_item *item = wld_getitemat(map, x, y);
 
-			if (mob) {
+			if (mob && !mob->is_dead) { // players are not destroyed
 				// mob name
 				char buffer[VIS_LENGTH];
 				snprintf(buffer, VIS_LENGTH, "- %s", mob->type->title);
@@ -740,7 +741,8 @@ void ui_update_mobpanel(struct wld_map *map)
 					wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				}
 				i++;
-			} else if (item) {
+			}
+			if (item) {
 				// item name
 				char buffer[VIS_LENGTH];
 				snprintf(buffer, VIS_LENGTH, "- %s", item->type->title);
@@ -750,7 +752,8 @@ void ui_update_mobpanel(struct wld_map *map)
 				ui_write_char(mobpanel, i + offy, offx, item->type->sprite);
 				wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				i++;
-			} else if(tile->dead_mob_type) {
+			}
+			if(tile->dead_mob_type) {
 				// dead mob
 				char buffer[VIS_LENGTH];
 				snprintf(buffer, VIS_LENGTH, "- %s (dead)", tile->dead_mob_type->title);
@@ -1324,8 +1327,10 @@ void ps_on_mapchange()
 
 void ps_build_world()
 {
-	// set RNG seed (TODO move this to a menu operation?)
-	int seed = 146;
+	dm_seed(time(NULL));
+	int seed = dm_randi();
+	//seed = 146;
+	dmlogi("SEED", seed);
 	world = wld_newworld(seed, 1);
 	current_map = world->maps[0];
 
@@ -1667,12 +1672,14 @@ void g_newgame()
 
 			break;
 		case PS_GAMEOVER:
-			// draw world
+			ui_loginfo("After many weary battles you succumb to the darkness.");
+			ui_loginfo("Death overtakes you.");
 			ps_play_draw();
 
-			getch(); // wait until player does something then quit
+			getch();
 
 			play_state = PS_END;
+			break;
 		case PS_WIN:
 			ui_loginfo("Congratulations!");
 			ui_loginfo("After many weary battles you have overcome Baleon.");
@@ -1681,7 +1688,9 @@ void g_newgame()
 			getch();
 
 			play_state = PS_END;
+			break;
 		case PS_END:
+			dmlog("GAME END");
 			ps_destroy_ui();
 			ps_destroy_world();
 			play_state = PS_EXIT;
