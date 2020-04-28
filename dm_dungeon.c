@@ -1718,7 +1718,6 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	dng_cellmap_buildtags(cellmap);
 	//
 	dng_cellmap_machinate(cellmap);
-	//cellMap->machinate();
 	dng_cellmap_decorate(cellmap);
 
 	return cellmap;

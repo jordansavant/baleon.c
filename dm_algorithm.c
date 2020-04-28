@@ -284,10 +284,16 @@ int dm_randi()
 	return (int)(dm_randf() * INT_MAX);
 }
 
+// from a up to but not including b
 int dm_randii(int a, int b)
 {
 	int len = b - a;
 	return (int)(dm_randf() * len + a);
+}
+
+bool dm_chance(int in, int outof)
+{
+	return ((double)in / (double)outof) > dm_randf();
 }
 
 

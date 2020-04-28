@@ -27,6 +27,7 @@ void dm_seed(unsigned long seed);
 double dm_randf();
 int dm_randi();
 int dm_randii(int a, int b);
+bool dm_chance(int in, int outof);
 
 // MATH
 int dm_disti(int x1, int y1, int x2, int y2);

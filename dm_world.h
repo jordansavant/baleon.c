@@ -114,11 +114,13 @@ struct wld_mob {
 	struct wld_map *map;
 	enum WLD_MOB_STATE state;
 	void (*ai_wander)(struct wld_mob*);
+	bool (*ai_is_hostile)(struct wld_mob*, struct wld_mob*);
 	bool (*ai_detect_combat)(struct wld_mob*);
 	void (*ai_decide_combat)(struct wld_mob*);
 	void (*ai_player_input)(struct wld_mob*);
 	int queue_x, queue_y;
 	int health, maxhealth;
+	int vision, basevision;
 	bool is_player, is_dead;
 	int cursor_target_index; // map index
 	enum MODE mode;

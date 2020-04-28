@@ -1,8 +1,6 @@
 TODO:
 
 now
-- Game Over state segfaults
-- ui mob list render dead mob under your feet
 - ai better attack and flee for bugbear
 	- flees after first form of damage
 - aoe test item

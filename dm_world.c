@@ -470,7 +470,7 @@ void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int
 			t->dm_ss_id = ss_id;
 		}
 	}
-	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, 20, wld_ss_isblocked, wld_ss_onvisible, false); // no leakage allowed
+	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, mob->vision, wld_ss_isblocked, wld_ss_onvisible, false); // no leakage allowed
 }
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y)
 {
@@ -736,12 +736,37 @@ int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range)
 
 void ai_default_wander(struct wld_mob *mob)
 {
-	mob->queue_x += 1;
+	// todo pick random destinations to walk to?
+	if (dm_chance(1, 4)) {
+		// 1/4 chance to wander in a random spot
+		int dirx = dm_randii(0, 3) - 1;
+		int diry = dm_randii(0, 3) - 1;
+		mob->queue_x += dirx;
+		mob->queue_y += diry;
+	}
+}
+bool ai_default_is_hostile(struct wld_mob *mob, struct wld_mob *target)
+{
+	return target->is_player && !target->is_dead && mob != target;
 }
 bool ai_default_detect_combat(struct wld_mob *mob)
 {
-	// TODO
-	return !mob->map->player->is_dead;
+	// I need to see if I can see an enemy that is a threat to me
+	// This is expensive to run on a bunch of mobs
+	// So it should maybe be optimized in som manner?
+	return false;
+	if (!mob->ai_is_hostile)
+		return false;
+
+	bool detect_enemy = false;
+	void on_visible(struct wld_mob *myself, int x, int y, double radius) {
+		struct wld_mob *visible_mob = wld_getmobat(myself->map, x, y);
+		if (visible_mob && myself->ai_is_hostile && myself->ai_is_hostile(myself, visible_mob)) {
+			detect_enemy = true;
+		}
+	}
+	wld_mobvision(mob, on_visible);
+	return detect_enemy;
 }
 void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee attack
 {
@@ -763,6 +788,12 @@ void ai_default_decide_combat(struct wld_mob *mob) // melee approach, melee atta
 			mob->queue_y += 1;
 	}
 }
+void ai_decide_combat_easy_flee(struct wld_mob *mob)
+{
+	// I detect that I am still in combat so I need to flee
+	// Get closest threat
+}
+
 void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item) // item can be NULL if it was not an item
 {
 	mob->health += amt;
@@ -1007,13 +1038,13 @@ void wld_update_mob(struct wld_mob *mob)
 
 	// if player
 	if (!mob->is_player) {
-ai_rerun:
+//ai_rerun:
 		switch (mob->state) {
 		case MS_WANDER:
 			if (mob->ai_detect_combat != NULL && mob->ai_detect_combat(mob)) {
 				// enter combat
 				mob->state = MS_COMBAT;
-				goto ai_rerun;
+				//goto ai_rerun;
 			} else if (mob->ai_wander != NULL) {
 				// wander
 				mob->ai_wander(mob);
@@ -1302,7 +1333,10 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->queue_y = 0;
 	mob->health = 100;
 	mob->maxhealth = 100; // TODO define based on things
+	mob->basevision = 20;
+	mob->vision = mob->basevision;
 	mob->ai_wander = NULL;
+	mob->ai_is_hostile = NULL;
 	mob->ai_detect_combat = NULL;
 	mob->ai_decide_combat = NULL;
 	mob->ai_player_input = NULL;
@@ -1355,6 +1389,7 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 				wld_map_new_mob(map, mob, c, r);
 				mob->is_player = false;
 				mob->ai_wander = ai_default_wander;
+				mob->ai_is_hostile = ai_default_is_hostile;
 				mob->ai_detect_combat = ai_default_detect_combat;
 				mob->ai_decide_combat = ai_default_decide_combat;
 			}
