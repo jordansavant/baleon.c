@@ -706,20 +706,35 @@ void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob* mob)
 // RPG CALCULATIONS
 #define STAT_STR_BASE 10
 #define STAT_DEX_BASE 10
+// fist melee
 int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
 {
 	// a factor of your strength out of 10
-	return 32;
+	double strf = (double)aggressor->stat_strength / STAT_STR_BASE;
+	return 6 * strf;
 }
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender)
 {
-	return .66;
+	return .5;
 }
-int rpg_calc_ranged_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
+// melee weapons
+int rpg_calc_melee_weapon_dmg(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender)
 {
-	return 34;
+	// TODO strngth * weapon dmg?
+	double strf = (double)aggressor->stat_strength / STAT_STR_BASE;
+	return 12 * strf;
 }
-double rpg_calc_ranged_coh(struct wld_mob *aggressor, struct wld_mob *defender)
+double rpg_calc_melee_weapon_coh(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender)
+{
+	return .76;
+}
+// ranged weapons
+int rpg_calc_ranged_weapon_dmg(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender)
+{
+	// TODO flat weapon dmg range?
+	return 12;
+}
+double rpg_calc_ranged_weapon_coh(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender)
 {
 	return .66;
 }
@@ -1163,9 +1178,9 @@ void itm_hit_melee_swordstyle(struct wld_item *weapon, struct wld_mob *user, str
 {
 	// TODO make this do a melee attack with the item's damage etc
 	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
-	double chance = rpg_calc_melee_coh(user, target);
+	double chance = rpg_calc_melee_weapon_coh(user, weapon, target);
 	if (dm_randf() < chance) {
-		int dmg = rpg_calc_melee_dmg(user, target);
+		int dmg = rpg_calc_melee_weapon_dmg(user, weapon, target);
 		ai_mob_attack_mob(user, target, dmg, weapon);
 	} else {
 		// whiff event
@@ -1257,9 +1272,9 @@ void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, st
 {
 	// when this standard ranged attack hits its first target it will do ranged weapon damage
 	struct wld_mob *target = wld_getmobat_index(user->map, tile->map_index);
-	double chance = rpg_calc_ranged_coh(user, target);
+	double chance = rpg_calc_ranged_weapon_coh(user, item, target);
 	if (dm_randf() < chance) {
-		int dmg = rpg_calc_ranged_dmg(user, target);
+		int dmg = rpg_calc_ranged_weapon_dmg(user, item, target);
 		ai_mob_attack_mob(user, target, dmg, item);
 	} else {
 		// whiff event
@@ -1401,6 +1416,18 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->is_destroy_queued = false;
 	mob->type_id = type;
 	mob->type = &wld_mobtypes[type];
+
+	// stats TODO roll these in some sort of character rolling menu?
+	switch (type) {
+	case MOB_PLAYER:
+		mob->stat_strength = dm_randii(5, 16);
+		mob->stat_dexterity = dm_randii(5, 16);
+		break;
+	default:
+		mob->stat_strength = dm_randii(3, 16);
+		mob->stat_dexterity = dm_randii(3, 16);
+		break;
+	}
 
 	// create inventory (pointers to malloc items)
 	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));

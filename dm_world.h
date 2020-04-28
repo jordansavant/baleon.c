@@ -129,6 +129,9 @@ struct wld_mob {
 	int target_x, target_y;
 	struct wld_item *active_item;
 	bool is_destroy_queued;
+
+	int stat_strength;
+	int stat_dexterity;
 };
 
 
