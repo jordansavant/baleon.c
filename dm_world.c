@@ -399,6 +399,10 @@ void wld_movecursor(struct wld_map *map, int relx, int rely)
 {
 	int newx = map->cursor->x + relx;
 	int newy = map->cursor->y + rely;
+	wld_setcursorpos(map, newx, newy);
+}
+void wld_setcursorpos(struct wld_map *map, int newx, int newy)
+{
 	if (newx >= 0 && newx < map->cols && newy >= 0 && newy < map->rows)
 	{
 		map->cursor->x = newx;

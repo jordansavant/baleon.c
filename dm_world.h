@@ -273,6 +273,7 @@ bool wld_canmoveto(struct wld_map *map, int x, int y);
 void wld_teleportmob(struct wld_mob *mob, int relx, int rely, bool trigger_events); // TODO duplicate code in here from movemob
 void wld_movemob(struct wld_mob *mob, int relx, int rely, bool trigger_events);
 void wld_movecursor(struct wld_map *map, int relx, int rely);
+void wld_setcursorpos(struct wld_map *map, int newx, int newy);
 
 struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y);
 struct wld_tile* wld_gettileat_index(struct wld_map *map, int index);

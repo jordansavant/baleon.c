@@ -27,6 +27,7 @@
 #define KEY_RETURN	10
 #define KEY_ESC		27
 #define KEY_SPACE	32
+#define KEY_TAB		9
 
 #define KEY_a		97
 #define KEY_b		98
@@ -421,6 +422,35 @@ int use_item_slot = -1;
 #define USE_LENGTH 58
 #define VIS_LENGTH 30
 char logs[LOG_COUNT][LOG_LENGTH];
+
+#define VISIBLE_MOB_MAX 100
+struct wld_mob* visible_mobs[VISIBLE_MOB_MAX];
+int visible_mobs_length = 0;
+int visible_mob_focus = 0;
+void clear_visible_mobs(bool full)
+{
+	int total = VISIBLE_MOB_MAX;
+	if (!full)
+		total = visible_mobs_length;
+	for (int i=0; i < VISIBLE_MOB_MAX; i++) {
+		visible_mobs[i] = NULL;
+	}
+	visible_mobs_length = 0;
+}
+void next_visible_mob()
+{
+	if (visible_mobs_length > 0)
+		visible_mob_focus = (visible_mob_focus + 1) % visible_mobs_length;
+	else
+		visible_mob_focus = 0;
+	for (int i=0; i < visible_mobs_length; i++) {
+		struct wld_mob *mob = visible_mobs[i];
+		if (mob && i == visible_mob_focus) {
+			wld_setcursorpos(mob->map, mob->map_x, mob->map_y);
+		}
+	}
+}
+
 
 void ui_box_color(WINDOW* win, int colorpair)
 {
@@ -1158,6 +1188,11 @@ void ai_player_input(struct wld_mob* player)
 					wld_movecursor(current_map, 1, 1);
 					listen = false;
 					break;
+				case KEY_TAB: // focus on next visible mob
+					// search the mob list for the next visible mob
+					next_visible_mob();
+					listen = false;
+					break;
 				} // eo switch always
 
 				break; // eo MODE PLAY
@@ -1294,6 +1329,9 @@ void ps_build_world()
 	world = wld_newworld(seed, 1);
 	current_map = world->maps[0];
 
+	// clear visible mob list
+	clear_visible_mobs(true);
+
 	ps_on_mapchange();
 }
 void ps_destroy_world()
@@ -1390,6 +1428,11 @@ void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
 	struct wld_tile *t = wld_gettileat(mob->map, x, y);
 	t->is_visible = true;
 	t->was_visible = true;
+	struct wld_mob *visible_mob = wld_getmobat_index(mob->map, t->map_index);
+	if (visible_mob && visible_mob != mob) { //player
+		visible_mobs[visible_mobs_length] = visible_mob;
+		visible_mobs_length++;
+	}
 }
 // r and c are world coords, translate them to map pad with border in mind
 void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold)
@@ -1424,6 +1467,8 @@ void ps_play_draw()
 	//clear();
 	//wclear(map_pad);
 
+	// Clear our list of last seen mobs
+	clear_visible_mobs(false);
 	// Draw tiles within the vision of the player
 	wld_mobvision(current_map->player, ps_play_draw_onvisible);
 
