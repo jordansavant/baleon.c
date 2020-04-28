@@ -770,6 +770,30 @@ struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self)
 	wld_mobvision(self, invision);
 	return closest_enemy;
 }
+void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy)
+{
+	double dirf_x, dirf_y;
+	dm_direction((double)self->map_x, (double)self->map_y, (double)enemy->map_x, (double)enemy->map_y, &dirf_x, &dirf_y);
+	int diri_x = -dm_round(dirf_x);
+	int diri_y = -dm_round(dirf_y);
+	// move away from closest enemy
+	if (wld_canmoveto(self->map, self->map_x + diri_x, self->map_y + diri_y)) {
+		self->queue_x += diri_x;
+		self->queue_y += diri_y;
+	} else if(wld_canmoveto(self->map, self->map_x + diri_x, self->map_y)) {
+		self->queue_x += diri_x;
+		self->queue_y;
+	} else if(wld_canmoveto(self->map, self->map_x, self->map_y + diri_y)) {
+		self->queue_x;
+		self->queue_y += diri_y;
+	} else {
+		// trapped run randomly
+		int dirx = dm_randii(0, 3) - 1;
+		int diry = dm_randii(0, 3) - 1;
+		self->queue_x += dirx;
+		self->queue_y += diry;
+	}
+}
 
 void ai_default_wander(struct wld_mob *mob)
 {
@@ -838,34 +862,9 @@ void ai_default_decide_combat(struct wld_mob *self) // melee approach, melee att
 		// find closest
 		struct wld_mob* closest_enemy = ai_get_closest_visible_enemy(self);
 		if (closest_enemy) {
-			double dirf_x, dirf_y;
-			dm_direction((double)self->map_x, (double)self->map_y, (double)closest_enemy->map_x, (double)closest_enemy->map_y, &dirf_x, &dirf_y);
-			int diri_x = -dm_round(dirf_x);
-			int diri_y = -dm_round(dirf_y);
-			// move away from closest enemy
-			if (wld_canmoveto(self->map, self->map_x + diri_x, self->map_y + diri_y)) {
-				self->queue_x += diri_x;
-				self->queue_y += diri_y;
-			} else if(wld_canmoveto(self->map, self->map_x + diri_x, self->map_y)) {
-				self->queue_x += diri_x;
-				self->queue_y;
-			} else if(wld_canmoveto(self->map, self->map_x, self->map_y + diri_y)) {
-				self->queue_x;
-				self->queue_y += diri_y;
-			} else {
-				// trapped run randomly
-				int dirx = dm_randii(0, 3) - 1;
-				int diry = dm_randii(0, 3) - 1;
-				self->queue_x += dirx;
-				self->queue_y += diry;
-			}
+			ai_flee_enemy(self, closest_enemy);
 		}
 	}
-}
-void ai_decide_combat_easy_flee(struct wld_mob *mob)
-{
-	// I detect that I am still in combat so I need to flee
-	// Get closest threat
 }
 
 void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item) // item can be NULL if it was not an item

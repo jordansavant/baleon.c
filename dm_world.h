@@ -325,6 +325,8 @@ int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range);
 
 ///////////////////////////
 // MOB AI
+struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
+void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy);
 void ai_default_wander(struct wld_mob *mob);
 bool ai_default_detect_combat(struct wld_mob *mob);
 void ai_default_decide_combat(struct wld_mob *mob);
