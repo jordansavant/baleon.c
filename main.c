@@ -119,7 +119,7 @@ void on_term_resize(int dummy)
 bool g_setup()
 {
 	// setup debug file pointer
-	dmlogopen("log.txt", "w");
+	dmlogopen("log/log.txt", "w");
 
 	// setup ncurses
 	initscr();

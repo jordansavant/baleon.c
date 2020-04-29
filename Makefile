@@ -12,20 +12,20 @@ make: $(BUILD) $(DEPS)
 	gcc $(BUILD) $(LIBS) $(CFLAGS)
 
 run: $(BUILD) $(DEPS)
-	gcc $(BUILD) $(LIBS) $(CFLAGS) -o main.out && ./main.out
+	gcc $(BUILD) $(LIBS) $(CFLAGS) -o build/main.out && ./build/main.out
 
 valgrind: $(BUILD) $(DEPS)
-	#gcc -g -O0 $(BUILD) $(LIBS) $(CFLAGS) -o main.out && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all --suppressions=ref/valgrind.suppression --log-file="valgrind-log.txt" ./main.out
-	gcc -g -O0 $(BUILD) $(LIBS) $(CFLAGS) -o main.out && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all --suppressions=ref/valgrind.suppression ./main.out
+	#gcc -g -O0 $(BUILD) $(LIBS) $(CFLAGS) -o build/main.out && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all --suppressions=ref/valgrind.suppression --log-file="log/valgrind-log.txt" ./main.out
+	gcc -g -O0 $(BUILD) $(LIBS) $(CFLAGS) -o build/main.out && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all --suppressions=ref/valgrind.suppression ./build/main.out
 
 valgrind-full: $(BUILD) $(DEPS)
-	gcc -g -O0 $(BUILD) $(LIBS) $(CFLAGS) -o main.out && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all ./main.out
+	gcc -g -O0 $(BUILD) $(LIBS) $(CFLAGS) -o build/main.out && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all ./build/main.out
 
 dng: main_testdng.c dm_dungeon.c dm_dungeon.h dm_algorithm.h dm_algorithm.c
-	gcc main_testdng.c dm_dungeon.c dm_algorithm.c mt_rand.c -o main_testdng.out -lm && ./main_testdng.out
+	gcc main_testdng.c dm_dungeon.c dm_algorithm.c mt_rand.c -o build/main_testdng.out -lm && ./build/main_testdng.out
 
 astar: main_astar.c dm_algorithm.c dm_algorithm.h
-	gcc main_astar.c dm_algorithm.c mt_rand.c -o main_astar.out -lm && ./main_astar.out
+	gcc main_astar.c dm_algorithm.c mt_rand.c -o build/main_astar.out -lm && ./build/main_astar.out
 
 cell: main_cellular.c dm_algorithm.c dm_algorithm.h
-	gcc main_cellular.c dm_algorithm.c mt_rand.c -o main_cellular.out -lm && ./main_cellular.out
+	gcc main_cellular.c dm_algorithm.c mt_rand.c -o build/main_cellular.out -lm && ./build/main_cellular.out
