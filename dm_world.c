@@ -514,6 +514,12 @@ struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y)
 	struct draw_struct ds = { colorpair, cha };
 	return ds;
 }
+bool wld_mob_nextto_tile(struct wld_mob *mob, struct wld_tile* tile)
+{
+	int diffx = abs(mob->map_x - tile->map_x);
+	int diffy = abs(mob->map_y - tile->map_y);
+	return diffx <= 1 && diffy <= 1;
+}
 bool wld_mob_nextto_mob(struct wld_mob *ma, struct wld_mob *mb)
 {
 	int diffx = abs(ma->map_x - mb->map_x);
@@ -1314,6 +1320,28 @@ void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld
 }
 
 
+/////////////
+// KEYS
+void itm_target_key(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
+{
+	// spiral
+	wld_mob_inspect_melee(user, inspect);
+}
+bool itm_can_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
+{
+	return wld_mob_nextto_tile(user, cursor_tile);
+}
+void itm_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
+{
+	if (cursor_tile->door_lock_id == item->key_id) {
+		item->type->fn_hit(item, user, cursor_tile);
+	}
+}
+void itm_hit_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
+{
+	tile->is_door_locked = false;
+	wld_log_ss("You used %s to open %s.", item->type->short_desc, tile->type->short_desc);
+}
 
 
 
@@ -1444,10 +1472,8 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 		mob->stat_constitution = dm_randii(5, 16);
 
 		// lets give him some items for playtesting
-		dmlog("add weapon");
 		mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
 		wld_inititem(mob->inventory[0], ITEM_WEAPON_SHORTSWORD);
-		dmlog("add weapon end");
 		break;
 	default:
 		mob->stat_strength = dm_randii(3, 16);
@@ -1507,6 +1533,7 @@ void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type)
 	item->map_index = -1;
 	item->map_x = 0;
 	item->map_y = 0;
+	item->key_id = -1;
 }
 void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 {
@@ -1522,22 +1549,31 @@ void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 
 			if (cell->has_item) {
 				struct wld_item* item = (struct wld_item*)malloc(sizeof(struct wld_item));
-				switch (dm_randii(0, 4)) {
-				case 0:
-					wld_inititem(item, ITEM_WEAPON_SHORTSWORD);
-					wld_map_new_item(map, item, c, r);
+				switch (cell->item_type) {
+				case DNG_ITEM_LOOT:
+					switch (dm_randii(0, 4)) {
+					case 0:
+						wld_inititem(item, ITEM_WEAPON_SHORTSWORD);
+						wld_map_new_item(map, item, c, r);
+						break;
+					case 1:
+						wld_inititem(item, ITEM_WEAPON_SHORTBOW);
+						wld_map_new_item(map, item, c, r);
+						break;
+					case 2:
+						wld_inititem(item, ITEM_POTION_MINOR_HEAL);
+						wld_map_new_item(map, item, c, r);
+						break;
+					case 3:
+						wld_inititem(item, ITEM_ARMOR_LEATHER);
+						wld_map_new_item(map, item, c, r);
+						break;
+					}
 					break;
-				case 1:
-					wld_inititem(item, ITEM_WEAPON_SHORTBOW);
+				case DNG_ITEM_KEY:
+					wld_inititem(item, ITEM_KEY_BASIC);
 					wld_map_new_item(map, item, c, r);
-					break;
-				case 2:
-					wld_inititem(item, ITEM_POTION_MINOR_HEAL);
-					wld_map_new_item(map, item, c, r);
-					break;
-				case 3:
-					wld_inititem(item, ITEM_ARMOR_LEATHER);
-					wld_map_new_item(map, item, c, r);
+					item->key_id = cell->key_id; // matches a door somewhere spooky
 					break;
 				}
 			}
@@ -1823,7 +1859,7 @@ void wld_setup()
 			"",
 			"shoot",
 			/////////////////////////////////////////////////////////
-			"Its string has been worn but the wood is strong,this",
+			"Its string has been worn but the wood is strong, this",
 			"small bow could fell small creatures"
 		},
 		{
@@ -1867,6 +1903,27 @@ void wld_setup()
 			/////////////////////////////////////////////////////////
 			"Humble but sturdy this set of leather armor is a rogue's",
 			"favorite friend."
+		},
+		{
+			ITEM_KEY_BASIC,
+			'*',
+			WCLR_YELLOW,
+			false,
+			true,
+			"a small bronze key",
+			"bronze key",
+			NULL,
+			itm_target_key,
+			itm_can_use_key,
+			itm_use_key,
+			itm_hit_key,
+			1,
+			false,0, // uses
+			"",
+			"use",
+			/////////////////////////////////////////////////////////
+			"This lost, tarnished bronze key may fit a lock to a",
+			"nearby door or chest."
 		},
 	};
 	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));

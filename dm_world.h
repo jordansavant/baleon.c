@@ -59,7 +59,7 @@ struct wld_tile {
 	bool is_door;
 	bool is_door_open;
 	bool is_door_locked;
-	bool door_lock_id;
+	int door_lock_id;
 	struct wld_mobtype* dead_mob_type;
 	// on_enter, on_leave events
 	void(*on_mob_enter)(struct wld_map*, struct wld_tile*, struct wld_mob*); // TODO left off here
@@ -146,6 +146,7 @@ enum WLD_ITEMTYPE {
 	ITEM_WEAPON_SHORTBOW,
 	ITEM_SCROLL_FIREBOMB,
 	ITEM_ARMOR_LEATHER,
+	ITEM_KEY_BASIC,
 };
 struct wld_itemtype {
 	enum WLD_ITEMTYPE type;
@@ -174,6 +175,7 @@ struct wld_item {
 	struct wld_itemtype *type;
 	bool has_dropped;
 	int uses;
+	int key_id;
 };
 
 
@@ -385,6 +387,7 @@ void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_m
 // These are built in main
 void wld_log(char* msg);
 void wld_log_s(char* msg, char* s2);
+void wld_log_ss(char* msg, char* s2, char *s3);
 void wld_log_ms(char* msg, struct wld_mob* mob);
 void wld_log_it(char* msg, struct wld_item* item);
 void wld_log_ts(char* msg, struct wld_tile* tile);

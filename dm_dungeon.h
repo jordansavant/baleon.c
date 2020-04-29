@@ -16,6 +16,13 @@ enum DNG_STYLES {
 	DNG_STYLE_DEEPWATER,
 };
 
+struct dng_cell;
+
+struct dng_key {
+	int id;
+	struct dng_cell* door_cell;
+};
+
 struct dng_exit {
         int id;
         int x, y;
@@ -44,8 +51,6 @@ struct dng_room {
 	bool is_machine_room;
 	bool is_room_isolated;
 	int door_count;
-
-	//unsigned int cellCount();
 };
 
 struct dng_roomdoor {
@@ -54,6 +59,11 @@ struct dng_roomdoor {
         // DoorType doorType;
         struct dng_room* parent_room;
 	int dir_x, dir_y;
+};
+
+enum DNG_ITEM_TYPE {
+	DNG_ITEM_LOOT,
+	DNG_ITEM_KEY
 };
 
 struct dng_cell {
@@ -97,13 +107,17 @@ struct dng_cell {
 	struct dm_astarnode *astar_node;
 
 	bool has_mob;
+
 	bool has_item;
+	enum DNG_ITEM_TYPE item_type;
+	int key_id;
 
 	bool is_cellular_open;
 
 	bool temp_wall;
 
 	int floor_style;
+
 };
 
 struct tunnel_dir {
@@ -134,6 +148,11 @@ struct dng_cellmap {
 	struct dng_exit *exit;
 	struct dng_room *entrance_room;
 	struct dng_room *exit_room;
+
+	// machinations
+	struct dng_key keys[100];
+	int keys_length;
+	int keys_placed;
 };
 
 struct dng_dungeon {
@@ -225,6 +244,7 @@ void dng_cellmap_machinate(struct dng_cellmap *cellmap);
 void dng_cellmap_lockrooms(struct dng_cellmap *cellmap);
 void dng_cellmap_machinate_isoroom(struct dng_cellmap *cellmap, struct dng_room *room);
 void dng_cellmap_machinate_isoroom_locknkey(struct dng_cellmap *cellmap, struct dng_room *room);
+void dng_cellmap_placekeys(struct dng_cellmap *cellmap);
 
 // DECORATIONS
 void dng_cellmap_decorate(struct dng_cellmap* cellmap);

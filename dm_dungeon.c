@@ -1311,8 +1311,11 @@ void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 			randy = room->y + dm_randii(1, room->height - 2);
 			cell = dng_cellmap_get_cell_at_position(cellmap, randx, randy);
 			cell->has_item = true;
+			cell->item_type = DNG_ITEM_LOOT;
 		}
 	}
+
+	dng_cellmap_placekeys(cellmap);
 
 }
 
@@ -1419,7 +1422,7 @@ void dng_cellmap_machinate_isoroom(struct dng_cellmap *cellmap, struct dng_room 
 	// - locked door with secret mechanism to open it
 	// - only accessibly by hidden teleport in the map
 	// - a secret door that must be searched to be spotted
-	switch (dm_randii(0,0)) {
+	switch (dm_randii(0,1)) {
 	case 0:
 		dng_cellmap_machinate_isoroom_locknkey(cellmap, room);
 		break;
@@ -1438,16 +1441,56 @@ void dng_cellmap_machinate_isoroom_locknkey(struct dng_cellmap *cellmap, struct 
 			cell->is_tunnel = false;
 			dng_cellmap_emplace_door(cellmap, room, cell);
 			cell->is_door_locked = true;
-			cell->door_lock_id = 0; // TODO
-			// TODO lock the door and give it a key id
+
+			// lock the door and give it a key id
 			// then put the key in a list that future machinations
 			// must resolve to place somewhere else in the dungeon
 			// that is accessible
+			printf("reserve keys\n");
+			int key_id = cellmap->keys_length; // next id
+			cellmap->keys[key_id].id = key_id;
+			cellmap->keys[key_id].door_cell = cell;
+			cell->door_lock_id = key_id;
+			cellmap->keys_length++;
+
 			return true;
 		}
 		return false;
 	}
 	dm_cellmap_inspect_room_perimeter(cellmap, room, inspect);
+}
+
+void dng_cellmap_placekeys(struct dng_cellmap *cellmap)
+{
+	while (cellmap->keys_placed < cellmap->keys_length) {
+		int key_id = cellmap->keys_placed;
+		struct dng_key *key = &cellmap->keys[key_id];
+		// pick a room to take ownership of the key
+		// the room must be reachable and not be the room
+		// that generated the key
+		// TODO, in the future we could place the key in
+		// another locked room as long as that rooms key
+		// is reachable
+		// TODO, key types would be nice, switches,
+		// key items, killing certain mobs, etc
+		// for now lets just place it on a cell as an
+		// item in another room
+		for (int i=0; i < cellmap->rooms_length; i++) {
+			struct dng_room *room = cellmap->rooms[i];
+			if (!room->is_room_isolated && room != cellmap->entrance_room) {
+				// pick a random tile to place a key item
+				int rx = dm_randii(room->x, room->x + room->width);
+				int ry = dm_randii(room->y, room->y + room->height);
+				// TODO this may have collisions with other items or stuff? entrances?, exits?
+				struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, rx, ry);
+				cell->has_item = true;
+				cell->item_type = DNG_ITEM_KEY;
+				cell->key_id = key_id;
+				cellmap->keys_placed++;
+				break;
+			}
+		}
+	}
 }
 // MACHINATION END
 ///////////////////////////
@@ -1692,6 +1735,10 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	cellmap->exit = NULL;
 	cellmap->entrance_room = NULL;
 	cellmap->exit_room = NULL;
+
+	// machintaions
+	cellmap->keys_length = 0;
+	cellmap->keys_placed = 0;
 
 	//printf("build ground\n");
 	dng_cellmap_buildground(cellmap);

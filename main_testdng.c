@@ -36,8 +36,12 @@ int main(void)
 						printf("w ");
 					else if (cell->has_mob)
 						printf("M ");
-					else if (cell->has_item)
-						printf("I ");
+					else if (cell->has_item) {
+						if (cell->item_type == DNG_ITEM_KEY)
+							printf("K ");
+						else
+							printf("I ");
+					}
 					else if (cell->is_tag_unreachable)
 						printf("U ");
 					else if (cell->is_entrance_transition)

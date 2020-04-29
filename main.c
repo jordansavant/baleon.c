@@ -1723,6 +1723,10 @@ void wld_log_s(char *msg, char *s)
 {
 	ui_loginfo_s(msg, s);
 }
+void wld_log_ss(char *msg, char *s, char *s2)
+{
+	ui_loginfo_ss(msg, s, s2);
+}
 void wld_log_ms(char* msg, struct wld_mob* mob)
 {
 	ui_loginfo_s(msg, mob->type->short_desc);
