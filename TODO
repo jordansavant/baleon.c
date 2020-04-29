@@ -1,9 +1,9 @@
 TODO:
 
 now
-- key failed message
 - hide keys better
 - key act_upon
+- key uses? destroyed when used?
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items

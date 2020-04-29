@@ -698,6 +698,14 @@ void wld_mob_inspect_targetables(struct wld_mob* mob, void (*inspect)(int,int))
 	// else target as melee
 	wld_mob_inspect_melee(mob, inspect);
 }
+void wld_mob_inspect_inventory(struct wld_mob *mob, void (*inspect)(struct wld_item*))
+{
+	for (int i=0; i < INVENTORY_SIZE; i++) {
+		struct wld_item *item = mob->inventory[i];
+		if (item)
+			inspect(item);
+	}
+}
 
 
 ///////////////////////////
@@ -1083,9 +1091,24 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 			return false;
 		}
 	} else {
-		// TODO is transition
+		if (tile->is_door && tile->is_door_locked && tile->door_lock_id > -1) {
+			// search inventory for key
+			dmlog("about to attempt to unlock the door");
+			struct wld_item *key = NULL;
+			void inspect(struct wld_item *item) {
+				if (!item->type->is_key || !item->type->fn_can_use || !item->type->fn_use)
+					return;
+				if (item->type->fn_can_use(item, mob, tile))
+					item->type->fn_use(item, mob, tile);
+			}
+			wld_mob_inspect_inventory(mob, inspect);
+		}
 		if (wld_canmoveto(mob->map, newx, newy)) {
 			return ai_queuemobmove(mob, relx, rely);
+		} else {
+			// I may not be able to move here because the tile
+			// is a locked door, if so search inventory for key
+			// and unlock, then attempt to move again
 		}
 		return false;
 	}
@@ -1786,8 +1809,7 @@ void wld_setup()
 			ITEM_VOID,
 			' ',
 			WCLR_BLACK,
-			false,
-			false,
+			false,false,false, // weapon, armor, key
 			"",
 			"",
 			NULL,
@@ -1806,8 +1828,7 @@ void wld_setup()
 			ITEM_POTION_MINOR_HEAL,
 			';',
 			WCLR_YELLOW,
-			false,
-			false,
+			false,false,false, // weapon, armor, key
 			"a potion of minor healing",
 			"minor healing potion",
 			itm_drink_minorhealth,
@@ -1828,8 +1849,7 @@ void wld_setup()
 			ITEM_WEAPON_SHORTSWORD,
 			'/',
 			WCLR_YELLOW,
-			true,
-			false,
+			true,false,false, // weapon, armor, key
 			"a shortsword",
 			"shortsword",
 			NULL,
@@ -1849,8 +1869,7 @@ void wld_setup()
 			ITEM_WEAPON_SHORTBOW,
 			')',
 			WCLR_YELLOW,
-			true,
-			false,
+			true,false,false, // weapon, armor, key
 			"a shortbow",
 			"shortbow",
 			NULL,
@@ -1870,8 +1889,7 @@ void wld_setup()
 			ITEM_SCROLL_FIREBOMB,
 			'=',
 			WCLR_YELLOW,
-			false,
-			false,
+			false,false,false, // weapon, armor, key
 			"a scroll of firebomb",
 			"scroll of firebomb",
 			NULL,
@@ -1891,8 +1909,7 @@ void wld_setup()
 			ITEM_ARMOR_LEATHER,
 			'M',
 			WCLR_YELLOW,
-			false,
-			true,
+			false,true,false, // weapon, armor, key
 			"a set of leather armor",
 			"leather armor",
 			NULL,
@@ -1912,8 +1929,7 @@ void wld_setup()
 			ITEM_KEY_BASIC,
 			'*',
 			WCLR_YELLOW,
-			false,
-			false,
+			false,false,true, // weapon, armor, key
 			"a small bronze key",
 			"bronze key",
 			NULL,
@@ -1937,6 +1953,7 @@ void wld_setup()
 		wld_itemtypes[i].fg_color = its[i].fg_color;
 		wld_itemtypes[i].is_weq = its[i].is_weq;
 		wld_itemtypes[i].is_aeq = its[i].is_aeq;
+		wld_itemtypes[i].is_key = its[i].is_key;
 		wld_itemtypes[i].short_desc = its[i].short_desc;
 		wld_itemtypes[i].title = its[i].title;
 		wld_itemtypes[i].fn_drink = its[i].fn_drink;

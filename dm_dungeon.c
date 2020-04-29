@@ -1446,7 +1446,6 @@ void dng_cellmap_machinate_isoroom_locknkey(struct dng_cellmap *cellmap, struct 
 			// then put the key in a list that future machinations
 			// must resolve to place somewhere else in the dungeon
 			// that is accessible
-			printf("reserve keys\n");
 			int key_id = cellmap->keys_length; // next id
 			cellmap->keys[key_id].id = key_id;
 			cellmap->keys[key_id].door_cell = cell;

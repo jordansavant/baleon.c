@@ -152,7 +152,7 @@ struct wld_itemtype {
 	enum WLD_ITEMTYPE type;
 	unsigned long sprite;
 	int fg_color;
-	bool is_weq, is_aeq;
+	bool is_weq, is_aeq, is_key;
 	char *short_desc;
 	char *title;
 	void (*fn_drink)(struct wld_item*, struct wld_mob*);
@@ -309,6 +309,7 @@ void wld_mob_resolve_item_uses(struct wld_mob* mob, struct wld_item* item);
 bool wld_mob_drop_item(struct wld_mob*, int);
 void wld_mob_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
+void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
 
 
 ///////////////////////////
