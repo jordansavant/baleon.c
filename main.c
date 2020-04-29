@@ -1336,7 +1336,7 @@ void ps_build_world()
 	int seed = dm_randi();
 	seed = 146;
 	dmlogi("SEED", seed);
-	world = wld_newworld(seed, 1);
+	world = wld_new_world(seed, 1);
 	current_map = world->maps[0];
 
 	// clear visible mob list
@@ -1348,9 +1348,9 @@ void ps_destroy_world()
 {
 	// THIS HAS NOT BEEN TESTED I CANT FIND DOCS ON HOW TO CLEAN UP PAD MEMORY
 	delwin(map_pad);
-	//wld_delmap(current_map);
+	//wld_delete_map(current_map);
 
-	wld_delworld(world);
+	wld_delete_world(world);
 
 	clear();
 }

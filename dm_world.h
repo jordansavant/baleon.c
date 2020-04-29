@@ -255,19 +255,19 @@ struct wld_world {
 // WORLD INITALIZATION
 void wld_setup();
 void wld_teardown();
-struct wld_world* wld_newworld(int seed, int count);
-void wld_delworld(struct wld_world*);
+struct wld_world* wld_new_world(int seed, int count);
+void wld_delete_world(struct wld_world*);
 void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_map *to, bool at_entrance);
 
 // MAP INITIALIZATION
-void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap);
-void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type);
-void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap);
-void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type);
-void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap);
-struct wld_map* wld_newmap(int id, int difficulty, int width, int height);
-void wld_delmob(struct wld_mob* mob);
-void wld_delmap(struct wld_map *map);
+void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap);
+void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type);
+void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap);
+void wld_init_item(struct wld_item* item, enum WLD_ITEMTYPE type);
+void wld_generate_items(struct wld_map *map, struct dng_cellmap* cellmap);
+struct wld_map* wld_new_map(int id, int difficulty, int width, int height);
+void wld_delete_mob(struct wld_mob* mob);
+void wld_delete_map(struct wld_map *map);
 
 // MAP METHODS
 int wld_calcindex(int x, int y, int cols);

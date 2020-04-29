@@ -36,7 +36,7 @@ struct wld_itemtype *wld_itemtypes;
 ///////////////////////////
 // WORLD METHODS START
 
-struct wld_world* wld_newworld(int seed, int count)
+struct wld_world* wld_new_world(int seed, int count)
 {
 	dm_seed(seed);
 	struct wld_world* world = (struct wld_world*)malloc(sizeof(struct wld_world));
@@ -50,14 +50,14 @@ struct wld_world* wld_newworld(int seed, int count)
 		// convert dungeon maps to game maps
 		// iterate the cellmap
 		struct dng_cellmap* cellmap = dungeon->maps[i];
-		struct wld_map* map = wld_newmap(i, cellmap->difficulty, cellmap->width, cellmap->height);
+		struct wld_map* map = wld_new_map(i, cellmap->difficulty, cellmap->width, cellmap->height);
 		map->world = world;
 		map->is_first_map = (i == 0);
 
 		// populate
-		wld_gentiles(map, cellmap);
-		wld_genmobs(map, cellmap);
-		wld_genitems(map, cellmap);
+		wld_generate_tiles(map, cellmap);
+		wld_generate_mobs(map, cellmap);
+		wld_generate_items(map, cellmap);
 
 		world->maps[i] = map;
 	}
@@ -67,10 +67,10 @@ struct wld_world* wld_newworld(int seed, int count)
 	return world;
 }
 
-void wld_delworld(struct wld_world* world)
+void wld_delete_world(struct wld_world* world)
 {
 	for (int i=0; i < world->maps_length; i++) {
-		wld_delmap(world->maps[i]);
+		wld_delete_map(world->maps[i]);
 	}
 	free(world->maps);
 	free(world);
@@ -329,7 +329,7 @@ void wld_teardown()
 ///////////////////////////
 // MAP INITIALIZATION
 
-void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
+void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 {
 	int *tile_map_array = (int*)malloc(map->length * sizeof(int));
 	int *mob_map_array = (int*)malloc(map->length * sizeof(int));
@@ -415,7 +415,7 @@ void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap)
 	map->item_map = item_map_array;
 }
 
-void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
+void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 {
 	mob->state = MS_START;
 	mob->queue_x = 0;
@@ -453,7 +453,7 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 
 		// lets give him some items for playtesting
 		mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
-		wld_inititem(mob->inventory[0], ITEM_WEAPON_SHORTSWORD);
+		wld_init_item(mob->inventory[0], ITEM_WEAPON_SHORTSWORD);
 		break;
 	default:
 		mob->stat_strength = dm_randii(3, 16);
@@ -467,7 +467,7 @@ void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 
 }
 
-void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
+void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 {
 	map->mobs = NULL;
 	map->mobs_length = 0;
@@ -481,7 +481,7 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 			// Spawn player and first dungeon entrance
 			if (cell->is_entrance_transition && map->is_first_map) {
 				struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-				wld_initmob(mob, MOB_PLAYER);
+				wld_init_mob(mob, MOB_PLAYER);
 				wld_map_new_mob(map, mob, c, r);
 				mob->is_player = true;
 				map->player = mob; // assign to map specifically
@@ -493,7 +493,7 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 
 			} else if (cell->has_mob) {
 				struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-				wld_initmob(mob, MOB_BUGBEAR);
+				wld_init_mob(mob, MOB_BUGBEAR);
 				wld_map_new_mob(map, mob, c, r);
 				mob->is_player = false;
 				mob->ai_wander = ai_default_wander;
@@ -505,7 +505,7 @@ void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap)
 	}
 }
 
-void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type)
+void wld_init_item(struct wld_item* item, enum WLD_ITEMTYPE type)
 {
 	item->type_id = type;
 	item->type = &wld_itemtypes[type];
@@ -519,7 +519,7 @@ void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type)
 	item->map_found -1;
 }
 
-void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
+void wld_generate_items(struct wld_map *map, struct dng_cellmap* cellmap)
 {
 	map->items = NULL;
 	map->items_length = 0;
@@ -537,25 +537,25 @@ void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 				case DNG_ITEM_LOOT:
 					switch (dm_randii(0, 4)) {
 					case 0:
-						wld_inititem(item, ITEM_WEAPON_SHORTSWORD);
+						wld_init_item(item, ITEM_WEAPON_SHORTSWORD);
 						wld_map_new_item(map, item, c, r);
 						break;
 					case 1:
-						wld_inititem(item, ITEM_WEAPON_SHORTBOW);
+						wld_init_item(item, ITEM_WEAPON_SHORTBOW);
 						wld_map_new_item(map, item, c, r);
 						break;
 					case 2:
-						wld_inititem(item, ITEM_POTION_MINOR_HEAL);
+						wld_init_item(item, ITEM_POTION_MINOR_HEAL);
 						wld_map_new_item(map, item, c, r);
 						break;
 					case 3:
-						wld_inititem(item, ITEM_ARMOR_LEATHER);
+						wld_init_item(item, ITEM_ARMOR_LEATHER);
 						wld_map_new_item(map, item, c, r);
 						break;
 					}
 					break;
 				case DNG_ITEM_KEY:
-					wld_inititem(item, ITEM_KEY_BASIC);
+					wld_init_item(item, ITEM_KEY_BASIC);
 					wld_map_new_item(map, item, c, r);
 					item->key_id = cell->key_id; // matches a door somewhere spooky
 					break;
@@ -565,7 +565,7 @@ void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 	}
 }
 
-struct wld_map* wld_newmap(int id, int difficulty, int width, int height)
+struct wld_map* wld_new_map(int id, int difficulty, int width, int height)
 {
 	struct wld_map *map = (struct wld_map*)malloc(sizeof(struct wld_map));
 
@@ -619,7 +619,7 @@ struct wld_map* wld_newmap(int id, int difficulty, int width, int height)
 }
 
 // frees mob memory
-void wld_delmob(struct wld_mob *mob)
+void wld_delete_mob(struct wld_mob *mob)
 {
 	for (int j=0; j<INVENTORY_SIZE; j++)
 		if (mob->inventory[j] != NULL)
@@ -628,7 +628,7 @@ void wld_delmob(struct wld_mob *mob)
 	free(mob);
 }
 
-void wld_delmap(struct wld_map *map)
+void wld_delete_map(struct wld_map *map)
 {
 	free(map->cursor);
 
@@ -640,7 +640,7 @@ void wld_delmap(struct wld_map *map)
 
 
 	for (int i=0; i<map->mobs_length; i++)
-		wld_delmob(map->mobs[i]);
+		wld_delete_mob(map->mobs[i]);
 	free(map->mobs);
 	free(map->mob_map);
 
@@ -782,7 +782,7 @@ void wld_map_queue_destroy_mob(struct wld_map* map, struct wld_mob* mob)
 void wld_map_destroy_mob(struct wld_map* map, struct wld_mob* mob)
 {
 	wld_map_remove_mob(map, mob);
-	wld_delmob(mob); // frees memory
+	wld_delete_mob(mob); // frees memory
 }
 
 // This is called when we don't want to destroy a mob, just remove it from map ownership
