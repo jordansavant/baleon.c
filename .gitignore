@@ -1,5 +1,3 @@
 *.out
 *.swp
 *.swo
-log.txt
-valgrind-log.txt
