@@ -595,6 +595,8 @@ void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *
 
 
 
+///////////////////////////
+// CELLBOMB START
 
 void dng_cellmap_cellbomb(struct dng_cellmap* cellmap)
 {
@@ -618,8 +620,8 @@ void dng_cellmap_cellbomb(struct dng_cellmap* cellmap)
 	dm_cellular_automata_detail(width, height, on_solid, on_open, alive_chance, death_max, birth_max, steps);
 }
 
-
-
+// CELLBOMB END
+///////////////////////////
 
 
 

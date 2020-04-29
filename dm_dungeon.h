@@ -193,6 +193,9 @@ void dng_cellmap_remove_door(struct dng_cellmap* cellmap, struct dng_cell *cell)
 void dng_cellmap_set_room_sills(struct dng_cellmap* cellmap, struct dng_room *room, void (*on_set)(struct dng_cell*));
 void dng_cellmap_connect_door(struct dng_cellmap *cellmap, struct dng_roomdoor *door);
 
+// CELLBOMB
+void dng_cellmap_cellbomb(struct dng_cellmap* cellmap);
+
 // ENTRANCE
 void dng_cellmap_buildentrance(struct dng_cellmap *cellmap);
 void dng_entrance_init(struct dng_entrance *entrance, int id, int x, int y);
