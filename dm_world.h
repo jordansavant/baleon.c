@@ -6,6 +6,10 @@
 
 #define INVENTORY_SIZE 12
 
+#define STAT_STR_BASE 10
+#define STAT_DEX_BASE 10
+#define STAT_CON_BASE 10
+
 enum WLD_COLOR_INDEX {
 	WCLR_BLACK,   // 0
 	WCLR_GREEN,   // 1
@@ -248,9 +252,27 @@ struct wld_world {
 	int maps_length;
 };
 
+// WORLD INITALIZATION
+void wld_setup();
+void wld_teardown();
+struct wld_world* wld_newworld(int seed, int count);
+void wld_delworld(struct wld_world*);
+void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_map *to, bool at_entrance);
 
-///////////////////////////
+// MAP INITIALIZATION
+void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap);
+void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type);
+void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap);
+void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type);
+void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap);
+struct wld_map* wld_newmap(int id, int difficulty, int width, int height);
+void wld_delmob(struct wld_mob* mob);
+void wld_delmap(struct wld_map *map);
+
 // MAP METHODS
+int wld_calcindex(int x, int y, int cols);
+int wld_calcx(int index, int cols);
+int wld_calcy(int index, int cols);
 void wld_map_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id);
 void wld_map_new_item(struct wld_map* map, struct wld_item* item, int x, int y);
 void wld_map_remove_item(struct wld_map* map, struct wld_item* item);
@@ -261,54 +283,46 @@ void wld_map_destroy_mob(struct wld_map* map, struct wld_mob* mob);
 void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob);
 void wld_map_add_mob_at_entrance(struct wld_map* map, struct wld_mob* mob);
 void wld_map_add_mob_at_exit(struct wld_map* map, struct wld_mob* mob);
+bool wld_map_can_move_to(struct wld_map *map, int x, int y);
+void wld_map_move_cursor(struct wld_map *map, int relx, int rely);
+void wld_map_set_cursor_pos(struct wld_map *map, int newx, int newy);
+struct wld_tile* wld_map_get_tile_at(struct wld_map *map, int x, int y);
+struct wld_tile* wld_map_get_tile_at_index(struct wld_map *map, int index);
+struct wld_mob* wld_map_get_mob_at(struct wld_map *map, int x, int y);
+struct wld_mob* wld_map_get_mob_at_index(struct wld_map *map, int index);
+struct wld_item* wld_map_get_item_at(struct wld_map *map, int x, int y);
+struct wld_item* wld_map_get_item_at_index(struct wld_map *map, int index);
+struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y);
+struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int y);
 
-///////////////////////////
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
 void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
 bool wld_tile_is_blocked_vision(struct wld_tile* tile);
 bool wld_tile_is_blocked_movement(struct wld_tile* tile);
 
-///////////////////////////
-// UTILITY METHODS
+// TYPE METHODS
 struct wld_tiletype* wld_get_tiletype(int id);
 struct wld_mobtype* wld_get_mobtype(int id);
 struct wld_itemtype* wld_get_itemtype(int id);
-
 int wld_cpair(enum WLD_COLOR_INDEX a, enum WLD_COLOR_INDEX b);
 int wld_cpair_tm(int tiletype, int mobtype);
 int wld_cpair_ti(int tiletype, int itemtype);
 int wld_cpairmem(int tiletype);
 int wld_cpair_bg(int tiletype);
 
-int wld_calcindex(int x, int y, int cols);
-int wld_calcx(int index, int cols);
-int wld_calcy(int index, int cols);
-
-int wld_distance_mob_tile(struct wld_map *map, struct wld_mob *mob, struct wld_tile *tile);
-bool wld_canmoveto(struct wld_map *map, int x, int y);
-void wld_teleportmob(struct wld_mob *mob, int relx, int rely, bool trigger_events);
-void wld_movemob(struct wld_mob *mob, int relx, int rely, bool trigger_events);
-void wld_movecursor(struct wld_map *map, int relx, int rely);
-void wld_setcursorpos(struct wld_map *map, int newx, int newy);
-
-struct wld_tile* wld_gettileat(struct wld_map *map, int x, int y);
-struct wld_tile* wld_gettileat_index(struct wld_map *map, int index);
-struct wld_mob* wld_getmobat(struct wld_map *map, int x, int y);
-struct wld_mob* wld_getmobat_index(struct wld_map *map, int index);
-struct wld_item* wld_getitemat(struct wld_map *map, int x, int y);
-struct wld_item* wld_getitemat_index(struct wld_map *map, int index);
-
-void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double));
-struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y);
-struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y);
-bool wld_mob_nextto_tile(struct wld_mob *mob, struct wld_tile* tile);
-bool wld_mob_nextto_mob(struct wld_mob* ma, struct wld_mob* mb);
+// MOB METHODS
+int wld_mob_dist_tile(struct wld_mob *mob, struct wld_tile *tile);
+void wld_mob_teleport(struct wld_mob *mob, int relx, int rely, bool trigger_events);
+void wld_mob_move(struct wld_mob *mob, int relx, int rely, bool trigger_events);
+void wld_mob_vision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double));
+bool wld_mob_is_next_to_tile(struct wld_mob *mob, struct wld_tile* tile);
+bool wld_mob_is_next_to_mob(struct wld_mob* ma, struct wld_mob* mb);
 struct wld_item* wld_mob_get_item_in_slot(struct wld_mob *mob, int slot);
 int wld_mob_get_open_inventory_slot(struct wld_mob *mob);
 bool wld_mob_has_inventory(struct wld_mob*);
 bool wld_mob_pickup_item(struct wld_mob*, struct wld_item*);
-void wld_swap_item(struct wld_mob* mob, int slot_a, int slot_b);
+void wld_mob_swap_item(struct wld_mob* mob, int slot_a, int slot_b);
 bool wld_mob_equip(struct wld_mob*, int);
 bool wld_mob_unequip(struct wld_mob*, int);
 bool wld_mob_drink_item(struct wld_mob *mob, int itemslot);
@@ -320,13 +334,37 @@ void wld_mob_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
 
+// MOB AI
+struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
+void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy);
+void ai_default_wander(struct wld_mob *mob);
+bool ai_default_is_hostile(struct wld_mob *self, struct wld_mob *target);
+bool ai_default_detect_combat(struct wld_mob *mob);
+void ai_default_decide_combat(struct wld_mob *self);
+void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item);
+void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
+void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item* item);
+bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
+void ai_mob_whiff(struct wld_mob *aggressor, struct wld_item* item);
+void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
+void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
+bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile* cursor_tile);
+bool ai_player_use_active_item(struct wld_mob* player);
+bool ai_player_trigger_target(struct wld_mob* player);
+bool ai_player_set_use_item(struct wld_mob*, int);
+bool ai_player_enter_targeting(struct wld_mob* player);
+bool ai_player_draw_weapon(struct wld_mob* player);
+bool ai_player_leave_targeting(struct wld_mob* player);
+bool ai_player_sheath_weapon(struct wld_mob* player);
+bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
+bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
+bool ai_rest(struct wld_mob *mob);
+bool ai_get(struct wld_mob *mob, int relx, int rely);
+void wld_update_mob(struct wld_mob *mob);
 
-///////////////////////////
 // CHEATS
 void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob*);
 
-
-///////////////////////////
 // RPG CALCULATIONS
 int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender);
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender);
@@ -336,39 +374,6 @@ int rpg_calc_ranged_weapon_dmg(struct wld_mob *aggressor, struct wld_item *weapo
 double rpg_calc_ranged_weapon_coh(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender);
 int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range);
 
-
-///////////////////////////
-// MOB AI
-struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
-void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy);
-void ai_default_wander(struct wld_mob *mob);
-bool ai_default_is_hostile(struct wld_mob *self, struct wld_mob *target);
-bool ai_default_detect_combat(struct wld_mob *mob);
-void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item);
-void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
-void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item* item);
-bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
-void ai_mob_whiff(struct wld_mob *aggressor, struct wld_item* item);
-void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
-void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
-bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile* cursor_tile);
-
-bool ai_player_use_active_item(struct wld_mob* player);
-bool ai_player_trigger_target(struct wld_mob* player);
-bool ai_player_set_use_item(struct wld_mob*, int);
-bool ai_player_enter_targeting(struct wld_mob* player);
-bool ai_player_draw_weapon(struct wld_mob* player);
-bool ai_player_leave_targeting(struct wld_mob* player);
-bool ai_player_sheath_weapon(struct wld_mob* player);
-
-bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
-bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
-bool ai_rest(struct wld_mob *mob);
-bool ai_get(struct wld_mob *mob, int relx, int rely);
-void wld_update_mob(struct wld_mob *mob);
-
-
-///////////////////////////
 // ITEM ACTIONS
 void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
 bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
@@ -385,30 +390,6 @@ bool itm_can_use_key(struct wld_item *item, struct wld_mob *user, struct wld_til
 void itm_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_hit_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
 
-
-///////////////////////////
-// MAP INITIALIZATION
-void wld_gentiles(struct wld_map *map, struct dng_cellmap* cellmap);
-void wld_initmob(struct wld_mob *mob, enum WLD_MOBTYPE type);
-void wld_genmobs(struct wld_map *map, struct dng_cellmap* cellmap);
-void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type);
-void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap);
-struct wld_map* wld_newmap(int id, int difficulty, int width, int height);
-void wld_delmob(struct wld_mob* mob);
-void wld_delmap(struct wld_map *map);
-
-
-///////////////////////////
-// WORLD INITALIZATION
-void wld_log(char* msg);
-void wld_setup();
-void wld_teardown();
-struct wld_world* wld_newworld(int seed, int count);
-void wld_delworld(struct wld_world*);
-void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_map *to, bool at_entrance);
-
-
-///////////////////////////
 // LOGGERS
 // These are built in main
 void wld_log(char* msg);

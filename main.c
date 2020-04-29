@@ -447,7 +447,7 @@ void next_visible_mob()
 	for (int i=0; i < visible_mobs_length; i++) {
 		struct wld_mob *mob = visible_mobs[i];
 		if (mob && i == visible_mob_focus) {
-			wld_setcursorpos(mob->map, mob->map_x, mob->map_y);
+			wld_map_set_cursor_pos(mob->map, mob->map_x, mob->map_y);
 		}
 	}
 }
@@ -638,10 +638,10 @@ void ui_update_cursorinfo(struct wld_map *map)
 	int y = map->cursor->y;
 
 	// Get details about the tile they are on
-	struct wld_tile *t = wld_gettileat(map, x, y);
+	struct wld_tile *t = wld_map_get_tile_at(map, x, y);
 	if (t->is_visible) {
-		struct wld_mob *m = wld_getmobat(map, x, y);
-		struct wld_item *i = wld_getitemat(map, x, y);
+		struct wld_mob *m = wld_map_get_mob_at(map, x, y);
+		struct wld_item *i = wld_map_get_item_at(map, x, y);
 		if (m != NULL) {
 			// TODO get "what" the mob is doing
 			ui_cursorinfo(m->type->short_desc);
@@ -663,10 +663,10 @@ void ui_update_positioninfo(struct wld_map *map)
 	int x = map->player->map_x;
 	int y = map->player->map_y;
 	// Get details about the tile they are on
-	struct wld_tile *t = wld_gettileat(map, x, y);
+	struct wld_tile *t = wld_map_get_tile_at(map, x, y);
 
 	if (t->is_visible) {
-		struct wld_item *i = wld_getitemat(map, x, y);
+		struct wld_item *i = wld_map_get_item_at(map, x, y);
 		if (i != NULL) {
 			ui_positioninfo(i->type->short_desc);
 		} else if(t->dead_mob_type) {
@@ -704,9 +704,9 @@ void ui_update_mobpanel(struct wld_map *map)
 		// better version is to hook into the primary mobvision call in main draw
 		int i=0;
 		void onvisible(struct wld_mob* player, int x, int y, double radius) {
-			struct wld_tile *tile = wld_gettileat(map, x, y);
-			struct wld_mob *mob = wld_getmobat(map, x, y);
-			struct wld_item *item = wld_getitemat(map, x, y);
+			struct wld_tile *tile = wld_map_get_tile_at(map, x, y);
+			struct wld_mob *mob = wld_map_get_mob_at(map, x, y);
+			struct wld_item *item = wld_map_get_item_at(map, x, y);
 
 			if (mob && !mob->is_dead) { // players are not destroyed
 				// mob name
@@ -765,7 +765,7 @@ void ui_update_mobpanel(struct wld_map *map)
 				i++;
 			}
 		}
-		wld_mobvision(current_map->player, onvisible);
+		wld_mob_vision(current_map->player, onvisible);
 		last_mob_list_length = i;
 
 		// render frame
@@ -1162,38 +1162,38 @@ void ai_player_input(struct wld_mob* player)
 				// Cursor movement
 				case KEY_UP:
 				case KEY_8: // up
-					wld_movecursor(current_map, 0, -1);
+					wld_map_move_cursor(current_map, 0, -1);
 					listen = false;
 					break;
 				case KEY_DOWN:
 				case KEY_2: // down
-					wld_movecursor(current_map, 0, 1);
+					wld_map_move_cursor(current_map, 0, 1);
 					listen = false;
 					break;
 				case KEY_LEFT:
 				case KEY_4: // left
-					wld_movecursor(current_map, -1, 0);
+					wld_map_move_cursor(current_map, -1, 0);
 					listen = false;
 					break;
 				case KEY_RIGHT:
 				case KEY_6: // right
-					wld_movecursor(current_map, 1, 0);
+					wld_map_move_cursor(current_map, 1, 0);
 					listen = false;
 					break;
 				case KEY_7: // upleft
-					wld_movecursor(current_map, -1, -1);
+					wld_map_move_cursor(current_map, -1, -1);
 					listen = false;
 					break;
 				case KEY_9: // upright
-					wld_movecursor(current_map, 1, -1);
+					wld_map_move_cursor(current_map, 1, -1);
 					listen = false;
 					break;
 				case KEY_1: // downleft
-					wld_movecursor(current_map, -1, 1);
+					wld_map_move_cursor(current_map, -1, 1);
 					listen = false;
 					break;
 				case KEY_3: // downright
-					wld_movecursor(current_map, 1, 1);
+					wld_map_move_cursor(current_map, 1, 1);
 					listen = false;
 					break;
 				case KEY_TAB: // focus on next visible mob
@@ -1435,10 +1435,10 @@ void ps_destroy_ui()
 void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
 {
 	// get the map tile at this position and draw it
-	struct wld_tile *t = wld_gettileat(mob->map, x, y);
+	struct wld_tile *t = wld_map_get_tile_at(mob->map, x, y);
 	t->is_visible = true;
 	t->was_visible = true;
-	struct wld_mob *visible_mob = wld_getmobat_index(mob->map, t->map_index);
+	struct wld_mob *visible_mob = wld_map_get_mob_at_index(mob->map, t->map_index);
 	if (visible_mob && visible_mob != mob) { //player
 		visible_mobs[visible_mobs_length] = visible_mob;
 		visible_mobs_length++;
@@ -1480,7 +1480,7 @@ void ps_play_draw()
 	// Clear our list of last seen mobs
 	clear_visible_mobs(false);
 	// Draw tiles within the vision of the player
-	wld_mobvision(current_map->player, ps_play_draw_onvisible);
+	wld_mob_vision(current_map->player, ps_play_draw_onvisible);
 
 	// Clear map without flutter
 	for (int padr=0; padr < current_map->rows + ui_map_border*2; padr++) {
@@ -1496,14 +1496,14 @@ void ps_play_draw()
 				continue;
 			int c = padc - 1;
 
-			struct wld_tile *t = wld_gettileat(current_map, c, r);
+			struct wld_tile *t = wld_map_get_tile_at(current_map, c, r);
 
 			if (t->is_visible) {
-				struct draw_struct ds = wld_get_drawstruct(current_map, c, r);
+				struct draw_struct ds = wld_map_get_drawstruct(current_map, c, r);
 				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
 
 			} else if (t->was_visible) {
-				struct draw_struct ds = wld_get_memory_drawstruct(current_map, c, r);
+				struct draw_struct ds = wld_map_get_drawstruct_memory(current_map, c, r);
 				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
 			}
 		}
@@ -1515,9 +1515,9 @@ void ps_play_draw()
 		int map_x = current_map->player->map_x;
 		int map_y = current_map->player->map_y;
 		void inspect(int x, int y) {
-			struct wld_tile *t = wld_gettileat(current_map, x, y);
+			struct wld_tile *t = wld_map_get_tile_at(current_map, x, y);
 			if (t->is_visible) {
-				struct draw_struct ds = wld_get_drawstruct(current_map, x, y);
+				struct draw_struct ds = wld_map_get_drawstruct(current_map, x, y);
 				ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
 			}
 		}
@@ -1598,7 +1598,7 @@ void ps_play_update()
 	// Clear map without flutter
 	for (int r=0; r < current_map->rows; r++) {
 		for (int c=0; c < current_map->cols; c++) {
-			struct wld_tile *t = wld_gettileat(current_map, c, r);
+			struct wld_tile *t = wld_map_get_tile_at(current_map, c, r);
 			t->is_visible = false;
 		}
 	}
