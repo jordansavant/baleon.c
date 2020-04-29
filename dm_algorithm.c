@@ -6,10 +6,12 @@
 #include "dm_algorithm.h"
 #include "dm_debug.h"
 
-#include <stdio.h> // TODO REMOVE
+// #include <stdio.h> // debugging only
+
+
 
 ///////////////////////////
-// SHADOWCASTING
+// SHADOWCASTING START
 
 unsigned int rand_seed = 0;
 unsigned int shadowcast_id = 0;
@@ -33,6 +35,7 @@ bool dm_sc_is_leakageblocked(int x, int y, int ax, int ay, bool (*is_blocked)(in
 	//}
 	return false;
 }
+
 void dm_shadowcast_r(
 	int x, int y,
 	int xmax, int ymax,
@@ -121,17 +124,14 @@ void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (
 	}
 }
 
+// SHADOWCASTING END
+///////////////////////////
+
 
 
 ///////////////////////////
-// SPIRAL
-struct dm_spiral dm_spiral(int maxlayers)
-{
-	struct dm_spiral s = {
-		0, 0, 0, 1, maxlayers
-	};
-	return s;
-}
+// SPIRAL START
+
 // this process steps right, down, left, up (and then right again)
 // to form a spiral to the layer specified
 // "leg" is what direction it is going
@@ -174,11 +174,27 @@ bool dm_spiralnext(struct dm_spiral *s)
 	return true;
 }
 
+struct dm_spiral dm_spiral(int maxlayers)
+{
+	struct dm_spiral s = {
+		0, 0, 0, 1, maxlayers
+	};
+	return s;
+}
+
+// SPIRAL END
+///////////////////////////
+
+
 
 ///////////////////////////
-// BRESENHAM LINE
+// BRESENHAM LINE START
 // http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm - Algorithm
 // http://roguebasin.roguelikedevelopment.org/index.php?title=Bresenham%27s_Line_Algorithm - Rogue Code
+
+// ------------------
+// BR PUBLIC
+
 void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), void (*on_visible)(int, int))
 {
     if (is_blocked != NULL && is_blocked(x1, y1))
@@ -238,15 +254,23 @@ void dm_bresenham(int x1, int y1, int x2, int y2, bool (*is_blocked)(int, int), 
     }
 }
 
+// BRESENHAM END
+///////////////////////////
+
+
 
 ///////////////////////////
-// FLOODFILL
+// FLOODFILL START
+
+// ------------------
+// FF DATA
+
 int __dm_floodfill_id = 0;
-void dm_floodfill(int x, int y, bool (*is_blocked)(int, int, int), void (*on_flood)(int, int, int))
-{
-	dm_floodfill_r(x, y, is_blocked, on_flood, 0);
-	__dm_floodfill_id++;
-}
+
+
+// ------------------
+// FF PRIVATE
+
 void dm_floodfill_r(int x, int y, bool (*is_blocked)(int, int, int), void (*on_flood)(int, int, int), int depth)
 {
 	if (is_blocked(x, y, depth))
@@ -260,14 +284,29 @@ void dm_floodfill_r(int x, int y, bool (*is_blocked)(int, int, int), void (*on_f
 	dm_floodfill_r(x, y + 1, is_blocked, on_flood, depth);
 	dm_floodfill_r(x, y - 1, is_blocked, on_flood, depth);
 }
+
+
+// ------------------
+// FF PUBLIC
+
 int dm_floodfill_id()
 {
 	return __dm_floodfill_id;
 }
 
+void dm_floodfill(int x, int y, bool (*is_blocked)(int, int, int), void (*on_flood)(int, int, int))
+{
+	dm_floodfill_r(x, y, is_blocked, on_flood, 0);
+	__dm_floodfill_id++;
+}
+
+// FLOODFILL END
+///////////////////////////
+
+
 
 ///////////////////////////
-// RANDOM
+// RANDOM START
 
 void dm_seed(unsigned long seed)
 {
@@ -296,10 +335,14 @@ bool dm_chance(int in, int outof)
 	return ((double)in / (double)outof) > dm_randf();
 }
 
+// RANDOM END
+///////////////////////////
+
 
 
 ///////////////////////////
-// MATH
+// MATH START
+
 int dm_disti(int x1, int y1, int x2, int y2)
 {
 	double x = (double)(x1 - x2);
@@ -336,6 +379,7 @@ double dm_round(double val)
 {
 	return floor(val + 0.5);
 }
+
 // ceil positive numbers up, negative down
 double dm_ceil_out(double val)
 {
@@ -345,10 +389,14 @@ double dm_ceil_out(double val)
 		return floor(val);
 }
 
+// MATH END
+///////////////////////////
+
 
 
 ///////////////////////////
-// ASTAR
+// ASTAR START
+
 #define ASTAR_LIST_LENGTH 25
 
 struct dm_astarnode* dm_astar_newnode()
@@ -376,6 +424,7 @@ void dm_astar_reset(struct dm_astarnode* node)
 	if (node->get_y)
 		node->astar_y = node->get_y(node);
 }
+
 void dm_astar_clean(struct dm_astarnode* node, unsigned int astar_id)
 {
     if (node->astar_id != astar_id) {
@@ -383,10 +432,12 @@ void dm_astar_clean(struct dm_astarnode* node, unsigned int astar_id)
         dm_astar_reset(node);
     }
 }
+
 bool dm_astar_equals(struct dm_astarnode* node_a, struct dm_astarnode* node_b)
 {
 	return node_a->astar_x == node_b->astar_x && node_a->astar_y == node_b->astar_y;
 }
+
 void dm_astarlist_push(struct dm_astarlist *list, struct dm_astarnode *node)
 {
 	// if out of room expand
@@ -399,6 +450,7 @@ void dm_astarlist_push(struct dm_astarlist *list, struct dm_astarnode *node)
 	list->list[list->length] = node;
 	list->length++;
 }
+
 void dm_astarlist_remove(struct dm_astarlist *list, struct dm_astarnode *node)
 {
 	// this does not realloc down, we just shrink the list so new pushes can replace old pushes
@@ -419,6 +471,7 @@ void dm_astarlist_remove(struct dm_astarlist *list, struct dm_astarnode *node)
 		list->length--;
 	}
 }
+
 void dm_astarlist_free(struct dm_astarlist *list)
 {
 	free(list->list);
@@ -574,7 +627,6 @@ void dm_astar(
 	dm_astarlist_free(&closed_list);
 }
 
-
 void dm_astar_check(
 	struct dm_astarnode *current_node,
 	struct dm_astarnode *end_node,
@@ -675,28 +727,55 @@ void dm_astar_check(
 	//printf("  end dir\n");
 }
 
+// ASTAR END
+///////////////////////////
+
+
 
 ///////////////////////////
-// CELLULAR AUTOMATA
+// CELLULAR AUTOMATA START
 
-int dm_cella_count_alive_neighbors(int *map, int x, int y, int width, int height)
+void dm_cellular_automata(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int))
 {
-	int count = 0;
-	for (int i = -1; i < 2; i++) {
-		for (int j = -1; j < 2; j++) {
-			int nb_x = i+x;
-			int nb_y = j+y;
-			int nb_index = nb_y * width + nb_x;
-			if (i == 0 && j == 0)
-				continue;
-			//If it's at the edges, consider it to be solid (you can try removing the count = count + 1)
-			if (nb_x < 0 || nb_y < 0 || nb_x >= width || nb_y >= height)
-				count = count + 1;
-			else if (map[nb_index] == 1)
-				count = count + 1;
+	double alive_chance = 0.4;
+	int death_max = 3;
+	int birth_max = 4;
+	int steps = 2;
+
+	dm_cellular_automata_detail(width, height, on_solid, on_open, alive_chance, death_max, birth_max, steps);
+}
+
+void dm_cellular_automata_detail(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int), double alive_chance, int death_max, int birth_max, int steps)
+{
+	int map[width * height];
+	dm_cella_init(map, width, height, alive_chance);
+
+	for (int i=0; i<steps; i++) {
+		dm_cella_simulate(map, width, height, death_max, birth_max);
+	}
+
+	for (int x=0; x < width; x++) {
+		for (int y=0; y < height; y++) {
+			if (map[y * width + x] == 0)
+				on_open(x, y);
+			else
+				on_solid(x, y);
 		}
 	}
-	return count;
+}
+
+void dm_cella_init(int *map, int width, int height, double chanceToStartAlive)
+{
+	for (int x=0; x < width; x++) {
+		for (int y=0; y < height; y++) {
+			int index = y * width + x;
+			if (dm_randf() < chanceToStartAlive)
+				//We're using numbers, not booleans, to decide if something is solid here. 0 = not solid
+				map[index] = 1;
+			else
+				map[index] = 0;
+		}
+	}
 }
 
 
@@ -723,44 +802,26 @@ void dm_cella_simulate(int *map, int width, int height, int deathLimit, int birt
 	}
 }
 
-void dm_cella_init(int *map, int width, int height, double chanceToStartAlive)
+int dm_cella_count_alive_neighbors(int *map, int x, int y, int width, int height)
 {
-	for (int x=0; x < width; x++) {
-		for (int y=0; y < height; y++) {
-			int index = y * width + x;
-			if (dm_randf() < chanceToStartAlive)
-				//We're using numbers, not booleans, to decide if something is solid here. 0 = not solid
-				map[index] = 1;
-			else
-				map[index] = 0;
+	int count = 0;
+	for (int i = -1; i < 2; i++) {
+		for (int j = -1; j < 2; j++) {
+			int nb_x = i+x;
+			int nb_y = j+y;
+			int nb_index = nb_y * width + nb_x;
+			if (i == 0 && j == 0)
+				continue;
+			//If it's at the edges, consider it to be solid (you can try removing the count = count + 1)
+			if (nb_x < 0 || nb_y < 0 || nb_x >= width || nb_y >= height)
+				count = count + 1;
+			else if (map[nb_index] == 1)
+				count = count + 1;
 		}
 	}
+	return count;
 }
 
-void dm_cellular_automata_detail(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int), double alive_chance, int death_max, int birth_max, int steps)
-{
-	int map[width * height];
-	dm_cella_init(map, width, height, alive_chance);
+// CELLULAR AUTOMATA END
+///////////////////////////
 
-	for (int i=0; i<steps; i++) {
-		dm_cella_simulate(map, width, height, death_max, birth_max);
-	}
-
-	for (int x=0; x < width; x++) {
-		for (int y=0; y < height; y++) {
-			if (map[y * width + x] == 0)
-				on_open(x, y);
-			else
-				on_solid(x, y);
-		}
-	}
-}
-void dm_cellular_automata(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int))
-{
-	double alive_chance = 0.4;
-	int death_max = 3;
-	int birth_max = 4;
-	int steps = 2;
-
-	dm_cellular_automata_detail(width, height, on_solid, on_open, alive_chance, death_max, birth_max, steps);
-}

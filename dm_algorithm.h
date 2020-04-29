@@ -4,6 +4,17 @@
 #include "dm_defines.h"
 
 // SHADOWCASTING
+bool dm_sc_is_leakageblocked(int x, int y, int ax, int ay, bool (*is_blocked)(int, int));
+void dm_shadowcast_r(
+	int x, int y,
+	int xmax, int ymax,
+	unsigned int radius,
+	bool (*is_blocked)(int, int),
+	void (*on_visible)(int, int, double, unsigned int),
+	bool allow_leakage,
+	int octant, int row, double start_slope, double end_slope,
+	int xx, int xy, int yx, int yy
+);
 void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double, unsigned int), bool allow_leakage);
 
 // SPIRAL
@@ -67,6 +78,7 @@ void dm_astar_clean(struct dm_astarnode* node, unsigned int astar_id);
 bool dm_astar_equals(struct dm_astarnode* node_a, struct dm_astarnode* node_b);
 void dm_astarlist_push(struct dm_astarlist *list, struct dm_astarnode *node);
 void dm_astarlist_remove(struct dm_astarlist *list, struct dm_astarnode *node);
+void dm_astarlist_free(struct dm_astarlist *list);
 
 void dm_astar(
 	struct dm_astarnode *start_node,
@@ -89,6 +101,9 @@ void dm_astar_check(
 );
 
 // CELLULAR AUTOMATA
+int dm_cella_count_alive_neighbors(int *map, int x, int y, int width, int height);
+void dm_cella_simulate(int *map, int width, int height, int deathLimit, int birthLimit);
+void dm_cella_init(int *map, int width, int height, double chanceToStartAlive);
 void dm_cellular_automata(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int));
 void dm_cellular_automata_detail(int width, int height, void (*on_solid)(int, int), void (*on_open)(int, int), double alive_chance, int death_max, int birth_max, int steps);
 
