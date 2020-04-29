@@ -106,7 +106,7 @@ void wld_setup()
 	struct wld_tiletype tts[] = { //     bg		 fg		  membg       memfg
 		{ TILE_VOID,            ' ', WCLR_BLACK, WCLR_BLACK, ' ', WCLR_BLACK, WCLR_BLACK, false, "" },
 		{ TILE_GRASS,           '"', WCLR_BLACK, WCLR_GREEN, '"', WCLR_BLACK, WCLR_BLUE,  false, "a small tuft of grass" },
-		{ TILE_WATER,           ' ', WCLR_BLUE,  WCLR_BLACK, '~', WCLR_BLACK, WCLR_BLUE,  false, "a pool of water glistens" },
+		{ TILE_WATER,           '~', WCLR_BLUE,  WCLR_BLUE,  '~', WCLR_BLACK, WCLR_BLUE,  false, "a pool of water glistens" },
 		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  false, "a large tree" },
 		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true,  "a rough stone wall" },
 		{ TILE_STONEFLOOR,	'.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "a rough stone floor" },
