@@ -241,7 +241,6 @@ struct draw_struct {
 	int colorpair;
 	unsigned long sprite;
 };
-void wld_new_mob(struct wld_map* map, struct wld_mob* mob, int x, int y);
 
 struct wld_world {
 	int seed;
@@ -251,9 +250,14 @@ struct wld_world {
 
 void wld_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id);
 void wld_map_new_item(struct wld_map* map, struct wld_item* item, int x, int y);
+void wld_map_remove_item(struct wld_map* map, struct wld_item* item);
+void wld_insert_mob(struct wld_map* map, struct wld_mob* mob, int x, int y, int id);
+void wld_map_new_mob(struct wld_map* map, struct wld_mob* mob, int x , int y);
 void wld_map_queue_destroy_mob(struct wld_map* map, struct wld_mob* mob);
 void wld_map_destroy_mob(struct wld_map* map, struct wld_mob* mob);
 void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob);
+void wld_map_add_mob_at_entrance(struct wld_map* map, struct wld_mob* mob);
+void wld_map_add_mob_at_exit(struct wld_map* map, struct wld_mob* mob);
 
 ///////////////////////////
 // TILE EVENTS
@@ -280,7 +284,7 @@ int wld_calcy(int index, int cols);
 
 int wld_distance_mob_tile(struct wld_map *map, struct wld_mob *mob, struct wld_tile *tile);
 bool wld_canmoveto(struct wld_map *map, int x, int y);
-void wld_teleportmob(struct wld_mob *mob, int relx, int rely, bool trigger_events); // TODO duplicate code in here from movemob
+void wld_teleportmob(struct wld_mob *mob, int relx, int rely, bool trigger_events);
 void wld_movemob(struct wld_mob *mob, int relx, int rely, bool trigger_events);
 void wld_movecursor(struct wld_map *map, int relx, int rely);
 void wld_setcursorpos(struct wld_map *map, int newx, int newy);
@@ -295,11 +299,13 @@ struct wld_item* wld_getitemat_index(struct wld_map *map, int index);
 void wld_mobvision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double));
 struct draw_struct wld_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_get_memory_drawstruct(struct wld_map *map, int x, int y);
+bool wld_mob_nextto_tile(struct wld_mob *mob, struct wld_tile* tile);
 bool wld_mob_nextto_mob(struct wld_mob* ma, struct wld_mob* mb);
 struct wld_item* wld_mob_get_item_in_slot(struct wld_mob *mob, int slot);
 int wld_mob_get_open_inventory_slot(struct wld_mob *mob);
 bool wld_mob_has_inventory(struct wld_mob*);
 bool wld_mob_pickup_item(struct wld_mob*, struct wld_item*);
+void wld_swap_item(struct wld_mob* mob, int slot_a, int slot_b);
 bool wld_mob_equip(struct wld_mob*, int);
 bool wld_mob_unequip(struct wld_mob*, int);
 bool wld_mob_drink_item(struct wld_mob *mob, int itemslot);
@@ -317,13 +323,14 @@ void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*
 void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob*);
 
 
-
 ///////////////////////////
 // RPG CALCULATIONS
 int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender);
-int rpg_calc_ranged_dmg(struct wld_mob *aggressor, struct wld_mob *defender);
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender);
-double rpg_calc_ranged_coh(struct wld_mob *aggressor, struct wld_mob *defender);
+int rpg_calc_melee_weapon_dmg(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender);
+double rpg_calc_melee_weapon_coh(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender);
+int rpg_calc_ranged_weapon_dmg(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender);
+double rpg_calc_ranged_weapon_coh(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender);
 int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range);
 
 
@@ -332,12 +339,14 @@ int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range);
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
 void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy);
 void ai_default_wander(struct wld_mob *mob);
+bool ai_default_is_hostile(struct wld_mob *self, struct wld_mob *target);
 bool ai_default_detect_combat(struct wld_mob *mob);
-void ai_default_decide_combat(struct wld_mob *mob);
 void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item);
 void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item* item);
 bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
+void ai_mob_whiff(struct wld_mob *aggressor, struct wld_item* item);
+void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
 bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile* cursor_tile);
 
@@ -358,8 +367,20 @@ void wld_update_mob(struct wld_mob *mob);
 
 ///////////////////////////
 // ITEM ACTIONS
-bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* curstile);
-void itm_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* curstile);
+void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
+bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
+void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* cursor_tile);
+void itm_hit_melee_swordstyle(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* tile);
+void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
+bool itm_can_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
+void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
+void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
+void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user);
+void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
+void itm_target_key(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
+bool itm_can_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
+void itm_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
+void itm_hit_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
 
 
 ///////////////////////////

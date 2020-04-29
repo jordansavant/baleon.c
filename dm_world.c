@@ -318,6 +318,7 @@ bool wld_canmoveto(struct wld_map *map, int x, int y)
 
 	return true;
 }
+// TODO code duplicate with wld_movemob
 void wld_teleportmob(struct wld_mob *mob, int x, int y, bool trigger_events)
 {
 	if (wld_canmoveto(mob->map, x, y)) {
@@ -883,7 +884,8 @@ void ai_default_decide_combat(struct wld_mob *self) // melee approach, melee att
 	}
 }
 
-void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item) // item can be NULL if it was not an item
+// item can be NULL if it was not an item
+void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item)
 {
 	mob->health += amt;
 	if (mob->health > mob->maxhealth)
