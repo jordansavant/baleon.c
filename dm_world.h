@@ -248,10 +248,13 @@ struct wld_world {
 	int maps_length;
 };
 
-void wld_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id);
+
+///////////////////////////
+// MAP METHODS
+void wld_map_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id);
 void wld_map_new_item(struct wld_map* map, struct wld_item* item, int x, int y);
 void wld_map_remove_item(struct wld_map* map, struct wld_item* item);
-void wld_insert_mob(struct wld_map* map, struct wld_mob* mob, int x, int y, int id);
+void wld_map_insert_mob(struct wld_map* map, struct wld_mob* mob, int x, int y, int id);
 void wld_map_new_mob(struct wld_map* map, struct wld_mob* mob, int x , int y);
 void wld_map_queue_destroy_mob(struct wld_map* map, struct wld_mob* mob);
 void wld_map_destroy_mob(struct wld_map* map, struct wld_mob* mob);

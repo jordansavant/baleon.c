@@ -8,9 +8,12 @@
 #include "dm_world.h"
 #include "dm_dungeon.h"
 
+
 ///////////////////////////
 // RAW DATA
 
+#define MALLOC_ITEM_SIZE 10
+#define MALLOC_MOB_SIZE 10
 #define WLD_COLOR_BASE 100
 #define WLD_COLOR_COUNT 8
 int curses_colors[] = {
@@ -24,27 +27,16 @@ int curses_colors[] = {
 	COLOR_MAGENTA, // 7
 };
 
-
-///////////////////////////
-// TILE STRUCTS
 struct wld_tiletype *wld_tiletypes;
-
-
-///////////////////////////
-// MOB STRUCTS
 struct wld_mobtype *wld_mobtypes;
-
-
-///////////////////////////
-// ITEM STRUCTS
 struct wld_itemtype *wld_itemtypes;
 
 
+
 ///////////////////////////
-// WORLD STRUCTS
-#define MALLOC_ITEM_SIZE 10
-#define MALLOC_MOB_SIZE 10
-void wld_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id)
+// MAP METHODS START
+
+void wld_map_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, int id)
 {
 	int index = wld_calcindex(x, y, map->cols);
 	// assign items properties for the map
@@ -56,6 +48,7 @@ void wld_insert_item(struct wld_map* map, struct wld_item* item, int x, int y, i
 	map->items[id] = item;
 	map->item_map[index] = id;
 }
+
 void wld_map_new_item(struct wld_map* map, struct wld_item* item, int x, int y)
 {
 	// if out of room expand
@@ -67,11 +60,12 @@ void wld_map_new_item(struct wld_map* map, struct wld_item* item, int x, int y)
 	map->items[map->items_length] = item;
 
 	// update the map to contain the item
-	wld_insert_item(map, item, x, y, map->items_length);
+	wld_map_insert_item(map, item, x, y, map->items_length);
 
 	// increment our list
 	map->items_length++;
 }
+
 void wld_map_remove_item(struct wld_map* map, struct wld_item* item)
 {
 	bool found = false;
@@ -104,9 +98,8 @@ void wld_map_remove_item(struct wld_map* map, struct wld_item* item)
 	}
 }
 
-
 // take a mob instance and add him to the mob list
-void wld_insert_mob(struct wld_map* map, struct wld_mob* mob, int x, int y, int id)
+void wld_map_insert_mob(struct wld_map* map, struct wld_mob* mob, int x, int y, int id)
 {
 	int index = wld_calcindex(x, y, map->cols);
 	// assign mobs properties for the map
@@ -119,6 +112,7 @@ void wld_insert_mob(struct wld_map* map, struct wld_mob* mob, int x, int y, int 
 	map->mobs[id] = mob;
 	map->mob_map[index] = id;
 }
+
 // This is called when we want the map to take ownership of the mob
 void wld_map_new_mob(struct wld_map* map, struct wld_mob* mob, int x , int y)
 {
@@ -131,17 +125,19 @@ void wld_map_new_mob(struct wld_map* map, struct wld_mob* mob, int x , int y)
 	map->mobs[map->mobs_length] = mob;
 
 	// update the map to contain the mob
-	wld_insert_mob(map, mob, x, y, map->mobs_length);
+	wld_map_insert_mob(map, mob, x, y, map->mobs_length);
 
 	// increment our list
 	map->mobs_length++;
 }
+
 // This is called by other game code and is very specifically not called
 // during any function that runs in the update loop
 void wld_map_queue_destroy_mob(struct wld_map* map, struct wld_mob* mob)
 {
 	mob->is_destroy_queued = true;
 }
+
 // This is called when we want to remove the map and free it from memory
 // such as when a mob is killed and permanently removed from the game
 void wld_map_destroy_mob(struct wld_map* map, struct wld_mob* mob)
@@ -149,6 +145,7 @@ void wld_map_destroy_mob(struct wld_map* map, struct wld_mob* mob)
 	wld_map_remove_mob(map, mob);
 	wld_delmob(mob); // frees memory
 }
+
 // This is called when we don't want to destroy a mob, just remove it from map ownership
 void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob)
 {
@@ -187,13 +184,21 @@ void wld_map_add_mob_at_entrance(struct wld_map* map, struct wld_mob* mob)
 {
 	wld_map_new_mob(map, mob, map->entrance_tile->map_x, map->entrance_tile->map_y);
 }
+
 void wld_map_add_mob_at_exit(struct wld_map* map, struct wld_mob* mob)
 {
 	wld_map_new_mob(map, mob, map->exit_tile->map_x, map->exit_tile->map_y);
 }
 
+// MAP METHODS END
 ///////////////////////////
-// TILE EVENTS
+
+
+
+
+///////////////////////////
+// TILE EVENTS START
+
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob)
 {
 	if (mob->is_player) {
@@ -201,6 +206,7 @@ void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, 
 			map->on_player_map_transition(map, mob, false);
 	}
 }
+
 void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob)
 {
 	if (mob->is_player) {
@@ -226,6 +232,11 @@ bool wld_tile_is_blocked_movement(struct wld_tile* tile)
 	// otherwise inherit settings from tile and parent
 	return tile->type->is_block || tile->is_blocked;
 }
+
+// TILE EVENTS END
+///////////////////////////
+
+
 
 ///////////////////////////
 // UTILITY METHODS
