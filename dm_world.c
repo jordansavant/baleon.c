@@ -961,7 +961,6 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 		struct wld_tile *tile = wld_gettileat_index(defender->map, defender->map_index);
 		if (weapon->type->fn_can_use(weapon, aggressor, tile)) {
 			weapon->type->fn_use(weapon, aggressor, tile);
-			// TODO item uses?
 			wld_mob_resolve_item_uses(aggressor, weapon);
 			return;
 		}
@@ -1093,7 +1092,6 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 	} else {
 		if (tile->is_door && tile->is_door_locked && tile->door_lock_id > -1) {
 			// search inventory for key
-			dmlog("about to attempt to unlock the door");
 			struct wld_item *key = NULL;
 			void inspect(struct wld_item *item) {
 				if (!item->type->is_key || !item->type->fn_can_use || !item->type->fn_use)
@@ -1359,7 +1357,9 @@ void itm_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* c
 {
 	if (cursor_tile->door_lock_id == item->key_id) {
 		item->type->fn_hit(item, user, cursor_tile);
+		// do not increment uses so it is "used" when it opens the door
 	} else {
+		item->uses++; // increment uses so the key remains in inventory
 		wld_log_ss("The %s failed to open %s.", item->type->title, cursor_tile->type->short_desc);
 	}
 }
@@ -1938,7 +1938,7 @@ void wld_setup()
 			itm_use_key,
 			itm_hit_key,
 			1,
-			false,0, // uses
+			true,1, // uses (key uses increment on failure)
 			"",
 			"use",
 			/////////////////////////////////////////////////////////
