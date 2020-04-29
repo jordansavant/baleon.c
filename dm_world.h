@@ -176,6 +176,7 @@ struct wld_item {
 	bool has_dropped;
 	int uses;
 	int key_id;
+	int map_found;
 };
 
 

@@ -558,6 +558,7 @@ bool wld_mob_pickup_item(struct wld_mob *m, struct wld_item *i)
 
 		// copy item to mob inventory
 		m->inventory[slot] = i;
+		i->map_found = m->map->id;
 
 		if (m->is_player && m->map->on_player_pickup_item)
 			m->map->on_player_pickup_item(m->map, m, i);
@@ -1335,6 +1336,8 @@ void itm_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* c
 {
 	if (cursor_tile->door_lock_id == item->key_id) {
 		item->type->fn_hit(item, user, cursor_tile);
+	} else {
+		wld_log_ss("The %s failed to open %s.", item->type->title, cursor_tile->type->short_desc);
 	}
 }
 void itm_hit_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
@@ -1534,6 +1537,7 @@ void wld_inititem(struct wld_item* item, enum WLD_ITEMTYPE type)
 	item->map_x = 0;
 	item->map_y = 0;
 	item->key_id = -1;
+	item->map_found -1;
 }
 void wld_genitems(struct wld_map *map, struct dng_cellmap* cellmap)
 {
@@ -1909,7 +1913,7 @@ void wld_setup()
 			'*',
 			WCLR_YELLOW,
 			false,
-			true,
+			false,
 			"a small bronze key",
 			"bronze key",
 			NULL,

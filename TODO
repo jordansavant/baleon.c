@@ -1,7 +1,9 @@
 TODO:
 
 now
-- dungeon: generate key for locked room somewhere
+- key failed message
+- hide keys better
+- key act_upon
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items

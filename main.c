@@ -854,9 +854,14 @@ void ui_update_usepanel(struct wld_map *map)
 				ui_write(usepanel, 0, buffer);
 				ui_write_len(usepanel, 2, use_item->type->use_text_1, USE_LENGTH);
 				ui_write_len(usepanel, 3, use_item->type->use_text_2, USE_LENGTH);
+				if (use_item->map_found > -1) {
+					char b[USE_LENGTH];
+					snprintf(b, USE_LENGTH, "Found on level %d.", use_item->map_found + 1);
+					ui_write_len(usepanel, 4, b, USE_LENGTH);
+				}
 
 				// give options
-				int offset = 5;
+				int offset = 6;
 				bool equippable = use_item->type->is_weq || use_item->type->is_aeq;
 				if (use_item_slot == 0 || use_item_slot == 1) {
 					ui_write(usepanel, offset, "e: unequip");
@@ -1133,7 +1138,7 @@ void ai_player_input(struct wld_mob* player)
 							trigger_world = ai_player_trigger_target(player);
 						}
 						if (!trigger_world)
-							ui_loginfo("Unable to attack such a target.");
+							ui_loginfo("Incapable of such attempt.");
 						listen = false;
 						break;
 					// exiting target mode
