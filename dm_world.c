@@ -954,18 +954,23 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 
 	int colorpair;
 	struct wld_mob *m = wld_map_get_mob_at(map, x, y);
+	struct wld_item *i = wld_map_get_item_at(map, x, y);
+	bool dead_mob = t->dead_mob_type != NULL;
 	if (m && !m->is_dead) { // player is dead and not removed
 		// if mob use its fg sprite and fg color
 		if (m->type->sprite != ' ')
 			cha = m->type->sprite;
 		colorpair = wld_cpair_tm(t->type_id, m->type_id);
-	} else if(item_id > -1) {
+	} else if(i) {
 		// if item  use its fg sprite and fg color
-		struct wld_item *i = wld_map_get_item_at(map, x, y);
 		if (i->type->sprite != ' ')
 			cha = i->type->sprite;
-		colorpair = wld_cpair_ti(t->type_id, i->type_id);
-	} else if(t->dead_mob_type != NULL) {
+		// if there is a dead mob set it as the b
+		if (dead_mob)
+			colorpair = wld_cpair(WCLR_YELLOW, WCLR_RED);
+		else
+			colorpair = wld_cpair_ti(t->type_id, i->type_id);
+	} else if(dead_mob) {
 		// if we have dead mob on this tile use its display
 		// if there is a dead mob on this then color it bloody
 		colorpair = wld_cpair(WCLR_BLACK, WCLR_RED);

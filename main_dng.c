@@ -69,11 +69,11 @@ int main(void)
 						printf("%s. %s", blue, def);
 					else {
 						// cell rooms, cellular openings, default
-						if (cell->floor_style == DNG_STYLE_GRASS)
+						if (cell->floor_style == DNG_FLOOR_STYLE_GRASS)
 							printf("%s\" %s", green, def);
-						else if (cell->floor_style == DNG_STYLE_WATER)
+						else if (cell->floor_style == DNG_FLOOR_STYLE_WATER)
 							printf("%s~ %s", blue, def);
-						else if (cell->floor_style == DNG_STYLE_DEEPWATER)
+						else if (cell->floor_style == DNG_FLOOR_STYLE_DEEPWATER)
 							printf("%sW %s", blue, def);
 						else
 							printf("  ");

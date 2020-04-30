@@ -146,7 +146,7 @@ bool g_setup()
 	init_pair(SCOLOR_NORMAL,	COLOR_WHITE,	COLOR_BLACK);
 	init_pair(SCOLOR_ALLWHITE,	COLOR_WHITE,	COLOR_WHITE);
 	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_MAGENTA);
-	init_pair(SCOLOR_TARGET,	COLOR_BLACK,	COLOR_CYAN);
+	init_pair(SCOLOR_TARGET,	COLOR_BLACK,	COLOR_YELLOW);
 	init_pair(SCOLOR_BLOOD,		COLOR_BLACK,	COLOR_RED);
 	init_pair(SCOLOR_ALLBLACK,	COLOR_BLACK,	COLOR_BLACK);
 
@@ -1553,7 +1553,10 @@ void ps_play_draw()
 			struct wld_tile *t = wld_map_get_tile_at(current_map, x, y);
 			if (t->is_visible) {
 				struct draw_struct ds = wld_map_get_drawstruct(current_map, x, y);
-				ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
+				if (t->dead_mob_type != NULL)
+					ps_draw_tile(t->map_y, t->map_x, ds.sprite, ds.colorpair, false);
+				else
+					ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
 			}
 		}
 		wld_mob_inspect_targetables(current_map->player, inspect);
