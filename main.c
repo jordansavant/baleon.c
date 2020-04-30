@@ -146,7 +146,7 @@ bool g_setup()
 	init_pair(SCOLOR_NORMAL,	COLOR_WHITE,	COLOR_BLACK);
 	init_pair(SCOLOR_ALLWHITE,	COLOR_WHITE,	COLOR_WHITE);
 	init_pair(SCOLOR_CURSOR,	COLOR_BLACK,	COLOR_MAGENTA);
-	init_pair(SCOLOR_TARGET,	COLOR_BLACK,	COLOR_RED);
+	init_pair(SCOLOR_TARGET,	COLOR_BLACK,	COLOR_CYAN);
 	init_pair(SCOLOR_BLOOD,		COLOR_BLACK,	COLOR_RED);
 	init_pair(SCOLOR_ALLBLACK,	COLOR_BLACK,	COLOR_BLACK);
 
@@ -401,6 +401,7 @@ int ui_map_padding = 15;
 int ui_map_border = 1;
 
 // PLAY UI PANELS
+WINDOW* cmdpanel;
 WINDOW* cursorpanel;
 WINDOW* logpanel;
 WINDOW* mobpanel;
@@ -422,6 +423,7 @@ int use_item_slot = -1;
 #define INV_ITEM_LENGTH 46
 #define USE_LENGTH 58
 #define VIS_LENGTH 30
+#define CMD_LENGTH 100
 char logs[LOG_COUNT][LOG_LENGTH];
 
 #define VISIBLE_MOB_MAX 100
@@ -522,12 +524,12 @@ void ui_anchor_br(WINDOW *win, int rows, int cols)
 	wresize(win, rows, cols);
 	mvwin(win, y - rows, x - cols);
 }
-void ui_anchor_bl(WINDOW *win, int rows, int cols)
+void ui_anchor_bl(WINDOW *win, int rows, int cols, int yoff, int xoff)
 {
 	int y, x;
 	getmaxyx(stdscr, y, x);
 	wresize(win, rows, cols);
-	mvwin(win, y - rows, 0);
+	mvwin(win, y - rows + yoff, xoff);
 }
 void ui_anchor_center(WINDOW *win, int rows, int cols, int yoff, int xoff)
 {
@@ -630,6 +632,32 @@ void ui_loginfo_ssi(char *msg, char *msg2, char *msg3, int i)
 	char buffer [LOG_LENGTH];
 	snprintf(buffer, LOG_LENGTH, msg, msg2, msg3, i);
 	ui_loginfo(buffer);
+}
+
+
+
+void ui_update_cmdpanel(struct wld_map *map)
+{
+	// deduce what our context is and provide options
+	wmove(cmdpanel, 0, 0);
+	wclrtoeol(cmdpanel);
+
+	char buffer[CMD_LENGTH]; // length of cmd bar
+	if (current_map->player->mode == MODE_PLAY) {
+		snprintf(buffer, CMD_LENGTH, "%s", "i: inventory  p: rest");
+		if (current_map->player->target_mode == TMODE_ACTIVE) {
+			strncat(buffer, "  y: unwield", 12);
+		} else {
+			strncat(buffer, "  y: wield", 10);
+		}
+		if (ai_can_get(current_map->player, 0, 0)) {
+			strncat(buffer, "  g: get", 8);
+		}
+	}
+
+	dmlogii(buffer, ui_map_rows, 2);
+	ui_write_rc(cmdpanel, 2, 1, buffer);
+	wrefresh(cmdpanel);
 }
 
 void ui_update_cursorinfo(struct wld_map *map)
@@ -1334,7 +1362,7 @@ void ps_build_world()
 {
 	dm_seed(time(NULL));
 	int seed = dm_randi();
-	seed = 146;
+	//seed = 146;
 	dmlogi("SEED", seed);
 	world = wld_new_world(seed, 1);
 	current_map = world->maps[0];
@@ -1379,7 +1407,7 @@ void ps_layout_ui()
 	ui_map_rows = sy - logpanel_rows - 1;
 
 	// mode bar on the bottom
-	ui_anchor_bl(cursorpanel, logpanel_rows, sx - logpanel_cols - 1);
+	ui_anchor_bl(cursorpanel, logpanel_rows, sx - logpanel_cols - 1, 0, 0);
 	ui_box(cursorpanel);
 
 	// inventory panel
@@ -1393,6 +1421,11 @@ void ps_layout_ui()
 	int usepanel_rows = 16;
 	ui_anchor_center(usepanel, usepanel_rows, usepanel_cols, -(logpanel_rows / 2), 0);
 	ui_box(usepanel);
+
+	// cmd panel is at the bottome of the map
+	int cmdpanel_cols = CMD_LENGTH;
+	int cmdpanel_rows = 1;
+	ui_anchor_bl(cmdpanel, cmdpanel_rows, cmdpanel_cols, - logpanel_rows, 0);
 
 }
 // this is called when window resize event happens
@@ -1408,6 +1441,7 @@ void ps_reset_ui()
 }
 void ps_build_ui()
 {
+	cmdpanel = newwin(0, 0, 0, 0);
 	cursorpanel = newwin(0, 0, 0, 0);
 	logpanel = newwin(0, 0, 0, 0);
 	mobpanel = newwin(0, 0, 0, 0);
@@ -1425,6 +1459,7 @@ void ps_destroy_ui()
 	delwin(mobpanel);
 	delwin(logpanel);
 	delwin(cursorpanel);
+	delwin(cmdpanel);
 }
 // TODO function on translating a screen item to the pad item
 //void translate_screenyx_mapyx(int sy, int, sx)
@@ -1557,13 +1592,8 @@ void ps_play_draw()
 	ui_update_cursorinfo(current_map);
 	ui_update_positioninfo(current_map);
 
-	// ascii tools
-	int y, x;
-	getmaxyx(stdscr, y, x);
-	move(ui_map_rows, 2);
-	addstr("y: draw/sheath   i: inventory   p: rest   g: get");
-
 	wrefresh(cursorpanel);
+	ui_update_cmdpanel(current_map);
 	if (current_map->player->mode == MODE_PLAY)
 		ui_update_mobpanel(current_map);
 	if (current_map->player->mode == MODE_INVENTORY)

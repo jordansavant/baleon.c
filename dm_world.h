@@ -361,6 +361,7 @@ bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely);
 bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
 bool ai_rest(struct wld_mob *mob);
 bool ai_get(struct wld_mob *mob, int relx, int rely);
+bool ai_can_get(struct wld_mob *mob, int relx, int rely);
 void wld_update_mob(struct wld_mob *mob);
 
 // CHEATS

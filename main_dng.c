@@ -5,6 +5,7 @@
 int main(void)
 {
 	int seed = 146;
+	seed = 1811492677;
 	do {
 		char *red = "\033[0;31m";
 		char *green = "\033[0;32m";

@@ -390,13 +390,13 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 					map->exit_tile = tile;
 				}
 			} else {
-				if (cell->floor_style == DNG_STYLE_GRASS) {
+				if (cell->floor_style == DNG_FLOOR_STYLE_GRASS) {
 					tile->type_id = TILE_GRASS;
 					tile->type = &wld_tiletypes[TILE_GRASS];
-				} else if(cell->floor_style == DNG_STYLE_WATER) {
+				} else if(cell->floor_style == DNG_FLOOR_STYLE_WATER) {
 					tile->type_id = TILE_WATER;
 					tile->type = &wld_tiletypes[TILE_WATER];
-				} else if(cell->floor_style == DNG_STYLE_DEEPWATER) {
+				} else if(cell->floor_style == DNG_FLOOR_STYLE_DEEPWATER) {
 					tile->type_id = TILE_DEEPWATER;
 					tile->type = &wld_tiletypes[TILE_DEEPWATER];
 				} else {
@@ -1789,6 +1789,16 @@ bool ai_get(struct wld_mob *mob, int relx, int rely)
 	return false;
 }
 
+bool ai_can_get(struct wld_mob *mob, int relx, int rely)
+{
+	int posx = mob->map_x + relx;
+	int posy = mob->map_y + rely;
+	int posindex = wld_calcindex(posx, posy, mob->map->cols);
+	struct wld_item *i = wld_map_get_item_at(mob->map, posx, posy);
+
+	return i != NULL;
+}
+
 bool ai_rest(struct wld_mob *mob)
 {
 	// TODO heal or let heal be natural at beginning of turn?
@@ -1989,7 +1999,7 @@ void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*in
 		if (dist > allowed_range)
 			return true;
 
-		return wld_tile_is_blocked_movement(t) || wld_tile_is_blocked_vision(t) || !t->is_visible;
+		return wld_tile_is_blocked_movement(t) || !t->is_visible;
 	}
 	void on_visible(int x, int y) {
 		if (x == start_x && y == start_y) // ignore origin position

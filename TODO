@@ -1,6 +1,9 @@
 TODO:
 
 now
+- targetint issues
+	- when standing in an open door it wont draw the line
+	- hard to see when we kill something with the targeting line as red
 - aoe test item
 - ui: target mode state w/ keyhints
 - ui: equipped items
