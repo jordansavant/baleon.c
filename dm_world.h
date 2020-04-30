@@ -77,7 +77,8 @@ struct wld_tile {
 enum WLD_MOBTYPE {
 	MOB_VOID = 0,
 	MOB_PLAYER = 1,
-	MOB_BUGBEAR = 2,
+	MOB_JACKAL = 2,
+	MOB_RAT = 3,
 };
 enum WLD_MOB_STATE {
 	MS_START,

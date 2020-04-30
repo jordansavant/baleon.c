@@ -16,6 +16,11 @@ enum DNG_STYLES {
 	DNG_STYLE_DEEPWATER,
 };
 
+enum DNG_MOB_STYLES {
+	DNG_MOB_STYLE_VOID,
+	DNG_MOB_STYLE_HOARD,
+};
+
 struct dng_cell;
 
 struct dng_key {
@@ -107,6 +112,7 @@ struct dng_cell {
 	struct dm_astarnode *astar_node;
 
 	bool has_mob;
+	bool mob_style;
 
 	bool has_item;
 	enum DNG_ITEM_TYPE item_type;
@@ -238,6 +244,7 @@ void dng_cellmap_link(struct dng_cellmap* child, struct dng_cellmap* parent);
 void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspect)(struct dng_cell*));
 void dng_cellmap_inspect_cells_in_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h, bool (*inspect)(struct dng_cell*));
 void dm_cellmap_inspect_room_perimeter(struct dng_cellmap *cellmap, struct dng_room *room, bool (*inspect)(struct dng_cell*));
+void dng_cellmap_inspect_room_cells(struct dng_cellmap *cellmap, struct dng_room *room, bool(*inspect)(struct dng_cell*));
 bool dng_cellmap_can_house_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h);
 struct dng_cell* dng_cellmap_get_cell_at_position(struct dng_cellmap *cellmap, int x, int y);
 struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *cellmap, int x, int y);
@@ -248,6 +255,7 @@ void dng_cellmap_lockrooms(struct dng_cellmap *cellmap);
 void dng_cellmap_machinate_isoroom(struct dng_cellmap *cellmap, struct dng_room *room);
 void dng_cellmap_machinate_isoroom_locknkey(struct dng_cellmap *cellmap, struct dng_room *room);
 void dng_cellmap_placekeys(struct dng_cellmap *cellmap);
+void dng_cellmap_machinate_room(struct dng_cellmap *cellmap, struct dng_room *room);
 
 // DECORATIONS
 void dng_cellmap_decorate(struct dng_cellmap* cellmap);

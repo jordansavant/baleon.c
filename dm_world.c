@@ -133,7 +133,8 @@ void wld_setup()
 		// hp, sprite, color, desc, title
 		{ MOB_VOID,	  0, ' ', WCLR_BLACK,   "" },
 		{ MOB_PLAYER,	100, '@', WCLR_MAGENTA, "yourself", "You"},
-		{ MOB_BUGBEAR,	 35, 'b', WCLR_RED,     "a small bugbear", "small bugbear" },
+		{ MOB_JACKAL,	 35, 'j', WCLR_RED,     "a small jackal", "jackal" },
+		{ MOB_RAT,	 5, 'r', WCLR_RED,     "a hideous rat", "rat" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
@@ -472,6 +473,27 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 	map->mobs = NULL;
 	map->mobs_length = 0;
 
+	void gen_jackal(struct wld_map* map, int c, int r) {
+		struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
+		wld_init_mob(mob, MOB_JACKAL);
+		wld_map_new_mob(map, mob, c, r);
+		mob->is_player = false;
+		mob->ai_wander = ai_default_wander;
+		mob->ai_is_hostile = ai_default_is_hostile;
+		mob->ai_detect_combat = ai_default_detect_combat;
+		mob->ai_decide_combat = ai_default_decide_combat;
+	}
+	void gen_rat(struct wld_map* map, int c, int r) {
+		struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
+		wld_init_mob(mob, MOB_RAT);
+		wld_map_new_mob(map, mob, c, r);
+		mob->is_player = false;
+		mob->ai_wander = ai_default_wander;
+		mob->ai_is_hostile = ai_default_is_hostile;
+		mob->ai_detect_combat = ai_default_detect_combat;
+		mob->ai_decide_combat = ai_default_decide_combat;
+	}
+
 	for (int r = 0; r < cellmap->height; r++) { // rows
 		for (int c=0; c < cellmap->width; c++){ // cols
 			// get cell from map
@@ -492,14 +514,18 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 				map->cursor->index = wld_calcindex(map->cursor->x, map->cursor->y, map->cols);
 
 			} else if (cell->has_mob) {
-				struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-				wld_init_mob(mob, MOB_BUGBEAR);
-				wld_map_new_mob(map, mob, c, r);
-				mob->is_player = false;
-				mob->ai_wander = ai_default_wander;
-				mob->ai_is_hostile = ai_default_is_hostile;
-				mob->ai_detect_combat = ai_default_detect_combat;
-				mob->ai_decide_combat = ai_default_decide_combat;
+				switch (cell->mob_style) {
+					case DNG_MOB_STYLE_HOARD:
+						gen_rat(map, c, r);
+						break;
+					default:
+						if (dm_chance(1,4)) {
+							gen_jackal(map, c, r);
+						} else {
+							gen_rat(map, c, r);
+						}
+						break;
+				}
 			}
 		}
 	}
@@ -1481,14 +1507,20 @@ void ai_default_decide_combat(struct wld_mob *self) // melee approach, melee att
 			int x = self->map->player->map_x;
 			int y = self->map->player->map_y;
 			// move to target
-			if (x < self->map_x)
-				self->queue_x += -1;
-			else if (x > self->map_x)
-				self->queue_x += 1;
-			if (y < self->map_y)
-				self->queue_y += -1;
-			else if (y > self->map_y)
-				self->queue_y += 1;
+			if (dm_chance(1,6)) {
+				// random movement
+				self->queue_x = dm_randii(0, 3) - 1;
+				self->queue_y = dm_randii(0, 3) - 1;
+			} else {
+				if (x < self->map_x)
+					self->queue_x += -1;
+				else if (x > self->map_x)
+					self->queue_x += 1;
+				if (y < self->map_y)
+					self->queue_y += -1;
+				else if (y > self->map_y)
+					self->queue_y += 1;
+			}
 		}
 	} else { // badly hurt, gonna go lick my wounds
 		// find closest

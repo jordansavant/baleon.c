@@ -84,6 +84,7 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->astar_node->get_y = dng_cell_get_y;
 
 	cell->has_mob = false;
+	cell->mob_style = DNG_MOB_STYLE_VOID;
 	cell->has_item = false;
 
 	cell->is_cellular_open = false;
@@ -1297,6 +1298,16 @@ void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 
 	dng_cellmap_lockrooms(cellmap);
 
+	// designate rooms
+	for (int i=0; i < cellmap->rooms_length; i++) {
+		struct dng_room* room = cellmap->rooms[i];
+		if (room != cellmap->entrance_room && !room->is_room_isolated) {
+			if (dm_chance(1,3)) {
+				dng_cellmap_machinate_room(cellmap, room);
+			}
+		}
+	}
+
 	// for now just populate one item and one enemy per room for testing
 	for (int i=0; i < cellmap->rooms_length; i++) {
 		struct dng_room* room = cellmap->rooms[i];
@@ -1493,10 +1504,45 @@ void dng_cellmap_placekeys(struct dng_cellmap *cellmap)
 		}
 	}
 }
+
+void dng_cellmap_machinate_room(struct dng_cellmap *cellmap, struct dng_room *room)
+{
+	// machination types!
+	// currently lets spawn a nest room
+	// filled with mobs, one mobs is the king and killing it
+	// will cause the other mobs to run in fear
+	switch (dm_randii(0, 4)) {
+	case 0: {
+			// horde room
+			int moblimit = dm_randii(6, 12);
+			int roomsize = room->width * room->height;
+			bool inspect(struct dng_cell* cell) {
+				if (dm_chance(moblimit, roomsize)) {
+					cell->has_mob = true;
+					cell->mob_style = DNG_MOB_STYLE_HOARD;
+					// TODO horde type
+				}
+				return false;
+			}
+			dng_cellmap_inspect_room_cells(cellmap, room, inspect);
+		}
+		break;
+	case 1: {
+			// room with an artifact
+			// if you aberrate on it you have a higher chance
+			// for strong aberattions but it can summon
+			// enemies as a trap
+		}
+		break;
+	case 2:
+		break;
+	case 3:
+		break;
+	}
+}
+
 // MACHINATION END
 ///////////////////////////
-
-
 
 
 
@@ -1639,6 +1685,11 @@ void dm_cellmap_inspect_room_perimeter(struct dng_cellmap *cellmap, struct dng_r
 		if (inspect(cell))
 			return;
 	}
+}
+
+void dng_cellmap_inspect_room_cells(struct dng_cellmap *cellmap, struct dng_room *room, bool(*inspect)(struct dng_cell*))
+{
+	dng_cellmap_inspect_cells_in_dimension(cellmap, room->x, room->y, room->width, room->height, inspect);
 }
 
 bool dng_cellmap_can_house_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h)
