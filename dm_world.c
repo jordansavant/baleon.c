@@ -114,7 +114,9 @@ void wld_setup()
 		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_CYAN,  false, "an exit further down" },
 		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  false, "an old stone door" },
 		{ TILE_DEEPWATER,       ' ', WCLR_BLACK, WCLR_BLACK, '~', WCLR_BLACK, WCLR_BLUE,  false, "an old stone door" },
-		{ TILE_SUMMONCIRCLE_SF, '.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "a strange stone floor" },
+		{ TILE_SUMMONCIRCLE_SF_INERT, '.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "a strange stone floor" },
+		{ TILE_SUMMONCIRCLE_ACTIVE, '0', WCLR_BLACK, WCLR_CYAN, '0', WCLR_BLACK, WCLR_BLUE,  false, "a runic summon center" },
+		{ TILE_SUMMONCIRCLE_NODE, '+', WCLR_BLACK, WCLR_CYAN, '+', WCLR_BLACK, WCLR_BLUE,  false, "a runic summon node" },
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
@@ -401,8 +403,8 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 					tile->type_id = TILE_DEEPWATER;
 					tile->type = &wld_tiletypes[TILE_DEEPWATER];
 				} else if(cell->tile_style == DNG_TILE_STYLE_SUMMONCIRCLE) {
-					tile->type_id = TILE_SUMMONCIRCLE_SF;
-					tile->type = &wld_tiletypes[TILE_SUMMONCIRCLE_SF];
+					tile->type_id = TILE_SUMMONCIRCLE_SF_INERT;
+					tile->type = &wld_tiletypes[TILE_SUMMONCIRCLE_SF_INERT];
 					tile->on_mob_enter = wld_tile_on_mob_enter_summoncircle;
 				} else {
 					tile->type_id = TILE_STONEFLOOR;
@@ -1034,7 +1036,7 @@ void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* ti
 		// TODO tune based on level difficulty or summon style
 		switch (tile->type->type) {
 		default:
-		case TILE_SUMMONCIRCLE_SF: // stone floor summon stone golumns?
+		case TILE_SUMMONCIRCLE_SF_INERT: // stone floor summon stone golumns?
 			// inspect a circle around us to summon enemies
 			// minv summon one randomly in an unoccupied space nearby
 			wld_log("Stepping on the stone you feel the presence of evil.");
@@ -1046,8 +1048,13 @@ void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* ti
 				if (wld_map_can_move_to(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y)) {
 					wld_log("A minion springs forth from the void.");
 					gen_jackal(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y);
+					struct wld_tile *node = wld_map_get_tile_at(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y);
+					node->type = wld_get_tiletype(TILE_SUMMONCIRCLE_NODE);
+					node->type_id = TILE_SUMMONCIRCLE_NODE;
 				}
 			}
+			tile->type_id = TILE_SUMMONCIRCLE_ACTIVE;
+			tile->type = wld_get_tiletype(TILE_SUMMONCIRCLE_ACTIVE);
 			break;
 		}
 		wld_log("SUMMON CIRCLE");
