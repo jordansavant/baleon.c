@@ -103,20 +103,20 @@ void wld_setup()
 	}
 
 	// copy tiletypes into malloc
-	struct wld_tiletype tts[] = { //     bg		 fg		  membg       memfg
-		{ TILE_VOID,            ' ', WCLR_BLACK, WCLR_BLACK, ' ', WCLR_BLACK, WCLR_BLACK, false, "" },
-		{ TILE_GRASS,           '"', WCLR_BLACK, WCLR_GREEN, '"', WCLR_BLACK, WCLR_BLUE,  false, "a small tuft of grass" },
-		{ TILE_WATER,           '~', WCLR_BLUE,  WCLR_BLUE,  '~', WCLR_BLACK, WCLR_BLUE,  false, "a pool of water glistens" },
-		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  false, "a large tree" },
-		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true,  "a rough stone wall" },
-		{ TILE_STONEFLOOR,	'.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "a rough stone floor" },
-		{ TILE_ENTRANCE,	'>', WCLR_BLACK, WCLR_CYAN,  '>', WCLR_BLACK, WCLR_CYAN,  false, "the entrance back up" },
-		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_CYAN,  false, "an exit further down" },
-		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  false, "an old stone door" },
-		{ TILE_DEEPWATER,       ' ', WCLR_BLACK, WCLR_BLACK, '~', WCLR_BLACK, WCLR_BLUE,  false, "an old stone door" },
-		{ TILE_SUMMONCIRCLE_SF_INERT, '.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "a strange stone floor" },
-		{ TILE_SUMMONCIRCLE_ACTIVE, '0', WCLR_BLACK, WCLR_CYAN, '0', WCLR_BLACK, WCLR_BLUE,  false, "a runic summon center" },
-		{ TILE_SUMMONCIRCLE_NODE, '+', WCLR_BLACK, WCLR_CYAN, '+', WCLR_BLACK, WCLR_BLUE,  false, "a runic summon node" },
+	struct wld_tiletype tts[] = { //     bg		 fg		  membg       memfg      block   transformable    short desc
+		{ TILE_VOID,            ' ', WCLR_BLACK, WCLR_BLACK, ' ', WCLR_BLACK, WCLR_BLACK, false, true, "" },
+		{ TILE_GRASS,           '"', WCLR_BLACK, WCLR_GREEN, '"', WCLR_BLACK, WCLR_BLUE,  false, true, "a small tuft of grass" },
+		{ TILE_WATER,           '~', WCLR_BLUE,  WCLR_BLUE,  '~', WCLR_BLACK, WCLR_BLUE,  false, true, "a pool of water glistens" },
+		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  false, true, "a large tree" },
+		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true, false, "a rough stone wall" },
+		{ TILE_STONEFLOOR,	'.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, true, "a rough stone floor" },
+		{ TILE_ENTRANCE,	'>', WCLR_BLACK, WCLR_CYAN,  '>', WCLR_BLACK, WCLR_CYAN,  false, false, "the entrance back up" },
+		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_CYAN,  false, false, "an exit further down" },
+		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  false, false, "an old stone door" },
+		{ TILE_DEEPWATER,       ' ', WCLR_BLACK, WCLR_BLACK, '~', WCLR_BLACK, WCLR_BLUE,  false, false, "an old stone door" },
+		{ TILE_SUMMONCIRCLE_SF_INERT, '.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, true, "a strange stone floor" },
+		{ TILE_SUMMONCIRCLE_ACTIVE, '0', WCLR_BLACK, WCLR_CYAN, '0', WCLR_BLACK, WCLR_BLUE,  false, true, "a runic summon center" },
+		{ TILE_SUMMONCIRCLE_NODE, '+', WCLR_BLACK, WCLR_CYAN, '+', WCLR_BLACK, WCLR_BLUE,  false, true, "a runic summon node" },
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
@@ -128,6 +128,7 @@ void wld_setup()
 		wld_tiletypes[i].memory_fg_color = tts[i].memory_fg_color;
 		wld_tiletypes[i].memory_bg_color = tts[i].memory_bg_color;
 		wld_tiletypes[i].is_block = tts[i].is_block;
+		wld_tiletypes[i].is_transformable = tts[i].is_transformable;
 		wld_tiletypes[i].short_desc = tts[i].short_desc;
 	}
 
@@ -1035,7 +1036,6 @@ void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* ti
 	if (mob->is_player) {
 		// TODO tune based on level difficulty or summon style
 		switch (tile->type->type) {
-		default:
 		case TILE_SUMMONCIRCLE_SF_INERT: // stone floor summon stone golumns?
 			// inspect a circle around us to summon enemies
 			// minv summon one randomly in an unoccupied space nearby
@@ -1044,20 +1044,22 @@ void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* ti
 				int x, y;
 			};
 			struct dir dirs[] = {{-2,-2}, {2,2}, {-2,2}, {2,-2}};
+			bool summoned = false;
 			for (int i=0; i<4; i++) {
-				if (wld_map_can_move_to(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y)) {
-					wld_log("A minion springs forth from the void.");
-					gen_jackal(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y);
-					struct wld_tile *node = wld_map_get_tile_at(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y);
+				struct wld_tile *node = wld_map_get_tile_at(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y);
+				if (node->type->is_transformable && wld_map_can_move_to(map, node->map_x, node->map_y)) {
+					gen_jackal(map, node->map_x, node->map_y);
 					node->type = wld_get_tiletype(TILE_SUMMONCIRCLE_NODE);
 					node->type_id = TILE_SUMMONCIRCLE_NODE;
+					summoned = true;
 				}
 			}
+			if (summoned)
+				wld_log("Minion spring forth from the void.");
 			tile->type_id = TILE_SUMMONCIRCLE_ACTIVE;
 			tile->type = wld_get_tiletype(TILE_SUMMONCIRCLE_ACTIVE);
 			break;
 		}
-		wld_log("SUMMON CIRCLE");
 	}
 }
 

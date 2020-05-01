@@ -52,6 +52,7 @@ struct wld_tiletype {
 	int memory_bg_color;
 	int memory_fg_color;
 	bool is_block;
+	bool is_transformable;
 	char *short_desc;
 };
 struct wld_tile {
