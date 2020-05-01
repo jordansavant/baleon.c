@@ -261,6 +261,10 @@ struct wld_world* wld_new_world(int seed, int count);
 void wld_delete_world(struct wld_world*);
 void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_map *to, bool at_entrance);
 
+// GENERATORS
+void gen_mob_jackal(struct wld_map* map, int c, int r);
+void gen_mob_rat(struct wld_map* map, int c, int r);
+
 // MAP INITIALIZATION
 void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap);
 void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type);

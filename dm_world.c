@@ -332,6 +332,39 @@ void wld_teardown()
 
 
 ///////////////////////////
+// GENERATORS START
+
+void gen_mob_jackal(struct wld_map* map, int c, int r)
+{
+	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
+	wld_init_mob(mob, MOB_JACKAL);
+	wld_map_new_mob(map, mob, c, r);
+	mob->is_player = false;
+	mob->ai_wander = ai_default_wander;
+	mob->ai_is_hostile = ai_default_is_hostile;
+	mob->ai_detect_combat = ai_default_detect_combat;
+	mob->ai_decide_combat = ai_default_decide_combat;
+}
+
+void gen_mob_rat(struct wld_map* map, int c, int r)
+{
+	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
+	wld_init_mob(mob, MOB_RAT);
+	wld_map_new_mob(map, mob, c, r);
+	mob->is_player = false;
+	mob->ai_wander = ai_default_wander;
+	mob->ai_is_hostile = ai_default_is_hostile;
+	mob->ai_detect_combat = ai_default_detect_combat;
+	mob->ai_decide_combat = ai_default_decide_combat;
+}
+
+// GENERATORS END
+///////////////////////////
+
+
+
+
+///////////////////////////
 // MAP INITIALIZATION
 
 void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
@@ -466,30 +499,6 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 
 }
 
-void gen_jackal(struct wld_map* map, int c, int r)
-{
-	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-	wld_init_mob(mob, MOB_JACKAL);
-	wld_map_new_mob(map, mob, c, r);
-	mob->is_player = false;
-	mob->ai_wander = ai_default_wander;
-	mob->ai_is_hostile = ai_default_is_hostile;
-	mob->ai_detect_combat = ai_default_detect_combat;
-	mob->ai_decide_combat = ai_default_decide_combat;
-}
-void gen_rat(struct wld_map* map, int c, int r)
-{
-	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-	wld_init_mob(mob, MOB_RAT);
-	wld_map_new_mob(map, mob, c, r);
-	mob->is_player = false;
-	mob->ai_wander = ai_default_wander;
-	mob->ai_is_hostile = ai_default_is_hostile;
-	mob->ai_detect_combat = ai_default_detect_combat;
-	mob->ai_decide_combat = ai_default_decide_combat;
-}
-
-
 void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 {
 	map->mobs = NULL;
@@ -517,13 +526,13 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 			} else if (cell->has_mob) {
 				switch (cell->mob_style) {
 					case DNG_MOB_STYLE_HOARD:
-						gen_rat(map, c, r);
+						gen_mob_rat(map, c, r);
 						break;
 					default:
 						if (dm_chance(1,4)) {
-							gen_jackal(map, c, r);
+							gen_mob_jackal(map, c, r);
 						} else {
-							gen_rat(map, c, r);
+							gen_mob_rat(map, c, r);
 						}
 						break;
 				}
@@ -1037,7 +1046,7 @@ void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* ti
 			for (int i=0; i<4; i++) {
 				struct wld_tile *node = wld_map_get_tile_at(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y);
 				if (node->type->is_transformable && wld_map_can_move_to(map, node->map_x, node->map_y)) {
-					gen_jackal(map, node->map_x, node->map_y);
+					gen_mob_jackal(map, node->map_x, node->map_y);
 					node->type = wld_get_tiletype(TILE_SUMMONCIRCLE_NODE);
 					summoned = true;
 				}
