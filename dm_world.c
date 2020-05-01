@@ -502,6 +502,7 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 
 		mob->inventory[3] = (struct wld_item*)malloc(sizeof(struct wld_item));
 		wld_init_item(mob->inventory[3], ITEM_POTION_MINOR_HEAL);
+
 		mob->inventory[4] = (struct wld_item*)malloc(sizeof(struct wld_item));
 		wld_init_item(mob->inventory[4], ITEM_POTION_MINOR_HEAL);
 		mob->inventory[5] = (struct wld_item*)malloc(sizeof(struct wld_item));
@@ -1964,39 +1965,55 @@ int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
 
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender)
 {
+	// TODO include enemy defense
 	return .5;
 }
 
 // melee weapons
 int rpg_calc_melee_weapon_dmg(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender)
 {
-	// TODO strngth * weapon dmg?
+	// melee damage range is boosted by strength
 	double strf = (double)aggressor->stat_strength / STAT_STR_BASE;
-	return 12 * strf;
+	int diff = weapon->type->max_val - weapon->type->min_val;
+	diff = dm_randii(0, diff + 1);
+	return weapon->type->min_val + diff  * strf;
 }
 
 double rpg_calc_melee_weapon_coh(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender)
 {
-	return .76;
+	// TODO include enemy defense
+	// melee chance of hit is the average of your dex and
+	double dexf = (double)aggressor->stat_dexterity / (double)STAT_DEX_BASE;
+	double strf = (double)aggressor->stat_strength / STAT_STR_BASE;
+	double factor = ( strf + strf + dexf ) / 3; // two thirds strength
+	dmlogf("coh melee", factor);
+	return .5 * factor;
 }
 
 // ranged weapons
 int rpg_calc_ranged_weapon_dmg(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender)
 {
-	// TODO flat weapon dmg range?
-	return 12;
+	// no boosts to dmg on ranged
+	return dm_randii(weapon->type->min_val, weapon->type->max_val + 1);
 }
 
 double rpg_calc_ranged_weapon_coh(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender)
 {
-	return .66;
+	// TODO include enemy defense
+	// chance of range hit based on dex
+	// at base dex you have a 50% chance to hit
+	double dexf = (double)aggressor->stat_dexterity / (double)STAT_DEX_BASE;
+	double strf = (double)aggressor->stat_strength / STAT_STR_BASE;
+	double factor = ( dexf + dexf + strf ) / 3; // two thirds dex
+	dmlogf("coh range", factor);
+	return .5 * dexf;
 }
 
 int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range)
 {
-	// TODO will calculate strength and dex etc
-	// TODO break into options for throwing range vs shooting range?
-	return base_range;
+	// range is boosted by STR
+	double strf = (double)aggressor->stat_strength / (double)STAT_STR_BASE;
+	return base_range * strf;
 }
 
 // alchemy boosts
@@ -2005,17 +2022,12 @@ int rpg_calc_alchemy_boost(struct wld_mob *user, struct wld_item *item)
 	// we can calculate and boost the effectiveness of alchemy
 	// get our range of potency differences
 	int diff = item->type->max_val - item->type->min_val;
-	dmlogii("max min", item->type->max_val, item->type->min_val);
-	dmlogi("diff", diff);
 	// calculate our constitution factor
 	double conf = (double)user->stat_constitution / (double)STAT_CON_BASE;
-	dmlogf("conf", conf);
 	// boost or shrink our difference value by our con factor
 	int diff_con = conf * diff;
-	dmlogi("diffcon", diff_con);
 	// use the boosted diff to determin final value
 	int value = item->type->min_val + dm_randii(0, diff_con + 1);
-	dmlogi("value", value);
 	return value;
 }
 
