@@ -1364,7 +1364,7 @@ void ps_build_world()
 	int seed = dm_randi();
 	seed = 146;
 	dmlogi("SEED", seed);
-	world = wld_new_world(seed, 1);
+	world = wld_new_world(seed, 2);
 	current_map = world->maps[0];
 
 	// clear visible mob list

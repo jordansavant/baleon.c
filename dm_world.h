@@ -171,6 +171,7 @@ struct wld_itemtype {
 	int base_radius;
 	bool has_uses;
 	int base_uses;
+	int min_val, max_val;
 	char *drink_label;
 	char *use_label;
 	char *use_text_1;
@@ -382,6 +383,7 @@ double rpg_calc_melee_weapon_coh(struct wld_mob *aggressor, struct wld_item *wea
 int rpg_calc_ranged_weapon_dmg(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender);
 double rpg_calc_ranged_weapon_coh(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender);
 int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range);
+int rpg_calc_alchemy_boost(struct wld_mob *user, struct wld_item *item);
 
 // ITEM ACTIONS
 void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));

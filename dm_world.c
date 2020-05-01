@@ -166,6 +166,7 @@ void wld_setup()
 			NULL,
 			0,0,//range radius
 			false, 0, // uses
+			0,0,//min max dmgs
 			"",
 			"",
 			"",
@@ -186,6 +187,7 @@ void wld_setup()
 			5,0, // range radius
 			true,
 			1,
+			6,22,//min max dmgs
 			"quaff",
 			"throw",
 			/////////////////////////////////////////////////////////
@@ -206,6 +208,7 @@ void wld_setup()
 			itm_hit_melee_swordstyle,
 			1,0, // range radius
 			false, 0, // uses
+			7,16,//min max dmgs
 			"",
 			"strike",
 			/////////////////////////////////////////////////////////
@@ -226,6 +229,7 @@ void wld_setup()
 			itm_hit_ranged_los_bowstyle,
 			10,0, // range radius
 			false, 0, // uses
+			5,13,//min max dmgs
 			"",
 			"shoot",
 			/////////////////////////////////////////////////////////
@@ -246,6 +250,7 @@ void wld_setup()
 			itm_hit_ranged_aoe_bombstyle,
 			9,3, // base range, radius
 			true,1,//uses
+			20,40,//min max dmgs
 			"", // consume
 			"cast", // use
 			/////////////////////////////////////////////////////////
@@ -266,6 +271,7 @@ void wld_setup()
 			NULL,
 			0,0, // range radius
 			false,0, // uses
+			0,0,//min max dmgs
 			"",
 			"",
 			/////////////////////////////////////////////////////////
@@ -286,6 +292,7 @@ void wld_setup()
 			itm_hit_key,
 			1,0, // range, radius
 			true,1, // uses (key uses increment on failure)
+			0,0,//min max dmgs
 			"",
 			"use",
 			/////////////////////////////////////////////////////////
@@ -312,6 +319,8 @@ void wld_setup()
 		wld_itemtypes[i].base_radius = its[i].base_radius;
 		wld_itemtypes[i].has_uses = its[i].has_uses;
 		wld_itemtypes[i].base_uses = its[i].base_uses;
+		wld_itemtypes[i].min_val = its[i].min_val;
+		wld_itemtypes[i].max_val = its[i].max_val;
 		wld_itemtypes[i].drink_label = its[i].drink_label;
 		wld_itemtypes[i].use_label = its[i].use_label;
 		wld_itemtypes[i].use_text_1 = its[i].use_text_1;
@@ -490,6 +499,14 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 
 		mob->inventory[2] = (struct wld_item*)malloc(sizeof(struct wld_item));
 		wld_init_item(mob->inventory[2], ITEM_SCROLL_FIREBOMB);
+
+		mob->inventory[3] = (struct wld_item*)malloc(sizeof(struct wld_item));
+		wld_init_item(mob->inventory[3], ITEM_POTION_MINOR_HEAL);
+		mob->inventory[4] = (struct wld_item*)malloc(sizeof(struct wld_item));
+		wld_init_item(mob->inventory[4], ITEM_POTION_MINOR_HEAL);
+		mob->inventory[5] = (struct wld_item*)malloc(sizeof(struct wld_item));
+		wld_init_item(mob->inventory[5], ITEM_POTION_MINOR_HEAL);
+		dmlogiii("str, dex, con", mob->stat_strength, mob->stat_dexterity, mob->stat_constitution);
 		break;
 	default:
 		mob->stat_strength = dm_randii(3, 16);
@@ -1982,6 +1999,26 @@ int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range)
 	return base_range;
 }
 
+// alchemy boosts
+int rpg_calc_alchemy_boost(struct wld_mob *user, struct wld_item *item)
+{
+	// we can calculate and boost the effectiveness of alchemy
+	// get our range of potency differences
+	int diff = item->type->max_val - item->type->min_val;
+	dmlogii("max min", item->type->max_val, item->type->min_val);
+	dmlogi("diff", diff);
+	// calculate our constitution factor
+	double conf = (double)user->stat_constitution / (double)STAT_CON_BASE;
+	dmlogf("conf", conf);
+	// boost or shrink our difference value by our con factor
+	int diff_con = conf * diff;
+	dmlogi("diffcon", diff_con);
+	// use the boosted diff to determin final value
+	int value = item->type->min_val + dm_randii(0, diff_con + 1);
+	dmlogi("value", value);
+	return value;
+}
+
 // RPG CALCULATIONS END
 ///////////////////////////
 
@@ -2131,7 +2168,8 @@ void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, st
 void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user)
 {
 	// TODO minor vs major healing levels
-	int hp = dm_randf() * 10;
+	int hp = rpg_calc_alchemy_boost(user, item);
+	// int hp = rpg_calc_alchemy_boost(user, int min, int max); TODO
 	ai_mob_heal(user, hp, item);
 }
 
@@ -2284,8 +2322,8 @@ void itm_hit_ranged_aoe_bombstyle(struct wld_item *item, struct wld_mob *user, s
 	// perform a blast based on t
 	wld_log_it("The %s blasts throughout the area.", item);
 	int blast_radius = item->type->base_radius;
-	int min_damage = 20;
-	int max_damage = 40;
+	int min_damage = item->type->min_val;
+	int max_damage = item->type->max_val;
 	bool sc_isblocked(int x, int y)
 	{
 		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
