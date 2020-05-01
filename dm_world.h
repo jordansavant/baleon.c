@@ -39,6 +39,7 @@ enum WLD_TILETYPE {
 	TILE_EXIT,
 	TILE_STONEDOOR,
 	TILE_DEEPWATER,
+	TILE_SUMMONCIRCLE_SF,
 };
 struct wld_tiletype {
 	enum WLD_TILETYPE type;
@@ -299,6 +300,7 @@ struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
 void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
+void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
 bool wld_tile_is_blocked_vision(struct wld_tile* tile);
 bool wld_tile_is_blocked_movement(struct wld_tile* tile);
 

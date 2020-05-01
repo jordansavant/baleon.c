@@ -5,7 +5,6 @@
 int main(void)
 {
 	int seed = 146;
-	seed = 1811492677;
 	do {
 		char *red = "\033[0;31m";
 		char *green = "\033[0;32m";
@@ -33,12 +32,14 @@ int main(void)
 					//	printf("P ");
 					if (false)
 						printf("skip");
-					else if (cell->temp_wall)
-						printf("w ");
+					else if (cell->tile_style == DNG_TILE_STYLE_SUMMONCIRCLE)
+						printf("S ");
+				//	else if (cell->temp_wall)
+				//		printf("w ");
 					else if (cell->has_mob)
-						printf("M ");
+						printf("m ");
 					else if (cell->has_item) {
-						if (cell->item_type == DNG_ITEM_KEY)
+						if (cell->item_style == DNG_ITEM_KEY)
 							printf("K ");
 						else
 							printf("I ");
@@ -53,10 +54,11 @@ int main(void)
 						printf("X ");
 					else if (cell->is_door)
 						printf("D ");
-					else if (cell->was_room_fix_tunnel)
-						printf("F ");
+					//else if (cell->was_room_fix_tunnel)
+					//	printf("F ");
 					else if (cell->is_tunnel)
-						printf("T ");
+						printf("  ");
+					//	printf("T ");
 					//else if (cell->was_corridor_tunnel)
 					//	printf("t ");
 					//else if (cell->was_door)
@@ -69,11 +71,11 @@ int main(void)
 						printf("%s. %s", blue, def);
 					else {
 						// cell rooms, cellular openings, default
-						if (cell->floor_style == DNG_FLOOR_STYLE_GRASS)
+						if (cell->tile_style == DNG_TILE_STYLE_GRASS)
 							printf("%s\" %s", green, def);
-						else if (cell->floor_style == DNG_FLOOR_STYLE_WATER)
+						else if (cell->tile_style == DNG_TILE_STYLE_WATER)
 							printf("%s~ %s", blue, def);
-						else if (cell->floor_style == DNG_FLOOR_STYLE_DEEPWATER)
+						else if (cell->tile_style == DNG_TILE_STYLE_DEEPWATER)
 							printf("%sW %s", blue, def);
 						else
 							printf("  ");

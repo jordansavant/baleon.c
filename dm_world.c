@@ -114,6 +114,7 @@ void wld_setup()
 		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_CYAN,  false, "an exit further down" },
 		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  false, "an old stone door" },
 		{ TILE_DEEPWATER,       ' ', WCLR_BLACK, WCLR_BLACK, '~', WCLR_BLACK, WCLR_BLUE,  false, "an old stone door" },
+		{ TILE_SUMMONCIRCLE_SF, '.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, "a strange stone floor" },
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
@@ -390,15 +391,19 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 					map->exit_tile = tile;
 				}
 			} else {
-				if (cell->floor_style == DNG_FLOOR_STYLE_GRASS) {
+				if (cell->tile_style == DNG_TILE_STYLE_GRASS) {
 					tile->type_id = TILE_GRASS;
 					tile->type = &wld_tiletypes[TILE_GRASS];
-				} else if(cell->floor_style == DNG_FLOOR_STYLE_WATER) {
+				} else if(cell->tile_style == DNG_TILE_STYLE_WATER) {
 					tile->type_id = TILE_WATER;
 					tile->type = &wld_tiletypes[TILE_WATER];
-				} else if(cell->floor_style == DNG_FLOOR_STYLE_DEEPWATER) {
+				} else if(cell->tile_style == DNG_TILE_STYLE_DEEPWATER) {
 					tile->type_id = TILE_DEEPWATER;
 					tile->type = &wld_tiletypes[TILE_DEEPWATER];
+				} else if(cell->tile_style == DNG_TILE_STYLE_SUMMONCIRCLE) {
+					tile->type_id = TILE_SUMMONCIRCLE_SF;
+					tile->type = &wld_tiletypes[TILE_SUMMONCIRCLE_SF];
+					tile->on_mob_enter = wld_tile_on_mob_enter_summoncircle;
 				} else {
 					tile->type_id = TILE_STONEFLOOR;
 					tile->type = &wld_tiletypes[TILE_STONEFLOOR];
@@ -468,31 +473,34 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 
 }
 
+void gen_jackal(struct wld_map* map, int c, int r)
+{
+	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
+	wld_init_mob(mob, MOB_JACKAL);
+	wld_map_new_mob(map, mob, c, r);
+	mob->is_player = false;
+	mob->ai_wander = ai_default_wander;
+	mob->ai_is_hostile = ai_default_is_hostile;
+	mob->ai_detect_combat = ai_default_detect_combat;
+	mob->ai_decide_combat = ai_default_decide_combat;
+}
+void gen_rat(struct wld_map* map, int c, int r)
+{
+	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
+	wld_init_mob(mob, MOB_RAT);
+	wld_map_new_mob(map, mob, c, r);
+	mob->is_player = false;
+	mob->ai_wander = ai_default_wander;
+	mob->ai_is_hostile = ai_default_is_hostile;
+	mob->ai_detect_combat = ai_default_detect_combat;
+	mob->ai_decide_combat = ai_default_decide_combat;
+}
+
+
 void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 {
 	map->mobs = NULL;
 	map->mobs_length = 0;
-
-	void gen_jackal(struct wld_map* map, int c, int r) {
-		struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-		wld_init_mob(mob, MOB_JACKAL);
-		wld_map_new_mob(map, mob, c, r);
-		mob->is_player = false;
-		mob->ai_wander = ai_default_wander;
-		mob->ai_is_hostile = ai_default_is_hostile;
-		mob->ai_detect_combat = ai_default_detect_combat;
-		mob->ai_decide_combat = ai_default_decide_combat;
-	}
-	void gen_rat(struct wld_map* map, int c, int r) {
-		struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-		wld_init_mob(mob, MOB_RAT);
-		wld_map_new_mob(map, mob, c, r);
-		mob->is_player = false;
-		mob->ai_wander = ai_default_wander;
-		mob->ai_is_hostile = ai_default_is_hostile;
-		mob->ai_detect_combat = ai_default_detect_combat;
-		mob->ai_decide_combat = ai_default_decide_combat;
-	}
 
 	for (int r = 0; r < cellmap->height; r++) { // rows
 		for (int c=0; c < cellmap->width; c++){ // cols
@@ -559,7 +567,8 @@ void wld_generate_items(struct wld_map *map, struct dng_cellmap* cellmap)
 
 			if (cell->has_item) {
 				struct wld_item* item = (struct wld_item*)malloc(sizeof(struct wld_item));
-				switch (cell->item_type) {
+				switch (cell->item_style) {
+				default:
 				case DNG_ITEM_LOOT:
 					switch (dm_randii(0, 4)) {
 					case 0:
@@ -1016,6 +1025,32 @@ void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, stru
 	if (mob->is_player) {
 		if (map->on_player_map_transition)
 			map->on_player_map_transition(map, mob, true);
+	}
+}
+
+void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob)
+{
+	if (mob->is_player) {
+		// TODO tune based on level difficulty or summon style
+		switch (tile->type->type) {
+		default:
+		case TILE_SUMMONCIRCLE_SF: // stone floor summon stone golumns?
+			// inspect a circle around us to summon enemies
+			// minv summon one randomly in an unoccupied space nearby
+			wld_log("Stepping on the stone you feel the presence of evil.");
+			struct dir {
+				int x, y;
+			};
+			struct dir dirs[] = {{-2,-2}, {2,2}, {-2,2}, {2,-2}};
+			for (int i=0; i<4; i++) {
+				if (wld_map_can_move_to(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y)) {
+					wld_log("A minion springs forth from the void.");
+					gen_jackal(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y);
+				}
+			}
+			break;
+		}
+		wld_log("SUMMON CIRCLE");
 	}
 }
 

@@ -9,16 +9,27 @@ enum DNG_MOTIF {
 	MOTIF_PRISON,
 };
 
-enum DNG_FLOOR_STYLES {
-	DNG_FLOOR_STYLE_VOID,
-	DNG_FLOOR_STYLE_GRASS,
-	DNG_FLOOR_STYLE_WATER,
-	DNG_FLOOR_STYLE_DEEPWATER,
+enum DNG_TILE_STYLES {
+	DNG_TILE_STYLE_VOID,
+	DNG_TILE_STYLE_GRASS,
+	DNG_TILE_STYLE_WATER,
+	DNG_TILE_STYLE_DEEPWATER,
+	DNG_TILE_STYLE_SUMMONCIRCLE,
 };
 
 enum DNG_MOB_STYLES {
 	DNG_MOB_STYLE_VOID,
 	DNG_MOB_STYLE_HOARD,
+};
+
+
+enum DNG_ITEM_STYLE {
+	DNG_ITEM_LOOT,
+	DNG_ITEM_KEY,
+	DNG_ITEM_RARE,
+	DNG_ITEM_EXOTIC,
+	DNG_ITEM_EPIC,
+	DNG_ITEM_ARTIFACT,
 };
 
 struct dng_cell;
@@ -66,11 +77,6 @@ struct dng_roomdoor {
 	int dir_x, dir_y;
 };
 
-enum DNG_ITEM_TYPE {
-	DNG_ITEM_LOOT,
-	DNG_ITEM_KEY
-};
-
 struct dng_cell {
         int index;
         int x, y;
@@ -115,14 +121,14 @@ struct dng_cell {
 	bool mob_style;
 
 	bool has_item;
-	enum DNG_ITEM_TYPE item_type;
+	enum DNG_ITEM_STYLE item_style;
 	int key_id;
 
 	bool is_cellular_open;
 
 	bool temp_wall;
 
-	int floor_style;
+	int tile_style;
 
 };
 

@@ -1362,7 +1362,7 @@ void ps_build_world()
 {
 	dm_seed(time(NULL));
 	int seed = dm_randi();
-	//seed = 146;
+	seed = 146;
 	dmlogi("SEED", seed);
 	world = wld_new_world(seed, 1);
 	current_map = world->maps[0];

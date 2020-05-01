@@ -91,7 +91,7 @@ void dng_cell_init(struct dng_cell *cell)
 
 	cell->temp_wall = false;
 
-	cell->floor_style = 0;
+	cell->tile_style = 0;
 }
 
 int dng_cell_get_x(struct dm_astarnode *astar_node)
@@ -1324,7 +1324,7 @@ void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 			randy = room->y + dm_randii(1, room->height - 2);
 			cell = dng_cellmap_get_cell_at_position(cellmap, randx, randy);
 			cell->has_item = true;
-			cell->item_type = DNG_ITEM_LOOT;
+			cell->item_style = DNG_ITEM_LOOT;
 		}
 	}
 
@@ -1496,7 +1496,7 @@ void dng_cellmap_placekeys(struct dng_cellmap *cellmap)
 				// TODO this may have collisions with other items or stuff? entrances?, exits?
 				struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, rx, ry);
 				cell->has_item = true;
-				cell->item_type = DNG_ITEM_KEY;
+				cell->item_style = DNG_ITEM_KEY;
 				cell->key_id = key_id;
 				cellmap->keys_placed++;
 				break;
@@ -1528,10 +1528,18 @@ void dng_cellmap_machinate_room(struct dng_cellmap *cellmap, struct dng_room *ro
 		}
 		break;
 	case 1: {
-			// room with an artifact
-			// if you aberrate on it you have a higher chance
-			// for strong aberattions but it can summon
-			// enemies as a trap
+			// Cursed Circle
+			// room with an artifact, if you pick it up
+			// it summons a temporary barrier you
+			// cannot escape and a strong enemy
+			// TODO how can you evade it?
+			// levitation? teleport?
+			int center_x = room->x + room->width / 2;
+			int center_y = room->y + room->height / 2;
+			struct dng_cell* cell = dng_cellmap_get_cell_at_position(cellmap, center_x, center_y);
+			cell->tile_style = DNG_TILE_STYLE_SUMMONCIRCLE;
+			cell->has_item = true;
+			cell->item_style = DNG_ITEM_RARE;
 		}
 		break;
 	case 2:
@@ -1577,7 +1585,7 @@ void dng_cellmap_decorate_vegetation(struct dng_cellmap *cellmap)
 	}
 	void on_open(int x, int y) {
 		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y );
-		cell->floor_style = DNG_FLOOR_STYLE_GRASS;
+		cell->tile_style = DNG_TILE_STYLE_GRASS;
 	}
 	double alive_chance = 0.48;
 	int death_max = 3;
@@ -1597,7 +1605,7 @@ void dng_cellmap_decorate_water(struct dng_cellmap *cellmap)
 	}
 	void on_open(int x, int y) {
 		struct dng_cell *cell = dng_cellmap_get_cell_at_position(cellmap, x, y );
-		cell->floor_style = DNG_FLOOR_STYLE_WATER;
+		cell->tile_style = DNG_TILE_STYLE_WATER;
 	}
 	double alive_chance = 0.56;
 	int death_max = 3;
