@@ -370,10 +370,8 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 
 			// TODO more
 			if (cell->is_wall) {
-				tile->type_id = TILE_STONEWALL;
 				tile->type = &wld_tiletypes[TILE_STONEWALL];
 			} else if (cell->is_door) {
-				tile->type_id = TILE_STONEDOOR;
 				tile->type = &wld_tiletypes[TILE_STONEDOOR];
 				tile->is_blocked = true; // cell->is_door_locked; // locked based on cell door quality
 				tile->is_door = true;
@@ -382,33 +380,26 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 				tile->door_lock_id = cell->door_lock_id;
 			} else if (cell->is_exit_transition || cell->is_entrance_transition) {
 				if (cell->is_entrance_transition) {
-					tile->type_id = TILE_ENTRANCE;
 					tile->type = &wld_tiletypes[TILE_ENTRANCE];
 					tile->on_mob_enter = wld_tile_on_mob_enter_entrance;
 					map->entrance_tile = tile;
 				}
 				if (cell->is_exit_transition) {
-					tile->type_id = TILE_EXIT;
 					tile->type = &wld_tiletypes[TILE_EXIT];
 					tile->on_mob_enter = wld_tile_on_mob_enter_exit;
 					map->exit_tile = tile;
 				}
 			} else {
 				if (cell->tile_style == DNG_TILE_STYLE_GRASS) {
-					tile->type_id = TILE_GRASS;
 					tile->type = &wld_tiletypes[TILE_GRASS];
 				} else if(cell->tile_style == DNG_TILE_STYLE_WATER) {
-					tile->type_id = TILE_WATER;
 					tile->type = &wld_tiletypes[TILE_WATER];
 				} else if(cell->tile_style == DNG_TILE_STYLE_DEEPWATER) {
-					tile->type_id = TILE_DEEPWATER;
 					tile->type = &wld_tiletypes[TILE_DEEPWATER];
 				} else if(cell->tile_style == DNG_TILE_STYLE_SUMMONCIRCLE) {
-					tile->type_id = TILE_SUMMONCIRCLE_SF_INERT;
 					tile->type = &wld_tiletypes[TILE_SUMMONCIRCLE_SF_INERT];
 					tile->on_mob_enter = wld_tile_on_mob_enter_summoncircle;
 				} else {
-					tile->type_id = TILE_STONEFLOOR;
 					tile->type = &wld_tiletypes[TILE_STONEFLOOR];
 				}
 			}
@@ -972,7 +963,7 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 		// if mob use its fg sprite and fg color
 		if (m->type->sprite != ' ')
 			cha = m->type->sprite;
-		colorpair = wld_cpair_tm(t->type_id, m->type_id);
+		colorpair = wld_cpair_tm(t->type->type, m->type_id);
 	} else if(i) {
 		// if item  use its fg sprite and fg color
 		if (i->type->sprite != ' ')
@@ -981,14 +972,14 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 		if (dead_mob)
 			colorpair = wld_cpair(WCLR_YELLOW, WCLR_RED);
 		else
-			colorpair = wld_cpair_ti(t->type_id, i->type_id);
+			colorpair = wld_cpair_ti(t->type->type, i->type_id);
 	} else if(dead_mob) {
 		// if we have dead mob on this tile use its display
 		// if there is a dead mob on this then color it bloody
 		colorpair = wld_cpair(WCLR_BLACK, WCLR_RED);
 		cha = t->dead_mob_type->sprite;
 	} else {
-		colorpair = wld_cpair_tm(t->type_id, 0);
+		colorpair = wld_cpair_tm(t->type->type, 0);
 	}
 
 	struct draw_struct ds = { colorpair, cha };
@@ -1000,7 +991,7 @@ struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int
 	// memory we do not look at mob data
 	struct wld_tile *t = wld_map_get_tile_at(map, x, y);
 	unsigned long cha = t->type->memory_sprite;
-	int colorpair = wld_cpairmem(t->type_id);
+	int colorpair = wld_cpairmem(t->type->type);
 
 	struct draw_struct ds = { colorpair, cha };
 	return ds;
@@ -1050,13 +1041,11 @@ void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* ti
 				if (node->type->is_transformable && wld_map_can_move_to(map, node->map_x, node->map_y)) {
 					gen_jackal(map, node->map_x, node->map_y);
 					node->type = wld_get_tiletype(TILE_SUMMONCIRCLE_NODE);
-					node->type_id = TILE_SUMMONCIRCLE_NODE;
 					summoned = true;
 				}
 			}
 			if (summoned)
 				wld_log("Minion spring forth from the void.");
-			tile->type_id = TILE_SUMMONCIRCLE_ACTIVE;
 			tile->type = wld_get_tiletype(TILE_SUMMONCIRCLE_ACTIVE);
 			break;
 		}
