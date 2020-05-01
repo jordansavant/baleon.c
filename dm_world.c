@@ -435,7 +435,6 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->target_y = 0;
 	mob->active_item = NULL;
 	mob->is_destroy_queued = false;
-	mob->type_id = type;
 	mob->type = &wld_mobtypes[type];
 
 	// create inventory (pointers to malloc items)
@@ -535,7 +534,6 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 
 void wld_init_item(struct wld_item* item, enum WLD_ITEMTYPE type)
 {
-	item->type_id = type;
 	item->type = &wld_itemtypes[type];
 	item->has_dropped = false;
 	item->uses = wld_itemtypes[type].base_uses;
@@ -963,7 +961,7 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 		// if mob use its fg sprite and fg color
 		if (m->type->sprite != ' ')
 			cha = m->type->sprite;
-		colorpair = wld_cpair_tm(t->type->type, m->type_id);
+		colorpair = wld_cpair_tm(t->type->type, m->type->type);
 	} else if(i) {
 		// if item  use its fg sprite and fg color
 		if (i->type->sprite != ' ')
@@ -972,7 +970,7 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 		if (dead_mob)
 			colorpair = wld_cpair(WCLR_YELLOW, WCLR_RED);
 		else
-			colorpair = wld_cpair_ti(t->type->type, i->type_id);
+			colorpair = wld_cpair_ti(t->type->type, i->type->type);
 	} else if(dead_mob) {
 		// if we have dead mob on this tile use its display
 		// if there is a dead mob on this then color it bloody

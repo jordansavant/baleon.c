@@ -58,7 +58,6 @@ struct wld_tiletype {
 struct wld_tile {
 	int id; // position in tile list
 	int map_x, map_y, map_index;
-	enum WLD_TILETYPE type_id;
 	struct wld_tiletype *type;
 	struct wld_map *map;
 	bool is_visible;
@@ -119,7 +118,6 @@ struct wld_mobtype {
 struct wld_mob {
 	int id; // positin in maps mob list
 	int map_x, map_y, map_index; // position in map geo and index
-	enum WLD_MOBTYPE type_id; // wld_mobtypes struct index
 	struct wld_mobtype *type;
 	struct wld_map *map;
 	enum WLD_MOB_STATE state;
@@ -180,7 +178,6 @@ struct wld_itemtype {
 struct wld_item {
 	int id;
 	int map_x, map_y, map_index;
-	enum WLD_ITEMTYPE type_id;
 	struct wld_itemtype *type;
 	bool has_dropped;
 	int uses;
