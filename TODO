@@ -1,8 +1,9 @@
 TODO:
 
 now
-- kill tile->type_id, we hve pointers now
-- aoe test item
+- item damage ranges
+- item effects
+- second space title for effects?
 - body fade over time
 - ui: target mode state w/ keyhints
 - ui: equipped items

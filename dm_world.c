@@ -164,7 +164,7 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
-			0,
+			0,0,//range radius
 			false, 0, // uses
 			"",
 			"",
@@ -183,7 +183,7 @@ void wld_setup()
 			itm_can_use_ranged_los,
 			itm_use_ranged_los,
 			itm_hit_minorhealth,
-			5,
+			5,0, // range radius
 			true,
 			1,
 			"quaff",
@@ -204,7 +204,7 @@ void wld_setup()
 			itm_can_use_melee,
 			itm_use_melee,
 			itm_hit_melee_swordstyle,
-			1,
+			1,0, // range radius
 			false, 0, // uses
 			"",
 			"strike",
@@ -224,7 +224,7 @@ void wld_setup()
 			itm_can_use_ranged_los,
 			itm_use_ranged_los,
 			itm_hit_ranged_los_bowstyle,
-			10,
+			10,0, // range radius
 			false, 0, // uses
 			"",
 			"shoot",
@@ -240,17 +240,17 @@ void wld_setup()
 			"a scroll of firebomb",
 			"scroll of firebomb",
 			NULL,
-			NULL,
-			NULL,
-			NULL,
-			NULL,
-			0,
+			itm_target_ranged_aoe,
+			itm_can_use_ranged_aoe,
+			itm_use_ranged_aoe,
+			itm_hit_ranged_aoe_bombstyle,
+			9,3, // base range, radius
 			true,1,//uses
-			"",
-			"",
+			"", // consume
+			"cast", // use
 			/////////////////////////////////////////////////////////
-			"Runic art covers the parchment surface showing a",
-			"large swathe of fire."
+			"{Daedum Kalkuum Brios Faraos} This runic scroll's surface",
+			"shows a large swathe of fire in a circular arc."
 		},
 		{
 			ITEM_ARMOR_LEATHER,
@@ -264,7 +264,7 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
-			0,
+			0,0, // range radius
 			false,0, // uses
 			"",
 			"",
@@ -284,7 +284,7 @@ void wld_setup()
 			itm_can_use_key,
 			itm_use_key,
 			itm_hit_key,
-			1,
+			1,0, // range, radius
 			true,1, // uses (key uses increment on failure)
 			"",
 			"use",
@@ -309,6 +309,7 @@ void wld_setup()
 		wld_itemtypes[i].fn_use = its[i].fn_use;
 		wld_itemtypes[i].fn_hit = its[i].fn_hit;
 		wld_itemtypes[i].base_range = its[i].base_range;
+		wld_itemtypes[i].base_radius = its[i].base_radius;
 		wld_itemtypes[i].has_uses = its[i].has_uses;
 		wld_itemtypes[i].base_uses = its[i].base_uses;
 		wld_itemtypes[i].drink_label = its[i].drink_label;
@@ -486,6 +487,9 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 		// lets give him some items for playtesting
 		mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
 		wld_init_item(mob->inventory[0], ITEM_WEAPON_SHORTSWORD);
+
+		mob->inventory[2] = (struct wld_item*)malloc(sizeof(struct wld_item));
+		wld_init_item(mob->inventory[2], ITEM_SCROLL_FIREBOMB);
 		break;
 	default:
 		mob->stat_strength = dm_randii(3, 16);
@@ -2166,6 +2170,142 @@ void itm_hit_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* t
 {
 	tile->is_door_locked = false;
 	wld_log_ss("You used %s to open %s.", item->type->short_desc, tile->type->short_desc);
+}
+
+
+
+// RANGED AOE
+// Throwing a bomb etc
+void itm_target_ranged_aoe(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
+{
+	// highlight a line from player to cursor, if something blocks the path then kill the line
+	int start_x = user->map->player->map_x;
+	int start_y = user->map->player->map_y;
+	int end_x = user->map->cursor->x;
+	int end_y = user->map->cursor->y;
+	int allowed_range = rpg_calc_range_dist(user, item->type->base_range);
+	int final_x = start_x;
+	int final_y = start_y;
+	bool is_blocked(int x, int y) {
+		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
+
+		// stop at tiles outside of the range of the item
+		int dist = dm_disti(user->map_x, user->map_y, x, y);
+		if (dist > allowed_range)
+			return true;
+
+		return wld_tile_is_blocked_movement(t) || !t->is_visible;
+	}
+	void on_visible(int x, int y) {
+		if (x == start_x && y == start_y) // ignore origin position
+			return;
+		inspect(x, y);
+		final_x = x;
+		final_y = y;
+	}
+	dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
+
+	// from final position shadowcast the blast radius
+	int blast_radius = item->type->base_radius;
+	bool sc_isblocked(int x, int y)
+	{
+		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
+		return wld_tile_is_blocked_movement(t);
+	}
+	void sc_onvisible(int x, int y, double radius, unsigned int ss_id)
+	{
+		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
+		if (t->dm_ss_id != ss_id && radius <= blast_radius) {
+			inspect(x, y);
+		}
+	}
+	dm_shadowcast(final_x, final_y, user->map->cols, user->map->rows, blast_radius, sc_isblocked, sc_onvisible, false); // no leakage allowed
+}
+
+// I can shoot a ranged aoe item at any position I want
+// the projectile should "hit" any mob or blocked wall in between
+// valid positions are the same as targeting los
+bool itm_can_use_ranged_aoe(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
+{
+	return true; // we can shoot it anywhere, even into the darkness
+}
+
+void itm_use_ranged_aoe(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
+{
+	// draw a bresenham line if I run into a living mob, then hit it
+	int start_x = user->map->player->map_x;
+	int start_y = user->map->player->map_y;
+	int end_x = cursor_tile->map_x;
+	int end_y = cursor_tile->map_y;
+	int allowed_range = rpg_calc_range_dist(user, item->type->base_range);
+
+	int final_x = start_x;
+	int final_y = start_y;
+	bool is_blocked(int x, int y) {
+		// check and make sure we do not shoot ourself
+		if (x == start_x && y == start_y)
+			return false;
+
+		// check to see if we have traveled further than our max range
+		int dist = dm_disti(user->map_x, user->map_y, x, y);
+		if (dist > allowed_range)
+			return true;
+
+		// if we have come in contact with a mob, stop raycast
+		struct wld_mob *mob = wld_map_get_mob_at(user->map, x, y);
+		if (mob != NULL && !mob->is_dead) {
+			return true;
+		}
+
+		// if we hit something that blocks movement stop the attack
+		struct wld_tile* tile = wld_map_get_tile_at(user->map, x, y);
+		if (wld_tile_is_blocked_movement(tile)) {
+			return true;
+		}
+
+		return false;
+	}
+	// get our last seen position
+	void inspect(int x, int y) {
+		final_x = x;
+		final_y = y;
+	}
+	dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, inspect);
+
+	// explode at final position
+	item->type->fn_hit(item, user, wld_map_get_tile_at(user->map, final_x, final_y));
+}
+
+void itm_hit_ranged_aoe_bombstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
+{
+	// TODO make this do item damage numbers
+	// TODO make this apply item effects to mobs
+	// TODO make this destroy certain terrains?
+	// perform a blast based on t
+	wld_log_it("The %s blasts throughout the area.", item);
+	int blast_radius = item->type->base_radius;
+	int min_damage = 20;
+	int max_damage = 40;
+	bool sc_isblocked(int x, int y)
+	{
+		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
+		return wld_tile_is_blocked_movement(t);
+	}
+	void sc_onvisible(int x, int y, double radius, unsigned int ss_id)
+	{
+		double radius_ratio = radius / (double)blast_radius;
+		int dmg = min_damage + (max_damage - min_damage) * radius_ratio;
+
+		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
+		if (t->dm_ss_id != ss_id && radius <= blast_radius) {
+			struct wld_mob *m = wld_map_get_mob_at(user->map, x, y);
+			if (m) {
+				// TODO apply effects and damage here
+				ai_mob_attack_mob(user, m, dmg, item);
+			}
+		}
+	}
+	dm_shadowcast(tile->map_x, tile->map_y, user->map->cols, user->map->rows, blast_radius, sc_isblocked, sc_onvisible, false); // no leakage allowed
 }
 
 // ITEM ACTIONS END

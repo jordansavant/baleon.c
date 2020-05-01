@@ -168,6 +168,7 @@ struct wld_itemtype {
 	void (*fn_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*fn_hit)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	int base_range;
+	int base_radius;
 	bool has_uses;
 	int base_uses;
 	char *drink_label;
@@ -387,16 +388,24 @@ void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect
 bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_hit_melee_swordstyle(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* tile);
+
 void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
 bool itm_can_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
+
 void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user);
 void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
+
 void itm_target_key(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
 bool itm_can_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_hit_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
+
+void itm_target_ranged_aoe(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
+bool itm_can_use_ranged_aoe(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
+void itm_use_ranged_aoe(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
+void itm_hit_ranged_aoe_bombstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
 
 // LOGGERS
 // These are built in main
