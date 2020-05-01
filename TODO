@@ -2,8 +2,8 @@ TODO:
 
 now
 - item damage ranges
-- item effects
-- second space title for effects?
+- item effects (active effects)
+	- second space title for effects?
 - body fade over time
 - ui: target mode state w/ keyhints
 - ui: equipped items

@@ -643,20 +643,20 @@ void ui_update_cmdpanel(struct wld_map *map)
 	wclrtoeol(cmdpanel);
 
 	char buffer[CMD_LENGTH]; // length of cmd bar
+	buffer[0] = '\0';
 	if (current_map->player->mode == MODE_PLAY) {
-		snprintf(buffer, CMD_LENGTH, "%s", "i: inventory  p: rest");
 		if (current_map->player->target_mode == TMODE_ACTIVE) {
-			strncat(buffer, "  y: unwield", 12);
+			strncat(buffer, "  x: exit", 9);
 		} else {
-			strncat(buffer, "  y: wield", 10);
+			strncat(buffer, "  y: wield  i: inventory  p: rest", 21);
 		}
 		if (ai_can_get(current_map->player, 0, 0)) {
 			strncat(buffer, "  g: get", 8);
 		}
 	}
 
-	dmlogii(buffer, ui_map_rows, 2);
-	ui_write_rc(cmdpanel, 2, 1, buffer);
+	if (buffer[0] != '\0')
+		ui_write_rc(cmdpanel, 0, 0, buffer);
 	wrefresh(cmdpanel);
 }
 
