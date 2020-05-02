@@ -792,6 +792,25 @@ void ui_update_logpanel(struct wld_map *map)
 	wrefresh(logpanel);
 }
 
+void ui_meter_effect(struct wld_effect *e, int len, int row, int col, int fg, int bg)
+{
+	int fill = (1 - ((double)e->current_iterations / (double)e->type->iterations)) * len;
+	char c = ' ';
+	for (int i=0; i < len; i++) {
+		if (c != '\0')
+			c = e->type->title[i];
+		if (i <= fill)
+			wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_RED, WCLR_YELLOW)));
+		else
+			wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_RED, WCLR_BLACK)));
+		if (c != '\0')
+			ui_write_char(mobpanel, row, col + i, c);
+		else
+			ui_write_char(mobpanel, row, col + i, ' ');
+	}
+	wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
+}
+
 int last_mob_list_length = 0;
 void ui_update_mobpanel(struct wld_map *map)
 {
@@ -844,6 +863,15 @@ void ui_update_mobpanel(struct wld_map *map)
 					wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				}
 				i++;
+				// active effects
+				for (int j=0; j < mob->active_effects_length; j++) {
+					struct wld_effect *e = &mob->active_effects[j];
+					if (e->is_active) {
+						ui_meter_effect(e, VIS_LENGTH - 5, i + offy, offx + 2, 1, 1);
+						//ui_write_rc(mobpanel, i + offy, offx + 2, e->type->title);
+						i++;
+					}
+				}
 			}
 			if (item) {
 				// item name

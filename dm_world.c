@@ -330,7 +330,7 @@ void wld_setup()
 	// Copy effect types into malloc
 	struct wld_effecttype ets [] = {
 		// hp, sprite, color, desc, title
-		{ EFFECT_FIRE,    5, '^', WCLR_YELLOW, -1, wld_effect_on_fire }
+		{ EFFECT_FIRE,    5, '^', WCLR_YELLOW, -1, wld_effect_on_fire, "fire" }
 	};
 	wld_effecttypes = (struct wld_effecttype*)malloc(ARRAY_SIZE(ets) * sizeof(struct wld_effecttype));
 	for (int i=0; i<ARRAY_SIZE(ets); i++) {
@@ -340,6 +340,7 @@ void wld_setup()
 		wld_effecttypes[i].fg_color = ets[i].fg_color;
 		wld_effecttypes[i].bg_color = ets[i].bg_color;
 		wld_effecttypes[i].on_update_mob = ets[i].on_update_mob;
+		wld_effecttypes[i].title = ets[i].title;
 	}
 }
 
@@ -1012,13 +1013,23 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 		colorpair = wld_cpair_tm(t->type->type, m->type->type);
 		if (m->type->sprite != ' ')
 			cha = m->type->sprite;
+		// if we have effects find an active one and pick it randomly
 		if (m->active_effects_length > 0) {
-			struct wld_effect *e = &m->active_effects[dm_randii(0, m->active_effects_length)];
-			cha2 = e->type->sprite;
-			if (e->type->bg_color != -1)
-				colorpair2 = wld_cpair(e->type->fg_color, e->type->bg_color);
-			else
-				colorpair2 = wld_cpair(e->type->fg_color, t->type->bg_color);
+			struct wld_effect *e = NULL;
+			for (int i=0; i < m->active_effects_length; i++) {
+				if (m->active_effects[i].is_active) {
+					if (e == NULL) {
+						e = &m->active_effects[i];
+					}
+				}
+			}
+			if (e) {
+				cha2 = e->type->sprite;
+				if (e->type->bg_color != -1)
+					colorpair2 = wld_cpair(e->type->fg_color, e->type->bg_color);
+				else
+					colorpair2 = wld_cpair(e->type->fg_color, t->type->bg_color);
+			}
 		}
 
 	} else if(i) {
@@ -1086,6 +1097,7 @@ void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT type, int x, int y)
 			if (!e->is_active)
 				effect_slot = i;
 		}
+		// otherwise append it
 		if (effect_slot == -1 && m->active_effects_length < MAX_ACTIVE_EFFECTS) {
 			effect_slot = m->active_effects_length;
 			m->active_effects_length++;

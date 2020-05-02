@@ -53,6 +53,7 @@ struct wld_effecttype {
 	unsigned long sprite;
 	int fg_color, bg_color;
 	void (*on_update_mob)(struct wld_effect *e, struct wld_mob *);
+	char *title;
 };
 
 struct wld_effect {
