@@ -25,14 +25,14 @@ struct wld_item;
 struct wld_mob;
 struct wld_mob_type;
 
-enum WLD_EFFECTTYPE {
-	EFFECT_HEAL,
-	EFFECT_DMG_HIT,
-	EFFECT_SUMMON,
+enum WLD_VISUAL_EFFECT {
+	VFX_HEAL,
+	VFX_DMG_HIT,
+	VFX_SUMMON,
 };
 
-struct wld_effect {
-	enum WLD_EFFECTTYPE type;
+struct wld_vfx {
+	enum WLD_VISUAL_EFFECT type;
 	int x, y;
 	int radius;
 };
@@ -235,7 +235,7 @@ struct wld_map {
 	struct wld_tile* exit_tile;
 
 	// function pointers game subscribes to for events
-	void (*on_effect)(struct wld_map *map, struct wld_effect *effect);
+	void (*on_effect)(struct wld_map *map, struct wld_vfx *effect);
 
 	void (*on_player_map_transition)(struct wld_map*, struct wld_mob *mob, bool forward);
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
@@ -359,6 +359,7 @@ bool wld_mob_drop_item(struct wld_mob*, int);
 void wld_mob_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
+//void wld_mob_add_effect(struct wld_mob*, WLD_MOBEFFECT type);
 
 // MOB AI
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
@@ -424,7 +425,7 @@ void itm_hit_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* t
 void itm_target_ranged_aoe(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
 bool itm_can_use_ranged_aoe(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_use_ranged_aoe(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
-void itm_hit_ranged_aoe_bombstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
+void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
 
 // LOGGERS
 // These are built in main

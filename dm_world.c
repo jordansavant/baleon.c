@@ -247,7 +247,7 @@ void wld_setup()
 			itm_target_ranged_aoe,
 			itm_can_use_ranged_aoe,
 			itm_use_ranged_aoe,
-			itm_hit_ranged_aoe_bombstyle,
+			itm_hit_ranged_aoe_firebomb,
 			9,3, // base range, radius
 			true,1,//uses
 			20,40,//min max dmgs
@@ -1028,21 +1028,21 @@ struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int
 
 void wld_map_effect_heal(struct wld_map *map, int x, int y)
 {
-	struct wld_effect e = { EFFECT_HEAL, x, y, 1 };
+	struct wld_vfx e = { VFX_HEAL, x, y, 1 };
 	if (map->on_effect)
 		map->on_effect(map, &e);
 }
 
 void wld_map_effect_dmg(struct wld_map *map, int x, int y)
 {
-	struct wld_effect e = { EFFECT_DMG_HIT, x, y, 1 };
+	struct wld_vfx e = { VFX_DMG_HIT, x, y, 1 };
 	if (map->on_effect)
 		map->on_effect(map, &e);
 }
 
 void wld_map_effect_summon(struct wld_map *map, int x, int y)
 {
-	struct wld_effect e = { EFFECT_SUMMON, x, y, 1 };
+	struct wld_vfx e = { VFX_SUMMON, x, y, 1 };
 	if (map->on_effect)
 		map->on_effect(map, &e);
 }
@@ -2357,7 +2357,7 @@ void itm_use_ranged_aoe(struct wld_item *item, struct wld_mob *user, struct wld_
 	item->type->fn_hit(item, user, wld_map_get_tile_at(user->map, final_x, final_y));
 }
 
-void itm_hit_ranged_aoe_bombstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
+void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
 {
 	// TODO make this do item damage numbers
 	// TODO make this apply item effects to mobs
@@ -2384,6 +2384,7 @@ void itm_hit_ranged_aoe_bombstyle(struct wld_item *item, struct wld_mob *user, s
 				// TODO apply effects and damage here
 				ai_mob_attack_mob(user, m, dmg, item);
 				wld_map_effect_dmg(user->map, m->map_x, m->map_y);
+				//wld_mob_add_effect(MOBEFF_FIRE);
 			}
 		}
 	}

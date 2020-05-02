@@ -131,7 +131,7 @@ void ui_set_use_item(struct wld_item* item, int item_slot);
 void ui_use_item_select(struct wld_mob* player, int item_slot);
 
 // MAP EVENTS
-void map_on_effect(struct wld_map *map, struct wld_effect *effect);
+void map_on_effect(struct wld_map *map, struct wld_vfx *effect);
 void map_on_player_transition(struct wld_map *map, struct wld_mob *player, bool forward);
 void map_on_cursormove(struct wld_map *map, int x, int y, int index);
 void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y, int index);

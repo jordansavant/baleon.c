@@ -1027,12 +1027,12 @@ void ui_use_item_select(struct wld_mob* player, int item_slot)
 ///////////////////////////
 // MAP EVENTS START
 
-void map_on_effect(struct wld_map *map, struct wld_effect *effect)
+void map_on_effect(struct wld_map *map, struct wld_vfx *effect)
 {
 	struct draw_struct ds = wld_map_get_drawstruct(map, effect->x, effect->y);
 	ui_clear_win(usepanel);
 	switch (effect->type) {
-	case EFFECT_HEAL: {
+	case VFX_HEAL: {
 			for (int i=0; i < 2; i++) {
 				if (i % 2 == 0)
 					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_A, false);
@@ -1043,7 +1043,7 @@ void map_on_effect(struct wld_map *map, struct wld_effect *effect)
 			}
 		}
 		break;
-	case EFFECT_DMG_HIT: {
+	case VFX_DMG_HIT: {
 			for (int i=0; i < 2; i++) {
 				if (i % 2 == 0)
 					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_A, false);
@@ -1054,7 +1054,7 @@ void map_on_effect(struct wld_map *map, struct wld_effect *effect)
 			}
 		}
 		break;
-	case EFFECT_SUMMON: {
+	case VFX_SUMMON: {
 			dmlog("SUMMON");
 			for (int i=0; i < 2; i++) {
 				if (i % 2 == 0)
