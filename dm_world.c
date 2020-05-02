@@ -1598,7 +1598,6 @@ void mutation_apply_test(struct wld_mob *mob)
 
 void wld_mob_new_mutation(struct wld_mob *mob, struct wld_aberration *ab)
 {
-	dmlog("new mutation");
 	struct wld_mutation *mutation = &ab->mutations[ab->mutations_length];
 	snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "%s", "foo bar +2, -3 golden chick");
 	mutation->on_update = mutation_update_test;
@@ -1610,7 +1609,6 @@ void wld_mob_new_mutation(struct wld_mob *mob, struct wld_aberration *ab)
 
 void wld_mob_new_aberration(struct wld_mob *mob)
 {
-	dmlog("new aberr");
 	struct wld_aberration *aberration = (struct wld_aberration*)malloc(sizeof(struct wld_aberration));
 	mob->current_aberration = aberration;
 	mob->aberrations[mob->aberrations_length] = aberration;
@@ -1624,7 +1622,6 @@ void wld_mob_new_aberration(struct wld_mob *mob)
 
 void wld_mob_push_aberration(struct wld_mob *mob)
 {
-	dmlog("push aberr");
 	if (mob->current_aberration) {
 		wld_mob_new_mutation(mob, mob->current_aberration);
 		if (mob->current_aberration->mutations_length >= MAX_MUTATIONS) {
