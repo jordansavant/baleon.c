@@ -74,7 +74,6 @@ enum USE_TYPE {
 // UTILS
 void skip_delay(double wait_s);
 void escapedelay(bool on);
-void debug(char *msg);
 void on_term_resize(int dummy);
 
 // GAME SETUP

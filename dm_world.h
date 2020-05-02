@@ -28,6 +28,7 @@ struct wld_mob_type;
 enum WLD_EFFECTTYPE {
 	EFFECT_HEAL,
 	EFFECT_DMG_HIT,
+	EFFECT_SUMMON,
 };
 
 struct wld_effect {

@@ -29,6 +29,8 @@
 #define ECOLOR_HEAL_B	14
 #define ECOLOR_DMG_A	15
 #define ECOLOR_DMG_B	16
+#define ECOLOR_SUMMON_A	17
+#define ECOLOR_SUMMON_B	18
 
 
 
@@ -51,11 +53,11 @@ void escapedelay(bool on)
 	else
 		ESCDELAY = 0;
 }
-void debug(char *msg)
+// term resized os event
+bool term_resized = false;
+void on_term_resize(int dummy)
 {
-	int y = getmaxy(stdscr);
-	dm_center(y - 1, msg, TCOLOR_NORMAL, TCOLOR_NORMAL, 0);
-	refresh();
+	term_resized = true;
 }
 
 // UTILITIES END
@@ -107,17 +109,11 @@ int use_item_slot = -1;
 #define CMD_LENGTH 100
 char logs[LOG_COUNT][LOG_LENGTH];
 
+// visible mob list
 #define VISIBLE_MOB_MAX 100
 struct wld_mob* visible_mobs[VISIBLE_MOB_MAX];
 int visible_mobs_length = 0;
 int visible_mob_focus = 0;
-
-
-bool term_resized = false;
-void on_term_resize(int dummy)
-{
-	term_resized = true;
-}
 
 bool g_setup()
 {
@@ -156,6 +152,8 @@ bool g_setup()
 	init_pair(ECOLOR_HEAL_B,	COLOR_GREEN,	COLOR_WHITE);
 	init_pair(ECOLOR_DMG_A,		COLOR_WHITE,	COLOR_RED);
 	init_pair(ECOLOR_DMG_B,		COLOR_RED,	COLOR_WHITE);
+	init_pair(ECOLOR_SUMMON_A,	COLOR_WHITE,	COLOR_CYAN);
+	init_pair(ECOLOR_SUMMON_B,	COLOR_BLACK,	COLOR_CYAN);
 
 	// setup world colors
 	wld_setup();
@@ -1051,6 +1049,18 @@ void map_on_effect(struct wld_map *map, struct wld_effect *effect)
 					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_A, false);
 				else
 					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_B, false);
+				ps_refresh_map_pad();
+				napms(100);
+			}
+		}
+		break;
+	case EFFECT_SUMMON: {
+			dmlog("SUMMON");
+			for (int i=0; i < 2; i++) {
+				if (i % 2 == 0)
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_SUMMON_A, false);
+				else
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_SUMMON_B, false);
 				ps_refresh_map_pad();
 				napms(100);
 			}

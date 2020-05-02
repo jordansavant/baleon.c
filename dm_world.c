@@ -1040,6 +1040,13 @@ void wld_map_effect_dmg(struct wld_map *map, int x, int y)
 		map->on_effect(map, &e);
 }
 
+void wld_map_effect_summon(struct wld_map *map, int x, int y)
+{
+	struct wld_effect e = { EFFECT_SUMMON, x, y, 1 };
+	if (map->on_effect)
+		map->on_effect(map, &e);
+}
+
 // MAP METHODS END
 ///////////////////////////
 
@@ -1085,10 +1092,11 @@ void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* ti
 					gen_mob_jackal(map, node->map_x, node->map_y);
 					node->type = wld_get_tiletype(TILE_SUMMONCIRCLE_NODE);
 					summoned = true;
+					wld_map_effect_summon(map, node->map_x, node->map_y);
 				}
 			}
 			if (summoned)
-				wld_log("Minion spring forth from the void.");
+				wld_log("Minions spring forth from the void.");
 			tile->type = wld_get_tiletype(TILE_SUMMONCIRCLE_ACTIVE);
 			break;
 		}
