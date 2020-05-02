@@ -511,6 +511,8 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 		mob->aberrations[j] = NULL;
 	}
 	mob->aberrations_length = 0;
+	mob->current_aberration = NULL;
+	mob->can_aberrate_more = false;
 
 	// stats TODO roll these in some sort of character rolling menu?
 	switch (type) {
@@ -1613,10 +1615,23 @@ void wld_mob_new_aberration(struct wld_mob *mob)
 	mob->current_aberration = aberration;
 	mob->aberrations[mob->aberrations_length] = aberration;
 	mob->aberrations_length++;
+	mob->can_aberrate_more = true;
 	aberration->mutations_length = 0;
 
 	// form first mutation
 	wld_mob_new_mutation(mob, aberration);
+}
+
+void wld_mob_push_aberration(struct wld_mob *mob)
+{
+	dmlog("push aberr");
+	if (mob->current_aberration) {
+		wld_mob_new_mutation(mob, mob->current_aberration);
+		if (mob->current_aberration->mutations_length >= MAX_MUTATIONS) {
+			mob->can_aberrate_more = false;
+			mob->can_aberrate = false;
+		}
+	}
 }
 
 // MOB METHODS END

@@ -206,6 +206,7 @@ struct wld_mob {
 	struct wld_aberration **aberrations;
 	int aberrations_length;
 	struct wld_aberration *current_aberration;
+	bool can_aberrate_more;
 };
 
 
@@ -419,6 +420,7 @@ void wld_mob_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
 void wld_mob_new_aberration(struct wld_mob *mob);
+void wld_mob_push_aberration(struct wld_mob *mob);
 
 // MOB AI
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);

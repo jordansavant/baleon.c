@@ -983,7 +983,25 @@ void ui_update_aberratepanel(struct wld_map *map)
 	ui_write(aberratepanel, 0, "----------------------- Aberration -----------------------");
 	ui_write(aberratepanel, 2, "Looking at the dead beneath your feet the lust for");
 	ui_write(aberratepanel, 3, "evolution and mutation grows. Will you mutate?");
-	ui_write(aberratepanel, 5, "y: yes  n: no");
+
+	if (map->player->current_aberration != NULL) {
+		int offy = 5;
+		for (int i=0; i < map->player->current_aberration->mutations_length; i++) {
+			struct wld_mutation *mut = &map->player->current_aberration->mutations[i];
+			ui_write(aberratepanel, offy, mut->desc);
+			offy++;
+		}
+		ui_clear(aberratepanel, offy);
+		if (map->player->can_aberrate_more) {
+			ui_write(aberratepanel, ++offy, "Press for more?");
+			ui_write(aberratepanel, ++offy, "y: yes  x: exit");
+		} else {
+			ui_write(aberratepanel, ++offy, "Mutations exhausted...");
+			ui_write(aberratepanel, ++offy, "x: exit");
+		}
+	} else {
+		ui_write(aberratepanel, 5, "y: yes  x: exit");
+	}
 
 	ui_box(aberratepanel);
 	wrefresh(aberratepanel);
@@ -1261,6 +1279,7 @@ void ai_player_input(struct wld_mob* player)
 					case KEY_F(2):
 						// enable aberate
 						current_map->player->can_aberrate = true;
+						player->mode = MODE_ABERRATE;
 						listen = false;
 						break;
 					// Player movement
@@ -1464,10 +1483,17 @@ void ai_player_input(struct wld_mob* player)
 				case KEY_x:
 					ui_clear_win(aberratepanel);
 					player->mode = MODE_PLAY;
+					player->current_aberration = NULL;
 					listen = false;
 					break;
 				case KEY_y:
-					wld_mob_new_aberration(player);
+					if (player->can_aberrate) {
+						if (player->current_aberration == NULL)
+							wld_mob_new_aberration(player);
+						else if (player->can_aberrate_more)
+							wld_mob_push_aberration(player);
+					}
+					listen = false;
 					break;
 				}
 				break;
