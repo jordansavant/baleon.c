@@ -961,7 +961,7 @@ void map_on_effect(struct wld_map *map, struct wld_effect *effect)
 	ui_clear_win(usepanel);
 	switch (effect->type) {
 	case EFFECT_HEAL: {
-			for (int i=0; i < effect->iterations; i++) {
+			for (int i=0; i < 2; i++) {
 				if (i % 2 == 0)
 					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_A, false);
 				else
@@ -972,7 +972,7 @@ void map_on_effect(struct wld_map *map, struct wld_effect *effect)
 		}
 		break;
 	case EFFECT_DMG_HIT: {
-			for (int i=0; i < effect->iterations; i++) {
+			for (int i=0; i < 2; i++) {
 				if (i % 2 == 0)
 					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_A, false);
 				else
