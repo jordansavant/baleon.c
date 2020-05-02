@@ -10,6 +10,8 @@
 #define STAT_DEX_BASE 10
 #define STAT_CON_BASE 10
 
+#define MAX_ACTIVE_EFFECTS 10
+
 enum WLD_COLOR_INDEX {
 	WCLR_BLACK,   // 0
 	WCLR_GREEN,   // 1
@@ -51,6 +53,7 @@ struct wld_effect {
 	int iterations;
 	unsigned long sprite;
 	int fg_color, bg_color;
+	void (*on_update_mob)(struct wld_effect *e, struct wld_mob *);
 };
 
 
@@ -171,7 +174,7 @@ struct wld_mob {
 	int stat_dexterity;
 	int stat_constitution;
 
-	struct wld_effect active_effects[10];
+	struct wld_effect active_effects[MAX_ACTIVE_EFFECTS];
 	int active_effects_length;
 };
 
@@ -342,6 +345,9 @@ void wld_map_vfx_heal(struct wld_map *map, int x, int y);
 void wld_map_vfx_dmg(struct wld_map *map, int x, int y);
 void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT, int x, int y);
 
+// EFFECTS
+void wld_effect_on_fire(struct wld_effect *effect, struct wld_mob *mob);
+
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
 void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
@@ -390,6 +396,8 @@ bool ai_default_is_hostile(struct wld_mob *self, struct wld_mob *target);
 bool ai_default_detect_combat(struct wld_mob *mob);
 void ai_default_decide_combat(struct wld_mob *self);
 void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item);
+void ai_mob_die(struct wld_mob *mob);
+void ai_effect_attack_mob(struct wld_effect *effect, struct wld_mob *defender, int amt);
 void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item* item);
 bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);

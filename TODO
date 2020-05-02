@@ -1,9 +1,14 @@
 TODO:
 
 now
-- item effects (active effects)
-	- second space title for effects?
-	- eg fire
+- make effect types that model after other types
+	- effect objects can be on the fly structs
+	- with type pointers that can have titles
+	- etc
+- fire tile for grass on fire
+	- run on updates on tiles
+	- convert them to a tile for a while
+	- then convert them back?
 - ui: equipped items
 - ui: stats / panels
 - rpg defense calculations?

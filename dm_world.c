@@ -250,7 +250,7 @@ void wld_setup()
 			itm_hit_ranged_aoe_firebomb,
 			9,3, // base range, radius
 			true,1,//uses
-			20,40,//min max dmgs
+			2,8,//min max dmgs (lower because of fire effect)
 			"", // consume
 			"cast", // use
 			/////////////////////////////////////////////////////////
@@ -1061,24 +1061,54 @@ void wld_map_vfx_summon(struct wld_map *map, int x, int y)
 
 void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT type, int x, int y)
 {
-	dmlog("add effect");
 	struct wld_mob* m = wld_map_get_mob_at(map, x, y);
 	if (m) {
-		m->active_effects[m->active_effects_length].type = type;
-		m->active_effects[m->active_effects_length].is_active = true;
-		m->active_effects[m->active_effects_length].iterations = 0;
-		switch (type) {
-			case EFFECT_FIRE:
-				m->active_effects[m->active_effects_length].sprite = '^';
-				m->active_effects[m->active_effects_length].fg_color = WCLR_YELLOW;
-				m->active_effects[m->active_effects_length].bg_color = -1;
-				break;
+		int effect_slot = -1;
+		// see if there is an inactive effect we can replce
+		for (int i=0; i<m->active_effects_length; i++) {
+			struct wld_effect *e = &m->active_effects[m->active_effects_length];
+			if (!e->is_active)
+				effect_slot = i;
 		}
-		m->active_effects_length++;
+		if (effect_slot == -1 && m->active_effects_length < MAX_ACTIVE_EFFECTS) {
+			effect_slot = m->active_effects_length;
+			m->active_effects_length++;
+		}
+		if (effect_slot != -1) {
+			m->active_effects[effect_slot].type = type;
+			m->active_effects[effect_slot].is_active = true;
+			m->active_effects[effect_slot].iterations = 0;
+			switch (type) {
+				case EFFECT_FIRE:
+					m->active_effects[effect_slot].sprite = '^';
+					m->active_effects[effect_slot].fg_color = WCLR_YELLOW;
+					m->active_effects[effect_slot].bg_color = -1;
+					m->active_effects[effect_slot].on_update_mob = wld_effect_on_fire;
+					break;
+			}
+		}
 	}
 }
 
 // MAP METHODS END
+///////////////////////////
+
+
+
+///////////////////////////
+// EFFECTS START
+void wld_effect_on_fire(struct wld_effect *effect, struct wld_mob *mob)
+{
+	// TODO RPG fire resistance
+	int max_iterations = 5;
+	if (effect->iterations < max_iterations) {
+		ai_effect_attack_mob(effect, mob, dm_randii(1, 4));
+	} else {
+		effect->is_active = false;
+	}
+
+}
+// EFFECTS END
 ///////////////////////////
 
 
@@ -1663,11 +1693,35 @@ void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item)
 		mob->map->on_mob_heal(mob->map, mob, amt, item);
 }
 
+void ai_mob_die(struct wld_mob *mob)
+{
+	mob->state = MS_DEAD;
+	mob->health = 0;
+	mob->is_dead = true;
+
+	// TODO drop loot?
+
+	struct wld_tile* tile = wld_map_get_tile_at_index(mob->map, mob->map_index);
+	tile->dead_mob_type = mob->type; // only most recent
+
+	// set this mob up to be destroyed if its not the player
+	if (!mob->is_player)
+		wld_map_queue_destroy_mob(mob->map, mob);
+}
+
+void ai_effect_attack_mob(struct wld_effect *effect, struct wld_mob *defender, int amt)
+{
+	defender->health -= amt;
+
+	if (defender->health <= 0)
+		ai_mob_die(defender);
+}
+
+
 void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item)
 {
-	defender->state = MS_DEAD;
-	defender->health = 0;
-	defender->is_dead = true;
+	ai_mob_die(defender);
+
 	// notify event
 	if (!defender->is_player && aggressor->map->on_mob_kill_mob)
 		aggressor->map->on_mob_kill_mob(aggressor->map, aggressor, defender, item);
@@ -1676,13 +1730,6 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct
 	if (aggressor->is_player && aggressor->map->on_player_kill_mob)
 		aggressor->map->on_player_kill_mob(aggressor->map, aggressor, defender, item);
 	// after event executed lets remove the mob and add the dead mob type to the tile floor
-	// TODO drop loot?
-	struct wld_tile* tile = wld_map_get_tile_at_index(defender->map, defender->map_index);
-	tile->dead_mob_type = defender->type; // only most recent
-
-	// set this mob up to be destroyed if its not the player
-	if (!defender->is_player)
-		wld_map_queue_destroy_mob(defender->map, defender);
 }
 
 void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int amt, struct wld_item *item)
@@ -1987,6 +2034,10 @@ void wld_update_mob(struct wld_mob *mob)
 	// apply effects
 	for (int i=0; i < mob->active_effects_length; i++) {
 		dmlogi("update active effect", i);
+		struct wld_effect *effect = &mob->active_effects[i];
+		if (effect->is_active && effect->on_update_mob) {
+			effect->on_update_mob(effect, mob);
+		}
 	}
 }
 
@@ -2420,10 +2471,9 @@ void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, st
 			struct wld_mob *m = wld_map_get_mob_at(user->map, x, y);
 			if (m) {
 				// TODO apply effects and damage here
-				//ai_mob_attack_mob(user, m, dmg, item);
+				ai_mob_attack_mob(user, m, dmg, item);
 				wld_map_vfx_dmg(user->map, m->map_x, m->map_y);
 				wld_map_add_effect(user->map, EFFECT_FIRE, m->map_x, m->map_y);
-				//wld_mob_add_effect(MOBEFF_FIRE);
 			}
 		}
 	}
