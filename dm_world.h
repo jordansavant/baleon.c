@@ -11,6 +11,9 @@
 #define STAT_CON_BASE 10
 
 #define MAX_ACTIVE_EFFECTS 10
+#define MAX_MUTATIONS 5
+#define MAX_MUTATION_DESC_LEN 35
+#define MAX_ABERRATIONS 20
 
 enum WLD_COLOR_INDEX {
 	WCLR_BLACK,   // 0
@@ -41,6 +44,21 @@ struct wld_vfx {
 };
 
 
+///////////////////////////
+// ABERRATIONS
+struct wld_mutation {
+	char desc[MAX_MUTATION_DESC_LEN];
+	void(*on_apply)(struct wld_mob*);
+	void(*on_update)(struct wld_mob*);
+};
+struct wld_aberration {
+	int id; // list index
+	struct wld_mutation mutations[MAX_MUTATIONS];
+	int mutations_length;
+};
+
+
+///////////////////////////
 // EFFECTS LIKE FIRE
 
 enum WLD_EFFECT {
@@ -176,7 +194,6 @@ struct wld_mob {
 	int target_x, target_y;
 	struct wld_item *active_item;
 	bool is_destroy_queued;
-	bool can_aberrate;
 
 	int stat_strength;
 	int stat_dexterity;
@@ -184,6 +201,11 @@ struct wld_mob {
 
 	struct wld_effect active_effects[MAX_ACTIVE_EFFECTS];
 	int active_effects_length;
+
+	bool can_aberrate;
+	struct wld_aberration **aberrations;
+	int aberrations_length;
+	struct wld_aberration *current_aberration;
 };
 
 
@@ -396,6 +418,7 @@ bool wld_mob_drop_item(struct wld_mob*, int);
 void wld_mob_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
+void wld_mob_new_aberration(struct wld_mob *mob);
 
 // MOB AI
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);

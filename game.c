@@ -982,8 +982,9 @@ void ui_update_aberratepanel(struct wld_map *map)
 {
 	ui_write(aberratepanel, 0, "----------------------- Aberration -----------------------");
 	ui_write(aberratepanel, 2, "Looking at the dead beneath your feet the lust for");
-	ui_write(aberratepanel, 3, "evolution and mutation grows. Do you wish to consume?");
+	ui_write(aberratepanel, 3, "evolution and mutation grows. Will you mutate?");
 	ui_write(aberratepanel, 5, "y: yes  n: no");
+
 	ui_box(aberratepanel);
 	wrefresh(aberratepanel);
 }
@@ -1461,10 +1462,12 @@ void ai_player_input(struct wld_mob* player)
 				switch (key) {
 				case KEY_ESC:
 				case KEY_x:
-					ui_unset_use();
 					ui_clear_win(aberratepanel);
 					player->mode = MODE_PLAY;
 					listen = false;
+					break;
+				case KEY_y:
+					wld_mob_new_aberration(player);
 					break;
 				}
 				break;

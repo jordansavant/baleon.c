@@ -497,13 +497,20 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->is_destroy_queued = false;
 	mob->type = &wld_mobtypes[type];
 	mob->active_effects_length = 0;
-	mob->can_aberrate = false;
 
 	// create inventory (pointers to malloc items)
 	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
 	for (int j=0; j < INVENTORY_SIZE; j++) {
 		mob->inventory[j] = NULL;
 	}
+
+	// create pointers to aberrations
+	mob->can_aberrate = false;
+	mob->aberrations = (struct wld_aberration**)malloc(MAX_ABERRATIONS * sizeof(struct wld_aberration*));
+	for (int j=0; j < MAX_ABERRATIONS; j++) {
+		mob->aberrations[j] = NULL;
+	}
+	mob->aberrations_length = 0;
 
 	// stats TODO roll these in some sort of character rolling menu?
 	switch (type) {
@@ -698,6 +705,10 @@ struct wld_map* wld_new_map(int id, int difficulty, int width, int height)
 // frees mob memory
 void wld_delete_mob(struct wld_mob *mob)
 {
+	for (int j=0; j<MAX_ABERRATIONS; j++)
+		if (mob->aberrations[j] != NULL)
+			free(mob->aberrations[j]);
+	free(mob->aberrations);
 	for (int j=0; j<INVENTORY_SIZE; j++)
 		if (mob->inventory[j] != NULL)
 			free(mob->inventory[j]);
@@ -1572,6 +1583,40 @@ void wld_mob_inspect_inventory(struct wld_mob *mob, void (*inspect)(struct wld_i
 		if (item)
 			inspect(item);
 	}
+}
+
+void mutation_update_test(struct wld_mob *mob)
+{
+	dmlog("mutation update");
+}
+void mutation_apply_test(struct wld_mob *mob)
+{
+	dmlog("mutation apply");
+}
+
+void wld_mob_new_mutation(struct wld_mob *mob, struct wld_aberration *ab)
+{
+	dmlog("new mutation");
+	struct wld_mutation *mutation = &ab->mutations[ab->mutations_length];
+	snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "%s", "foo bar +2, -3 golden chick");
+	mutation->on_update = mutation_update_test;
+	mutation->on_apply = mutation_apply_test;
+	mutation->on_apply(mob);
+
+	ab->mutations_length++;
+}
+
+void wld_mob_new_aberration(struct wld_mob *mob)
+{
+	dmlog("new aberr");
+	struct wld_aberration *aberration = (struct wld_aberration*)malloc(sizeof(struct wld_aberration));
+	mob->current_aberration = aberration;
+	mob->aberrations[mob->aberrations_length] = aberration;
+	mob->aberrations_length++;
+	aberration->mutations_length = 0;
+
+	// form first mutation
+	wld_mob_new_mutation(mob, aberration);
 }
 
 // MOB METHODS END

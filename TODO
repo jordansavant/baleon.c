@@ -70,6 +70,21 @@ PLOT CURVE
 
 
 ABERRATION IDEAS
+struct mutation_type {
+	char *description;
+	on_mob_apply();
+	on_mob_update();
+}
+struct mutation {
+	mutation_type;
+	is_active;
+	// randomized values
+}
+struct aberration {
+	int index // player
+	struct mutation mutations[];
+}
+
 - unlock aberation ability at first levels
 - aberation meter when full you can consume enemies for an aberration
 	- enemy difficulties and flavors for aberation lists?
