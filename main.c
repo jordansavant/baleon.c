@@ -26,6 +26,8 @@
 #define SCOLOR_TARGET   12
 #define ECOLOR_HEAL_A	13
 #define ECOLOR_HEAL_B	14
+#define ECOLOR_DMG_A	15
+#define ECOLOR_DMG_B	16
 
 #define KEY_RETURN	10
 #define KEY_ESC		27
@@ -153,6 +155,8 @@ bool g_setup()
 	init_pair(SCOLOR_ALLBLACK,	COLOR_BLACK,	COLOR_BLACK);
 	init_pair(ECOLOR_HEAL_A,	COLOR_WHITE,	COLOR_GREEN);
 	init_pair(ECOLOR_HEAL_B,	COLOR_GREEN,	COLOR_WHITE);
+	init_pair(ECOLOR_DMG_A,		COLOR_WHITE,	COLOR_RED);
+	init_pair(ECOLOR_DMG_B,		COLOR_RED,	COLOR_WHITE);
 
 	// setup world colors
 	wld_setup();
@@ -953,15 +957,26 @@ void ps_draw_tile(int, int, unsigned long, int, bool);
 
 void map_on_effect(struct wld_map *map, struct wld_effect *effect)
 {
+	struct draw_struct ds = wld_map_get_drawstruct(map, effect->x, effect->y);
 	ui_clear_win(usepanel);
 	switch (effect->type) {
 	case EFFECT_HEAL: {
-			struct draw_struct ds = wld_map_get_drawstruct(map, effect->x, effect->y);
 			for (int i=0; i < effect->iterations; i++) {
 				if (i % 2 == 0)
 					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_A, false);
 				else
 					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_B, false);
+				ps_refresh_map_pad();
+				napms(100);
+			}
+		}
+		break;
+	case EFFECT_DMG_HIT: {
+			for (int i=0; i < effect->iterations; i++) {
+				if (i % 2 == 0)
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_A, false);
+				else
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_B, false);
 				ps_refresh_map_pad();
 				napms(100);
 			}

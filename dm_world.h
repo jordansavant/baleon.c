@@ -27,6 +27,7 @@ struct wld_mob_type;
 
 enum WLD_EFFECTTYPE {
 	EFFECT_HEAL,
+	EFFECT_DMG_HIT,
 };
 
 struct wld_effect {
@@ -316,7 +317,7 @@ struct wld_item* wld_map_get_item_at(struct wld_map *map, int x, int y);
 struct wld_item* wld_map_get_item_at_index(struct wld_map *map, int index);
 struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int y);
-void wld_map_effect(struct wld_map *map, struct wld_effect *effect);
+void wld_map_effect(struct wld_map *map, enum WLD_EFFECTTYPE type, int x, int y, int radius, int iterrations);
 
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);

@@ -1026,10 +1026,11 @@ struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int
 	return ds;
 }
 
-void wld_map_effect(struct wld_map *map, struct wld_effect *effect)
+void wld_map_effect(struct wld_map *map, enum WLD_EFFECTTYPE type, int x, int y, int radius, int iterrations)
 {
+	struct wld_effect e = { type, x, y, radius, iterrations };
 	if (map->on_effect)
-		map->on_effect(map, effect);
+		map->on_effect(map, &e);
 }
 
 // MAP METHODS END
@@ -1992,7 +1993,7 @@ double rpg_calc_melee_weapon_coh(struct wld_mob *aggressor, struct wld_item *wea
 	double dexf = (double)aggressor->stat_dexterity / (double)STAT_DEX_BASE;
 	double strf = (double)aggressor->stat_strength / STAT_STR_BASE;
 	double factor = ( strf + strf + dexf ) / 3; // two thirds strength
-	return .5 * factor;
+	return .75 * factor;
 }
 
 // ranged weapons
@@ -2010,7 +2011,7 @@ double rpg_calc_ranged_weapon_coh(struct wld_mob *aggressor, struct wld_item *we
 	double dexf = (double)aggressor->stat_dexterity / (double)STAT_DEX_BASE;
 	double strf = (double)aggressor->stat_strength / STAT_STR_BASE;
 	double factor = ( dexf + dexf + strf ) / 3; // two thirds dex
-	return .5 * dexf;
+	return .75 * dexf;
 }
 
 int rpg_calc_range_dist(struct wld_mob *aggressor, int base_range)
@@ -2078,6 +2079,7 @@ void itm_hit_melee_swordstyle(struct wld_item *weapon, struct wld_mob *user, str
 	if (dm_randf() < chance) {
 		int dmg = rpg_calc_melee_weapon_dmg(user, weapon, target);
 		ai_mob_attack_mob(user, target, dmg, weapon);
+		wld_map_effect(user->map, EFFECT_DMG_HIT, target->map_x, target->map_y, 1, 2);
 	} else {
 		// whiff event
 		ai_mob_whiff_mob(user, target, weapon);
@@ -2174,6 +2176,7 @@ void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, st
 	if (dm_randf() < chance) {
 		int dmg = rpg_calc_ranged_weapon_dmg(user, item, target);
 		ai_mob_attack_mob(user, target, dmg, item);
+		wld_map_effect(user->map, EFFECT_DMG_HIT, target->map_x, target->map_y, 1, 2);
 	} else {
 		// whiff event
 		ai_mob_whiff_mob(user, target, item);
@@ -2187,12 +2190,7 @@ void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user)
 	int hp = rpg_calc_alchemy_boost(user, item);
 	// int hp = rpg_calc_alchemy_boost(user, int min, int max); TODO
 	ai_mob_heal(user, hp, item);
-	struct wld_effect e = {
-		EFFECT_HEAL,
-		user->map_x, user->map_y,
-		1, 2
-	};
-	wld_map_effect(user->map, &e);
+	wld_map_effect(user->map, EFFECT_HEAL, user->map_x, user->map_y, 1, 2);
 }
 
 void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
@@ -2200,7 +2198,7 @@ void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld
 	struct wld_mob *target = wld_map_get_mob_at_index(user->map, tile->map_index);
 	int hp = dm_randf() * 10;
 	ai_mob_heal(target, hp, item);
-
+	wld_map_effect(user->map, EFFECT_HEAL, tile->map_x, tile->map_y, 1, 2);
 }
 
 
@@ -2363,6 +2361,7 @@ void itm_hit_ranged_aoe_bombstyle(struct wld_item *item, struct wld_mob *user, s
 			if (m) {
 				// TODO apply effects and damage here
 				ai_mob_attack_mob(user, m, dmg, item);
+				wld_map_effect(user->map, EFFECT_DMG_HIT, m->map_x, m->map_y, 1, 2);
 			}
 		}
 	}
