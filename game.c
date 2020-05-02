@@ -1035,9 +1035,9 @@ void map_on_effect(struct wld_map *map, struct wld_vfx *effect)
 	case VFX_HEAL: {
 			for (int i=0; i < 2; i++) {
 				if (i % 2 == 0)
-					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_A, false);
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_A, ' ', -1, false);
 				else
-					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_B, false);
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_B, ' ', -1, false);
 				ps_refresh_map_pad();
 				napms(100);
 			}
@@ -1046,9 +1046,9 @@ void map_on_effect(struct wld_map *map, struct wld_vfx *effect)
 	case VFX_DMG_HIT: {
 			for (int i=0; i < 2; i++) {
 				if (i % 2 == 0)
-					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_A, false);
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_A, ' ', -1, false);
 				else
-					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_B, false);
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_DMG_B, ' ', -1, false);
 				ps_refresh_map_pad();
 				napms(100);
 			}
@@ -1058,9 +1058,9 @@ void map_on_effect(struct wld_map *map, struct wld_vfx *effect)
 			dmlog("SUMMON");
 			for (int i=0; i < 2; i++) {
 				if (i % 2 == 0)
-					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_SUMMON_A, false);
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_SUMMON_A, ' ', -1, false);
 				else
-					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_SUMMON_B, false);
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_SUMMON_B, ' ', -1, false);
 				ps_refresh_map_pad();
 				napms(100);
 			}
@@ -1622,7 +1622,7 @@ void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius)
 }
 
 // r and c are world coords, translate them to map pad with border in mind
-void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold)
+void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, unsigned long cha2, int colorpair2, bool bold)
 {
 	int yborder = ui_map_border * map_rows_scale;
 	int xborder = ui_map_border * map_cols_scale;
@@ -1637,8 +1637,11 @@ void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold)
 	if (map_cols_scale > 1 || map_rows_scale > 1) {
 		for (int i=1; i < map_cols_scale; i++) {
 			wmove(map_pad, r * map_rows_scale + yborder, c * map_cols_scale + i + xborder);
-			wattrset(map_pad, COLOR_PAIR(colorpair));
-			waddch(map_pad, ' '); // pad
+			int second_cpair = colorpair;
+			if (colorpair2 != -1)
+				second_cpair = colorpair2;
+			wattrset(map_pad, COLOR_PAIR(second_cpair));
+			waddch(map_pad, cha2); // pad
 			// TODO, stopped working correctly after shadowcaster
 			//for (int j=1; j < map_rows_scale; j++) {
 			//	wmove(map_pad, r * map_rows_scale + j, c * map_cols_scale + i);
@@ -1701,11 +1704,11 @@ void ps_play_draw()
 
 			if (t->is_visible) {
 				struct draw_struct ds = wld_map_get_drawstruct(current_map, c, r);
-				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
+				ps_draw_tile(r, c, ds.sprite, ds.colorpair, ds.sprite_2, ds.colorpair_2, false);
 
 			} else if (t->was_visible) {
 				struct draw_struct ds = wld_map_get_drawstruct_memory(current_map, c, r);
-				ps_draw_tile(r, c, ds.sprite, ds.colorpair, false);
+				ps_draw_tile(r, c, ds.sprite, ds.colorpair, ds.sprite_2, ds.colorpair_2, false);
 			}
 		}
 	}
@@ -1720,9 +1723,9 @@ void ps_play_draw()
 			if (t->is_visible) {
 				struct draw_struct ds = wld_map_get_drawstruct(current_map, x, y);
 				if (t->dead_mob_type != NULL)
-					ps_draw_tile(t->map_y, t->map_x, ds.sprite, ds.colorpair, false);
+					ps_draw_tile(t->map_y, t->map_x, ds.sprite, ds.colorpair, ' ', -1, false);
 				else
-					ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, false);
+					ps_draw_tile(t->map_y, t->map_x, ds.sprite, SCOLOR_TARGET, ' ', -1, false);
 			}
 		}
 		wld_mob_inspect_targetables(current_map->player, inspect);

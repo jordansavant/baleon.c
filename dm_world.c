@@ -982,18 +982,29 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 {
 	struct wld_tile *t = wld_map_get_tile_at(map, x, y);
 	unsigned long cha = t->type->sprite;
+	unsigned long cha2 = ' ';
 	int mob_id = map->mob_map[t->map_index];
 	int item_id = map->item_map[t->map_index];
 
-	int colorpair;
+	int colorpair = -1;
+	int colorpair2 = -1;
 	struct wld_mob *m = wld_map_get_mob_at(map, x, y);
 	struct wld_item *i = wld_map_get_item_at(map, x, y);
 	bool dead_mob = t->dead_mob_type != NULL;
 	if (m && !m->is_dead) { // player is dead and not removed
 		// if mob use its fg sprite and fg color
+		colorpair = wld_cpair_tm(t->type->type, m->type->type);
 		if (m->type->sprite != ' ')
 			cha = m->type->sprite;
-		colorpair = wld_cpair_tm(t->type->type, m->type->type);
+		if (m->active_effects_length > 0) {
+			struct wld_effect *e = &m->active_effects[dm_randii(0, m->active_effects_length)];
+			cha2 = e->sprite;
+			if (e->bg_color != -1)
+				colorpair2 = wld_cpair(e->fg_color, e->bg_color);
+			else
+				colorpair2 = wld_cpair(e->fg_color, t->type->bg_color);
+		}
+
 	} else if(i) {
 		// if item  use its fg sprite and fg color
 		if (i->type->sprite != ' ')
@@ -1012,7 +1023,7 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 		colorpair = wld_cpair_tm(t->type->type, 0);
 	}
 
-	struct draw_struct ds = { colorpair, cha };
+	struct draw_struct ds = { colorpair, cha, cha2, colorpair2 };
 	return ds;
 }
 
@@ -1023,7 +1034,7 @@ struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int
 	unsigned long cha = t->type->memory_sprite;
 	int colorpair = wld_cpairmem(t->type->type);
 
-	struct draw_struct ds = { colorpair, cha };
+	struct draw_struct ds = { colorpair, cha, ' ', -1 };
 	return ds;
 }
 
@@ -1058,9 +1069,9 @@ void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT type, int x, int y)
 		m->active_effects[m->active_effects_length].iterations = 0;
 		switch (type) {
 			case EFFECT_FIRE:
-				m->active_effects[m->active_effects_length].sprite = '~';
-				m->active_effects[m->active_effects_length].fg_color = COLOR_RED;
-				m->active_effects[m->active_effects_length].bg_color = COLOR_YELLOW;
+				m->active_effects[m->active_effects_length].sprite = '^';
+				m->active_effects[m->active_effects_length].fg_color = WCLR_YELLOW;
+				m->active_effects[m->active_effects_length].bg_color = -1;
 				break;
 		}
 		m->active_effects_length++;
@@ -2409,7 +2420,7 @@ void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, st
 			struct wld_mob *m = wld_map_get_mob_at(user->map, x, y);
 			if (m) {
 				// TODO apply effects and damage here
-				ai_mob_attack_mob(user, m, dmg, item);
+				//ai_mob_attack_mob(user, m, dmg, item);
 				wld_map_vfx_dmg(user->map, m->map_x, m->map_y);
 				wld_map_add_effect(user->map, EFFECT_FIRE, m->map_x, m->map_y);
 				//wld_mob_add_effect(MOBEFF_FIRE);

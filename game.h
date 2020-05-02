@@ -159,7 +159,7 @@ void ps_reset_ui();
 void ps_build_ui();
 void ps_destroy_ui();
 void ps_play_draw_onvisible(struct wld_mob* mob, int x, int y, double radius);
-void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold);
+void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, unsigned long cha2, int cpair2, bool bold);
 void ps_refresh_map_pad();
 void ps_play_draw();
 void ps_play_update();

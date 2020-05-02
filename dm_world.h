@@ -25,6 +25,7 @@ struct wld_item;
 struct wld_mob;
 struct wld_mob_type;
 
+
 enum WLD_VISUAL_EFFECT {
 	VFX_HEAL,
 	VFX_DMG_HIT,
@@ -281,6 +282,8 @@ struct wld_map {
 struct draw_struct {
 	int colorpair;
 	unsigned long sprite;
+	unsigned long sprite_2;
+	int colorpair_2;
 };
 
 struct wld_world {
