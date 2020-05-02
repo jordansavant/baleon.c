@@ -501,7 +501,7 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 		wld_init_item(mob->inventory[2], ITEM_SCROLL_FIREBOMB);
 
 		mob->inventory[3] = (struct wld_item*)malloc(sizeof(struct wld_item));
-		wld_init_item(mob->inventory[3], ITEM_POTION_MINOR_HEAL);
+		wld_init_item(mob->inventory[3], ITEM_WEAPON_SHORTBOW);
 
 		mob->inventory[4] = (struct wld_item*)malloc(sizeof(struct wld_item));
 		wld_init_item(mob->inventory[4], ITEM_POTION_MINOR_HEAL);
@@ -2235,6 +2235,8 @@ void itm_hit_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* t
 
 // RANGED AOE
 // Throwing a bomb etc
+// its a bit deceiving to show it
+// going past enemies, it should stop if it sees one
 void itm_target_ranged_aoe(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int))
 {
 	// highlight a line from player to cursor, if something blocks the path then kill the line
@@ -2246,21 +2248,26 @@ void itm_target_ranged_aoe(struct wld_item *item, struct wld_mob *user, void(*in
 	int final_x = start_x;
 	int final_y = start_y;
 	bool is_blocked(int x, int y) {
-		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
-
 		// stop at tiles outside of the range of the item
 		int dist = dm_disti(user->map_x, user->map_y, x, y);
 		if (dist > allowed_range)
 			return true;
 
+		// stop at position of another mob
+		struct wld_mob *m = wld_map_get_mob_at(user->map, x, y);
+		if (m && !m->is_dead && m != user)
+			return true;
+
+		// stop at a blocked tile
+		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
 		return wld_tile_is_blocked_movement(t) || !t->is_visible;
 	}
 	void on_visible(int x, int y) {
 		if (x == start_x && y == start_y) // ignore origin position
 			return;
-		inspect(x, y);
 		final_x = x;
 		final_y = y;
+		inspect(x, y);
 	}
 	dm_bresenham(start_x, start_y, end_x, end_y, is_blocked, on_visible);
 
@@ -2268,6 +2275,7 @@ void itm_target_ranged_aoe(struct wld_item *item, struct wld_mob *user, void(*in
 	int blast_radius = item->type->base_radius;
 	bool sc_isblocked(int x, int y)
 	{
+		// only block shadowcast for blocked tiles
 		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
 		return wld_tile_is_blocked_movement(t);
 	}
