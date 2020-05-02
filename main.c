@@ -24,6 +24,8 @@
 #define SCOLOR_BLOOD    10
 #define SCOLOR_ALLBLACK 11
 #define SCOLOR_TARGET   12
+#define ECOLOR_HEAL_A	13
+#define ECOLOR_HEAL_B	14
 
 #define KEY_RETURN	10
 #define KEY_ESC		27
@@ -149,6 +151,8 @@ bool g_setup()
 	init_pair(SCOLOR_TARGET,	COLOR_BLACK,	COLOR_YELLOW);
 	init_pair(SCOLOR_BLOOD,		COLOR_BLACK,	COLOR_RED);
 	init_pair(SCOLOR_ALLBLACK,	COLOR_BLACK,	COLOR_BLACK);
+	init_pair(ECOLOR_HEAL_A,	COLOR_WHITE,	COLOR_GREEN);
+	init_pair(ECOLOR_HEAL_B,	COLOR_GREEN,	COLOR_WHITE);
 
 	// setup world colors
 	wld_setup();
@@ -943,6 +947,29 @@ void ui_use_item_select(struct wld_mob* player, int item_slot)
 ///////////////////////////
 // MAP EVENT SUBSCRIPTIONS
 
+void ps_play_draw();
+void ps_refresh_map_pad();
+void ps_draw_tile(int, int, unsigned long, int, bool);
+
+void map_on_effect(struct wld_map *map, struct wld_effect *effect)
+{
+	ui_clear_win(usepanel);
+	switch (effect->type) {
+	case EFFECT_HEAL: {
+			struct draw_struct ds = wld_map_get_drawstruct(map, effect->x, effect->y);
+			for (int i=0; i < effect->iterations; i++) {
+				if (i % 2 == 0)
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_A, false);
+				else
+					ps_draw_tile(effect->y, effect->x, ds.sprite, ECOLOR_HEAL_B, false);
+				ps_refresh_map_pad();
+				napms(100);
+			}
+		}
+		break;
+	}
+}
+
 void map_on_player_transition(struct wld_map *map, struct wld_mob *player, bool forward)
 {
 	if (forward) {
@@ -1335,6 +1362,8 @@ void ps_on_mapchange()
 	// World is large indexed map to start
 	map_pad = newpad(current_map->rows * map_rows_scale + ui_map_border * 2, current_map->cols * map_cols_scale + ui_map_border * 2); // pad extra two for us two draw black around the edges
 
+	current_map->on_effect = map_on_effect;
+
 	current_map->on_player_map_transition = map_on_player_transition;
 	current_map->on_cursormove = map_on_cursormove;
 	current_map->on_playermove = map_on_playermove;
@@ -1506,6 +1535,30 @@ void ps_draw_tile(int r, int c, unsigned long cha, int colorpair, bool bold)
 		}
 	}
 }
+
+void ps_refresh_map_pad()
+{
+	// lets calculate where to offset the pad
+	// we need to shift the pad if the player is within X range of a map edge
+	int plyrpad_x = current_map->player->map_x;
+	int plyrpad_y = current_map->player->map_y;
+
+	int shiftpad_x = 0, shiftpad_y = 0, shiftwin_x = 0, shiftwin_y = 0;
+	int paddingx = ui_map_padding * map_cols_scale;
+	int paddingy = ui_map_padding * map_rows_scale;
+	if (plyrpad_x < paddingx)
+		shiftwin_x += paddingx - plyrpad_x * map_cols_scale;
+	if (plyrpad_x * map_cols_scale > ui_map_cols - paddingx)
+		shiftpad_x += paddingx + (plyrpad_x * map_cols_scale - ui_map_cols);
+	if (plyrpad_y < paddingy)
+		shiftwin_y += paddingy - plyrpad_y * map_rows_scale;
+	if (plyrpad_y * map_rows_scale > ui_map_rows - paddingy)
+		shiftpad_y += paddingy + (plyrpad_y * map_rows_scale - ui_map_rows);
+
+	refresh(); // has to be called before prefresh for some reason?
+	prefresh(map_pad, 0 + shiftpad_y, 0 + shiftpad_x, 0 + shiftwin_y, 0 + shiftwin_x, ui_map_rows, ui_map_cols);
+}
+
 void ps_play_draw()
 {
 	// do not clear, it causes awful redraw
@@ -1570,25 +1623,7 @@ void ps_play_draw()
 	unsigned long ch = mvwinch(map_pad, current_map->cursor->y * map_rows_scale + yborder, current_map->cursor->x * map_cols_scale + xborder) & A_CHARTEXT;
 	waddch(map_pad, ch);
 
-	// lets calculate where to offset the pad
-	// we need to shift the pad if the player is within X range of a map edge
-	int plyrpad_x = current_map->player->map_x;
-	int plyrpad_y = current_map->player->map_y;
-
-	int shiftpad_x = 0, shiftpad_y = 0, shiftwin_x = 0, shiftwin_y = 0;
-	int paddingx = ui_map_padding * map_cols_scale;
-	int paddingy = ui_map_padding * map_rows_scale;
-	if (plyrpad_x < paddingx)
-		shiftwin_x += paddingx - plyrpad_x * map_cols_scale;
-	if (plyrpad_x * map_cols_scale > ui_map_cols - paddingx)
-		shiftpad_x += paddingx + (plyrpad_x * map_cols_scale - ui_map_cols);
-	if (plyrpad_y < paddingy)
-		shiftwin_y += paddingy - plyrpad_y * map_rows_scale;
-	if (plyrpad_y * map_rows_scale > ui_map_rows - paddingy)
-		shiftpad_y += paddingy + (plyrpad_y * map_rows_scale - ui_map_rows);
-
-	refresh(); // has to be called before prefresh for some reason?
-	prefresh(map_pad, 0 + shiftpad_y, 0 + shiftpad_x, 0 + shiftwin_y, 0 + shiftwin_x, ui_map_rows, ui_map_cols);
+	ps_refresh_map_pad();
 
 	// UI constants (needs to be done in an event?)
 	ui_update_logpanel(current_map);

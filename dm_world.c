@@ -1026,6 +1026,12 @@ struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int
 	return ds;
 }
 
+void wld_map_effect(struct wld_map *map, struct wld_effect *effect)
+{
+	if (map->on_effect)
+		map->on_effect(map, effect);
+}
+
 // MAP METHODS END
 ///////////////////////////
 
@@ -1986,7 +1992,6 @@ double rpg_calc_melee_weapon_coh(struct wld_mob *aggressor, struct wld_item *wea
 	double dexf = (double)aggressor->stat_dexterity / (double)STAT_DEX_BASE;
 	double strf = (double)aggressor->stat_strength / STAT_STR_BASE;
 	double factor = ( strf + strf + dexf ) / 3; // two thirds strength
-	dmlogf("coh melee", factor);
 	return .5 * factor;
 }
 
@@ -2005,7 +2010,6 @@ double rpg_calc_ranged_weapon_coh(struct wld_mob *aggressor, struct wld_item *we
 	double dexf = (double)aggressor->stat_dexterity / (double)STAT_DEX_BASE;
 	double strf = (double)aggressor->stat_strength / STAT_STR_BASE;
 	double factor = ( dexf + dexf + strf ) / 3; // two thirds dex
-	dmlogf("coh range", factor);
 	return .5 * dexf;
 }
 
@@ -2183,6 +2187,12 @@ void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user)
 	int hp = rpg_calc_alchemy_boost(user, item);
 	// int hp = rpg_calc_alchemy_boost(user, int min, int max); TODO
 	ai_mob_heal(user, hp, item);
+	struct wld_effect e = {
+		EFFECT_HEAL,
+		user->map_x, user->map_y,
+		1, 2
+	};
+	wld_map_effect(user->map, &e);
 }
 
 void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
@@ -2190,6 +2200,7 @@ void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld
 	struct wld_mob *target = wld_map_get_mob_at_index(user->map, tile->map_index);
 	int hp = dm_randf() * 10;
 	ai_mob_heal(target, hp, item);
+
 }
 
 

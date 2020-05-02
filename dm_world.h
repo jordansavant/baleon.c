@@ -25,6 +25,18 @@ struct wld_item;
 struct wld_mob;
 struct wld_mob_type;
 
+enum WLD_EFFECTTYPE {
+	EFFECT_HEAL,
+};
+
+struct wld_effect {
+	enum WLD_EFFECTTYPE type;
+	int x, y;
+	int radius;
+	int iterations;
+};
+
+
 ///////////////////////////
 // TILE STRUCTS
 
@@ -222,6 +234,8 @@ struct wld_map {
 	struct wld_tile* exit_tile;
 
 	// function pointers game subscribes to for events
+	void (*on_effect)(struct wld_map *map, struct wld_effect *effect);
+
 	void (*on_player_map_transition)(struct wld_map*, struct wld_mob *mob, bool forward);
 	void (*on_cursormove)(struct wld_map*, int x, int y, int index);
 	void (*on_playermove)(struct wld_map*, struct wld_mob *, int x, int y, int index);
@@ -302,6 +316,7 @@ struct wld_item* wld_map_get_item_at(struct wld_map *map, int x, int y);
 struct wld_item* wld_map_get_item_at_index(struct wld_map *map, int index);
 struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int y);
+void wld_map_effect(struct wld_map *map, struct wld_effect *effect);
 
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);

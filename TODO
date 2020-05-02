@@ -1,17 +1,17 @@
 TODO:
 
 now
-- item damage ranges
-	- ranged rpg etc
 - item effects (active effects)
 	- second space title for effects?
-- body fade over time
-- ui: target mode state w/ keyhints
 - ui: equipped items
+- ui: stats / panels
+- rpg defense calculations?
 - reorganize code
 	- make sure world funcs are in world h
 	- game.h and game.c?
 		- game_ui ?
+
+aberration
 
 
 later
@@ -40,6 +40,7 @@ later
 - version in menu
 
 no use cases yet
+- body fade over time
 - mobs drop items?
 - ? can your close a door ?
 - teleport
