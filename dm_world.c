@@ -30,7 +30,7 @@ int curses_colors[] = {
 struct wld_tiletype *wld_tiletypes;
 struct wld_mobtype *wld_mobtypes;
 struct wld_itemtype *wld_itemtypes;
-
+struct wld_effecttype *wld_effecttypes;
 
 
 ///////////////////////////
@@ -326,10 +326,26 @@ void wld_setup()
 		wld_itemtypes[i].use_text_1 = its[i].use_text_1;
 		wld_itemtypes[i].use_text_2 = its[i].use_text_2;
 	}
+
+	// Copy effect types into malloc
+	struct wld_effecttype ets [] = {
+		// hp, sprite, color, desc, title
+		{ EFFECT_FIRE,    5, '^', WCLR_YELLOW, -1, wld_effect_on_fire }
+	};
+	wld_effecttypes = (struct wld_effecttype*)malloc(ARRAY_SIZE(ets) * sizeof(struct wld_effecttype));
+	for (int i=0; i<ARRAY_SIZE(ets); i++) {
+		wld_effecttypes[i].type = ets[i].type;
+		wld_effecttypes[i].iterations = ets[i].iterations;
+		wld_effecttypes[i].sprite = ets[i].sprite;
+		wld_effecttypes[i].fg_color = ets[i].fg_color;
+		wld_effecttypes[i].bg_color = ets[i].bg_color;
+		wld_effecttypes[i].on_update_mob = ets[i].on_update_mob;
+	}
 }
 
 void wld_teardown()
 {
+	free(wld_effecttypes);
 	free(wld_itemtypes);
 	free(wld_mobtypes);
 	free(wld_tiletypes);
@@ -998,11 +1014,11 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 			cha = m->type->sprite;
 		if (m->active_effects_length > 0) {
 			struct wld_effect *e = &m->active_effects[dm_randii(0, m->active_effects_length)];
-			cha2 = e->sprite;
-			if (e->bg_color != -1)
-				colorpair2 = wld_cpair(e->fg_color, e->bg_color);
+			cha2 = e->type->sprite;
+			if (e->type->bg_color != -1)
+				colorpair2 = wld_cpair(e->type->fg_color, e->type->bg_color);
 			else
-				colorpair2 = wld_cpair(e->fg_color, t->type->bg_color);
+				colorpair2 = wld_cpair(e->type->fg_color, t->type->bg_color);
 		}
 
 	} else if(i) {
@@ -1075,17 +1091,9 @@ void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT type, int x, int y)
 			m->active_effects_length++;
 		}
 		if (effect_slot != -1) {
-			m->active_effects[effect_slot].type = type;
+			m->active_effects[effect_slot].type = wld_get_effectype(type);
 			m->active_effects[effect_slot].is_active = true;
-			m->active_effects[effect_slot].iterations = 0;
-			switch (type) {
-				case EFFECT_FIRE:
-					m->active_effects[effect_slot].sprite = '^';
-					m->active_effects[effect_slot].fg_color = WCLR_YELLOW;
-					m->active_effects[effect_slot].bg_color = -1;
-					m->active_effects[effect_slot].on_update_mob = wld_effect_on_fire;
-					break;
-			}
+			m->active_effects[effect_slot].current_iterations = 0;
 		}
 	}
 }
@@ -1100,13 +1108,13 @@ void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT type, int x, int y)
 void wld_effect_on_fire(struct wld_effect *effect, struct wld_mob *mob)
 {
 	// TODO RPG fire resistance
-	int max_iterations = 5;
-	if (effect->iterations < max_iterations) {
+	if (effect->current_iterations < effect->type->iterations) {
 		ai_effect_attack_mob(effect, mob, dm_randii(1, 4));
+		effect->current_iterations++;
 	} else {
+		dmlog("deactivate fire");
 		effect->is_active = false;
 	}
-
 }
 // EFFECTS END
 ///////////////////////////
@@ -1201,6 +1209,10 @@ struct wld_mobtype* wld_get_mobtype(int id)
 struct wld_itemtype* wld_get_itemtype(int id)
 {
 	return &wld_itemtypes[id];
+}
+struct wld_effecttype* wld_get_effectype(int id)
+{
+	return &wld_effecttypes[id];
 }
 int wld_cpair(enum WLD_COLOR_INDEX a, enum WLD_COLOR_INDEX b)
 {
@@ -2033,10 +2045,9 @@ void wld_update_mob(struct wld_mob *mob)
 
 	// apply effects
 	for (int i=0; i < mob->active_effects_length; i++) {
-		dmlogi("update active effect", i);
 		struct wld_effect *effect = &mob->active_effects[i];
-		if (effect->is_active && effect->on_update_mob) {
-			effect->on_update_mob(effect, mob);
+		if (effect->is_active) {
+			effect->type->on_update_mob(effect, mob);
 		}
 	}
 }
