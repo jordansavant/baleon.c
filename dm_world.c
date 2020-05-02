@@ -497,6 +497,7 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->is_destroy_queued = false;
 	mob->type = &wld_mobtypes[type];
 	mob->active_effects_length = 0;
+	mob->can_aberrate = false;
 
 	// create inventory (pointers to malloc items)
 	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));

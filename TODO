@@ -1,26 +1,15 @@
 TODO:
 
 now
-- make effect types that model after other types
-	- effect objects can be on the fly structs
-	- with type pointers that can have titles
-	- etc
+- ui: equipped items
+- ui: stats / panels
+- rpg defense calculations?
+
+later
 - fire tile for grass on fire
 	- run on updates on tiles
 	- convert them to a tile for a while
 	- then convert them back?
-- ui: equipped items
-- ui: stats / panels
-- rpg defense calculations?
-- reorganize code
-	- make sure world funcs are in world h
-	- game.h and game.c?
-		- game_ui ?
-
-aberration
-
-
-later
 - hide keys better
 - rpg:
 	- dex based coh?
@@ -39,28 +28,81 @@ later
 - bug: tunnels are getting stubbed out in little groups and thus not collapsing
 - bug: tunnels can exist in closed loops in the middle of nowhere
 - ranged point test item
-- rpg rules, visions, aberrations
 - gameover
 - win screen
 - seed in menu
-- version in menu
+- version in start
 
 no use cases yet
 - body fade over time
 - mobs drop items?
 - ? can your close a door ?
 - teleport
-- game effects
-	- during call back loop special function that renders tile changes
-	- runs in a small timer loop for effects
-	- damage, projectiles, explosions
-- destructable terrain?
 
 scope creep
+- destructable terrain?
+- fall pits you can fall to next dungeon point
+	- not into walls
+	- not into isolated rooms
 - input recorder?
 - return of mouse cursor?
 	- i think this was alleviated with tab controls
 
+PLOT CURVE
+- intro levels
+	- story: intro birth of the "aberrant one"
+	- introduce base mechanics
+	- are primitive enemies
+	- basic treasures
+- early levels
+	- story: aberations and evolutions
+	- first aberrations
+	- machinated rooms
+- mid levels
+	- story: history of men and baleon
+	- story: baleon's shadow appears (you are defeated?)
+	- harder enemies and machinations
+	- ltnt bosses
+- late levels
+	- story: baleon's weakness
+- final level
+	- story: baleon's battle
+
+
+ABERRATION IDEAS
+- unlock aberation ability at first levels
+- aberation meter when full you can consume enemies for an aberration
+	- enemy difficulties and flavors for aberation lists?
+- press your luck game begins
+	- you receive a random positive or negative condition
+	- you can continue to mutate up to X number of times
+	- each time adds another aberration effect
+negatives:
+- catch fire randomly
+- shortened vision (randomly)?
+- all enemy X type appear as Y type
+- stat A is swapped with stat B
+- throw distance is 2
+- randomly lose an inventory item
+- forget portions of the dungeon randomly
+- cannot heal from alchemy
+- water is toxic
+- double negatives of effect A
+- cannot fly
+- cannot range attack less than 5
+positives:
+- increased vision
+- increased stat X
+- improved hearing, unveil random mob positions beyond vision
+- enemies react to combat slower
+- heal X more per turn
+- effect A invulnerable
+- increased inventory size
+- can throw melee weapons
+- randomly (automatically) find a dungeon key
+- enemy type A flee in fear constantly
+- can eat keys to restore health
+- negate all fall damage
 
 
 CORE MECHANIC:

@@ -133,6 +133,7 @@ enum MODE {
 	MODE_PLAY,
 	MODE_INVENTORY,
 	MODE_USE,
+	MODE_ABERRATE,
 };
 enum TARGET_MODE {
 	TMODE_NONE,
@@ -175,6 +176,7 @@ struct wld_mob {
 	int target_x, target_y;
 	struct wld_item *active_item;
 	bool is_destroy_queued;
+	bool can_aberrate;
 
 	int stat_strength;
 	int stat_dexterity;

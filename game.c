@@ -95,6 +95,7 @@ WINDOW* logpanel;
 WINDOW* mobpanel;
 WINDOW* inventorypanel;
 WINDOW* usepanel;
+WINDOW* aberratepanel;
 enum USE_TYPE use_type = USE_NONE;
 struct wld_item *use_item = NULL;
 int use_item_slot = -1;
@@ -105,6 +106,7 @@ int use_item_slot = -1;
 #define INV_LENGTH 48
 #define INV_ITEM_LENGTH 46
 #define USE_LENGTH 58
+#define ABE_LENGTH 58
 #define VIS_LENGTH 30
 #define CMD_LENGTH 100
 char logs[LOG_COUNT][LOG_LENGTH];
@@ -196,9 +198,6 @@ void g_newgame()
 		case PS_PLAY:
 			// draw world
 			ps_play_draw();
-
-			// capture play input
-			//ps_play_input();
 
 			// update world
 			ps_play_update();
@@ -717,6 +716,7 @@ void ui_update_cmdpanel(struct wld_map *map)
 	char buffer[CMD_LENGTH]; // length of cmd bar
 	buffer[0] = '\0';
 	if (current_map->player->mode == MODE_PLAY) {
+		struct wld_tile *t = wld_map_get_tile_at_index(current_map, current_map->player->map_index);
 		if (current_map->player->target_mode == TMODE_ACTIVE) {
 			strncat(buffer, "  x: exit", 9);
 		} else {
@@ -724,6 +724,9 @@ void ui_update_cmdpanel(struct wld_map *map)
 		}
 		if (ai_can_get(current_map->player, 0, 0)) {
 			strncat(buffer, "  g: get", 8);
+		}
+		if (t->dead_mob_type && current_map->player->can_aberrate) {
+			strncat(buffer, "  b: aberrate", 13);
 		}
 	}
 
@@ -973,6 +976,16 @@ void ui_update_inventorypanel(struct wld_map *map)
 		ui_box_color(inventorypanel, TCOLOR_YELLOW);
 		wrefresh(inventorypanel);
 	}
+}
+
+void ui_update_aberratepanel(struct wld_map *map)
+{
+	ui_write(aberratepanel, 0, "----------------------- Aberration -----------------------");
+	ui_write(aberratepanel, 2, "Looking at the dead beneath your feet the lust for");
+	ui_write(aberratepanel, 3, "evolution and mutation grows. Do you wish to consume?");
+	ui_write(aberratepanel, 5, "y: yes  n: no");
+	ui_box(aberratepanel);
+	wrefresh(aberratepanel);
 }
 
 void ui_update_usepanel(struct wld_map *map)
@@ -1244,6 +1257,11 @@ void ai_player_input(struct wld_mob* player)
 						wld_cheat_teleport_exit(player->map, player);
 						listen = false;
 						break;
+					case KEY_F(2):
+						// enable aberate
+						current_map->player->can_aberrate = true;
+						listen = false;
+						break;
 					// Player movement
 					case KEY_BACKSPACE:
 						play_state = PS_MENU;
@@ -1319,6 +1337,16 @@ void ai_player_input(struct wld_mob* player)
 						// enter inventory management mode
 						player->mode = MODE_INVENTORY;
 						ui_clear_win(mobpanel);
+						listen = false;
+						break;
+					case KEY_b:
+						// enter aberration mode
+						if (player->can_aberrate) {
+							struct wld_tile *t = wld_map_get_tile_at_index(player->map, player->map_index);
+							if (t->dead_mob_type) {
+								player->mode = MODE_ABERRATE;
+							}
+						}
 						listen = false;
 						break;
 					}
@@ -1429,6 +1457,17 @@ void ai_player_input(struct wld_mob* player)
 				case KEY_0: ui_use_item_select(player, 11); listen = false; break;
 				}
 				break; // eo MODE INVENTORY
+			case MODE_ABERRATE:
+				switch (key) {
+				case KEY_ESC:
+				case KEY_x:
+					ui_unset_use();
+					ui_clear_win(aberratepanel);
+					player->mode = MODE_PLAY;
+					listen = false;
+					break;
+				}
+				break;
 			case MODE_USE:
 				// EXIT USE MODE
 				switch (key) {
@@ -1598,6 +1637,11 @@ void ps_layout_ui()
 	int cmdpanel_rows = 1;
 	ui_anchor_bl(cmdpanel, cmdpanel_rows, cmdpanel_cols, - logpanel_rows, 0);
 
+	// aberrate panel
+	int aberratepanel_cols = ABE_LENGTH + 4;
+	int aberratepanel_rows = 16;
+	ui_anchor_center(aberratepanel, aberratepanel_rows, aberratepanel_cols, -(logpanel_rows / 2), 0);
+	ui_box(aberratepanel);
 }
 
 // this is called when window resize event happens
@@ -1620,6 +1664,7 @@ void ps_build_ui()
 	mobpanel = newwin(0, 0, 0, 0);
 	inventorypanel = newwin(0, 0, 0, 0);
 	usepanel = newwin(0, 0, 0, 0);
+	aberratepanel = newwin(0, 0, 0, 0);
 
 	ps_layout_ui();
 
@@ -1628,6 +1673,7 @@ void ps_build_ui()
 
 void ps_destroy_ui()
 {
+	delwin(aberratepanel);
 	delwin(usepanel);
 	delwin(inventorypanel);
 	delwin(mobpanel);
@@ -1782,6 +1828,8 @@ void ps_play_draw()
 		ui_update_inventorypanel(current_map);
 	if (current_map->player->mode == MODE_USE)
 		ui_update_usepanel(current_map);
+	if (current_map->player->mode == MODE_ABERRATE)
+		ui_update_aberratepanel(current_map);
 }
 
 void ps_play_update()
