@@ -38,6 +38,21 @@ struct wld_vfx {
 };
 
 
+// EFFECTS LIKE FIRE
+
+enum WLD_EFFECT {
+	EFFECT_FIRE,
+};
+
+struct wld_effect {
+	enum WLD_EFFECT type;
+	bool is_active;
+	int iterations;
+	unsigned long sprite;
+	int fg_color, bg_color;
+};
+
+
 ///////////////////////////
 // TILE STRUCTS
 
@@ -154,6 +169,9 @@ struct wld_mob {
 	int stat_strength;
 	int stat_dexterity;
 	int stat_constitution;
+
+	struct wld_effect active_effects[10];
+	int active_effects_length;
 };
 
 
@@ -319,6 +337,7 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int y);
 void wld_map_vfx_heal(struct wld_map *map, int x, int y);
 void wld_map_vfx_dmg(struct wld_map *map, int x, int y);
+void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT, int x, int y);
 
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);

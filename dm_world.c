@@ -479,6 +479,7 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->active_item = NULL;
 	mob->is_destroy_queued = false;
 	mob->type = &wld_mobtypes[type];
+	mob->active_effects_length = 0;
 
 	// create inventory (pointers to malloc items)
 	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
@@ -1045,6 +1046,25 @@ void wld_map_vfx_summon(struct wld_map *map, int x, int y)
 	struct wld_vfx e = { VFX_SUMMON, x, y, 1 };
 	if (map->on_effect)
 		map->on_effect(map, &e);
+}
+
+void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT type, int x, int y)
+{
+	dmlog("add effect");
+	struct wld_mob* m = wld_map_get_mob_at(map, x, y);
+	if (m) {
+		m->active_effects[m->active_effects_length].type = type;
+		m->active_effects[m->active_effects_length].is_active = true;
+		m->active_effects[m->active_effects_length].iterations = 0;
+		switch (type) {
+			case EFFECT_FIRE:
+				m->active_effects[m->active_effects_length].sprite = '~';
+				m->active_effects[m->active_effects_length].fg_color = COLOR_RED;
+				m->active_effects[m->active_effects_length].bg_color = COLOR_YELLOW;
+				break;
+		}
+		m->active_effects_length++;
+	}
 }
 
 // MAP METHODS END
@@ -1952,6 +1972,11 @@ void wld_update_mob(struct wld_mob *mob)
 	wld_mob_move(mob, mob->queue_x, mob->queue_y, true);
 	mob->queue_x = 0;
 	mob->queue_y = 0;
+
+	// apply effects
+	for (int i=0; i < mob->active_effects_length; i++) {
+		dmlogi("update active effect", i);
+	}
 }
 
 // MOB AI END
@@ -2298,6 +2323,7 @@ void itm_target_ranged_aoe(struct wld_item *item, struct wld_mob *user, void(*in
 		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
 		if (t->dm_ss_id != ss_id && radius <= blast_radius) {
 			inspect(x, y);
+			t->dm_ss_id = ss_id;
 		}
 	}
 	dm_shadowcast(final_x, final_y, user->map->cols, user->map->rows, blast_radius, sc_isblocked, sc_onvisible, false); // no leakage allowed
@@ -2379,11 +2405,13 @@ void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, st
 
 		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
 		if (t->dm_ss_id != ss_id && radius <= blast_radius) {
+			t->dm_ss_id = ss_id;
 			struct wld_mob *m = wld_map_get_mob_at(user->map, x, y);
 			if (m) {
 				// TODO apply effects and damage here
 				ai_mob_attack_mob(user, m, dmg, item);
 				wld_map_vfx_dmg(user->map, m->map_x, m->map_y);
+				wld_map_add_effect(user->map, EFFECT_FIRE, m->map_x, m->map_y);
 				//wld_mob_add_effect(MOBEFF_FIRE);
 			}
 		}
