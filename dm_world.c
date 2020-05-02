@@ -1026,21 +1026,21 @@ struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int
 	return ds;
 }
 
-void wld_map_effect_heal(struct wld_map *map, int x, int y)
+void wld_map_vfx_heal(struct wld_map *map, int x, int y)
 {
 	struct wld_vfx e = { VFX_HEAL, x, y, 1 };
 	if (map->on_effect)
 		map->on_effect(map, &e);
 }
 
-void wld_map_effect_dmg(struct wld_map *map, int x, int y)
+void wld_map_vfx_dmg(struct wld_map *map, int x, int y)
 {
 	struct wld_vfx e = { VFX_DMG_HIT, x, y, 1 };
 	if (map->on_effect)
 		map->on_effect(map, &e);
 }
 
-void wld_map_effect_summon(struct wld_map *map, int x, int y)
+void wld_map_vfx_summon(struct wld_map *map, int x, int y)
 {
 	struct wld_vfx e = { VFX_SUMMON, x, y, 1 };
 	if (map->on_effect)
@@ -1092,7 +1092,7 @@ void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* ti
 					gen_mob_jackal(map, node->map_x, node->map_y);
 					node->type = wld_get_tiletype(TILE_SUMMONCIRCLE_NODE);
 					summoned = true;
-					wld_map_effect_summon(map, node->map_x, node->map_y);
+					wld_map_vfx_summon(map, node->map_x, node->map_y);
 				}
 			}
 			if (summoned)
@@ -2094,7 +2094,7 @@ void itm_hit_melee_swordstyle(struct wld_item *weapon, struct wld_mob *user, str
 	if (dm_randf() < chance) {
 		int dmg = rpg_calc_melee_weapon_dmg(user, weapon, target);
 		ai_mob_attack_mob(user, target, dmg, weapon);
-		wld_map_effect_dmg(user->map, target->map_x, target->map_y);
+		wld_map_vfx_dmg(user->map, target->map_x, target->map_y);
 	} else {
 		// whiff event
 		ai_mob_whiff_mob(user, target, weapon);
@@ -2191,7 +2191,7 @@ void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, st
 	if (dm_randf() < chance) {
 		int dmg = rpg_calc_ranged_weapon_dmg(user, item, target);
 		ai_mob_attack_mob(user, target, dmg, item);
-		wld_map_effect_dmg(user->map, target->map_x, target->map_y);
+		wld_map_vfx_dmg(user->map, target->map_x, target->map_y);
 	} else {
 		// whiff event
 		ai_mob_whiff_mob(user, target, item);
@@ -2204,7 +2204,7 @@ void itm_drink_minorhealth(struct wld_item *item, struct wld_mob *user)
 	// TODO minor vs major healing levels
 	int hp = rpg_calc_alchemy_boost(user, item);
 	ai_mob_heal(user, hp, item);
-	wld_map_effect_heal(user->map, user->map_x, user->map_y);
+	wld_map_vfx_heal(user->map, user->map_x, user->map_y);
 }
 
 void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
@@ -2212,7 +2212,7 @@ void itm_hit_minorhealth(struct wld_item *item, struct wld_mob *user, struct wld
 	struct wld_mob *target = wld_map_get_mob_at_index(user->map, tile->map_index);
 	int hp = dm_randf() * 10;
 	ai_mob_heal(target, hp, item);
-	wld_map_effect_heal(user->map, tile->map_x, tile->map_y);
+	wld_map_vfx_heal(user->map, tile->map_x, tile->map_y);
 }
 
 
@@ -2383,7 +2383,7 @@ void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, st
 			if (m) {
 				// TODO apply effects and damage here
 				ai_mob_attack_mob(user, m, dmg, item);
-				wld_map_effect_dmg(user->map, m->map_x, m->map_y);
+				wld_map_vfx_dmg(user->map, m->map_x, m->map_y);
 				//wld_mob_add_effect(MOBEFF_FIRE);
 			}
 		}

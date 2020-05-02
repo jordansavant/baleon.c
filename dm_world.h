@@ -317,8 +317,8 @@ struct wld_item* wld_map_get_item_at(struct wld_map *map, int x, int y);
 struct wld_item* wld_map_get_item_at_index(struct wld_map *map, int index);
 struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int y);
-void wld_map_effect_heal(struct wld_map *map, int x, int y);
-void wld_map_effect_dmg(struct wld_map *map, int x, int y);
+void wld_map_vfx_heal(struct wld_map *map, int x, int y);
+void wld_map_vfx_dmg(struct wld_map *map, int x, int y);
 
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
@@ -359,7 +359,6 @@ bool wld_mob_drop_item(struct wld_mob*, int);
 void wld_mob_inspect_melee(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
-//void wld_mob_add_effect(struct wld_mob*, WLD_MOBEFFECT type);
 
 // MOB AI
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
