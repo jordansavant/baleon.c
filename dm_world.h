@@ -2,6 +2,7 @@
 #define DM_WORLD
 
 #include "dm_defines.h"
+#include "dm_algorithm.h"
 #include "dm_dungeon.h"
 
 #define INVENTORY_SIZE 12
@@ -127,6 +128,7 @@ struct wld_tile {
 	// on_enter, on_leave events
 	void(*on_mob_enter)(struct wld_map*, struct wld_tile*, struct wld_mob*); // TODO left off here
 	unsigned int dm_ss_id; // shadowcast id
+	struct dm_astarnode *astar_node;
 };
 
 
@@ -197,6 +199,7 @@ struct wld_mob {
 	int target_x, target_y;
 	struct wld_item *active_item;
 	bool is_destroy_queued;
+	double flee_threshold;
 
 	int stat_strength;
 	int stat_dexterity;
@@ -382,6 +385,10 @@ void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT, int x, int y);
 // EFFECTS
 void wld_effect_on_fire(struct wld_effect *effect, struct wld_mob *mob);
 
+// TILE METHODS
+int wld_tile_get_x(struct dm_astarnode *astar_node);
+int wld_tile_get_y(struct dm_astarnode *astar_node);
+
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
 void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
@@ -424,14 +431,15 @@ void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
 void wld_mob_new_aberration(struct wld_mob *mob);
 void wld_mob_push_aberration(struct wld_mob *mob);
+void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*inspect)(struct wld_tile*));
 
 // MOB AI
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
 void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy);
 void ai_default_wander(struct wld_mob *mob);
-bool ai_default_is_hostile(struct wld_mob *self, struct wld_mob *target);
-bool ai_default_detect_combat(struct wld_mob *mob);
-void ai_default_decide_combat(struct wld_mob *self);
+bool ai_is_hostile_player(struct wld_mob *self, struct wld_mob *target);
+bool ai_detect_combat_visible_hostile(struct wld_mob *mob);
+void ai_decide_combat_melee_with_flee(struct wld_mob *self);
 void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item);
 void ai_mob_die(struct wld_mob *mob);
 void ai_effect_attack_mob(struct wld_effect *effect, struct wld_mob *defender, int amt);

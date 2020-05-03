@@ -370,9 +370,10 @@ void gen_mob_rat(struct wld_map* map, int c, int r)
 	wld_init_mob(mob, MOB_RAT);
 	wld_map_new_mob(map, mob, c, r);
 	mob->ai_wander = ai_default_wander;
-	mob->ai_is_hostile = ai_default_is_hostile;
-	mob->ai_detect_combat = ai_default_detect_combat;
-	mob->ai_decide_combat = ai_default_decide_combat;
+	mob->ai_is_hostile = ai_is_hostile_player;
+	mob->ai_detect_combat = ai_detect_combat_visible_hostile;
+	mob->ai_decide_combat = ai_decide_combat_melee_with_flee;
+	mob->flee_threshold = .5;
 }
 
 void gen_mob_jackal(struct wld_map* map, int c, int r)
@@ -381,9 +382,10 @@ void gen_mob_jackal(struct wld_map* map, int c, int r)
 	wld_init_mob(mob, MOB_JACKAL);
 	wld_map_new_mob(map, mob, c, r);
 	mob->ai_wander = ai_default_wander;
-	mob->ai_is_hostile = ai_default_is_hostile;
-	mob->ai_detect_combat = ai_default_detect_combat;
-	mob->ai_decide_combat = ai_default_decide_combat;
+	mob->ai_is_hostile = ai_is_hostile_player;
+	mob->ai_detect_combat = ai_detect_combat_visible_hostile;
+	mob->ai_decide_combat = ai_decide_combat_melee_with_flee;
+	mob->flee_threshold = .4;
 }
 
 // GENERATORS END
@@ -428,6 +430,12 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 			tile->dead_mob_type = NULL;
 			tile->on_mob_enter = NULL;
 			tile->dm_ss_id = 0;
+			tile->astar_node = dm_astar_newnode();
+			tile->astar_node->owner = (void*)tile;
+			tile->astar_node->get_x = wld_tile_get_x;
+			tile->astar_node->get_y = wld_tile_get_y;
+			dmlogii("astar assign", tile->map_x, tile->map_y);
+			dmlogii("astar test", tile->astar_node->get_x(tile->astar_node), tile->astar_node->get_y(tile->astar_node));
 
 			// TODO more
 			if (cell->is_wall) {
@@ -498,6 +506,7 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->type = &wld_mobtypes[type];
 	mob->active_effects_length = 0;
 	mob->vision = mob->type->base_vision;
+	mob->flee_threshold  = .5;
 
 	// create inventory (pointers to malloc items)
 	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
@@ -735,6 +744,8 @@ void wld_delete_map(struct wld_map *map)
 	free(map->mobs);
 	free(map->mob_map);
 
+	for (int i=0; i<map->tiles_length; i++)
+		free(map->tiles[i].astar_node);
 	free(map->tiles);
 	free(map->tile_map);
 	free(map);
@@ -1148,6 +1159,26 @@ void wld_effect_on_fire(struct wld_effect *effect, struct wld_mob *mob)
 
 
 
+///////////////////////////
+// TILE METHODS START
+
+int wld_tile_get_x(struct dm_astarnode *astar_node)
+{
+	struct wld_tile *tile = (struct wld_tile*)astar_node->owner;
+	return tile->map_x;
+}
+
+int wld_tile_get_y(struct dm_astarnode *astar_node)
+{
+	struct wld_tile *tile = (struct wld_tile*)astar_node->owner;
+	return tile->map_y;
+}
+
+// TILE METHODS END
+///////////////////////////
+
+
+
 
 ///////////////////////////
 // TILE EVENTS START
@@ -1322,6 +1353,7 @@ void wld_mob_teleport(struct wld_mob *mob, int x, int y, bool trigger_events)
 		}
 	}
 }
+
 void wld_mob_move(struct wld_mob *mob, int relx, int rely, bool trigger_events)
 {
 	// TODO speeds and things could come into play here
@@ -1723,12 +1755,14 @@ void ai_default_wander(struct wld_mob *mob)
 	}
 }
 
-bool ai_default_is_hostile(struct wld_mob *self, struct wld_mob *target)
+// treats player as hostile enemy, no one else
+bool ai_is_hostile_player(struct wld_mob *self, struct wld_mob *target)
 {
 	return target->is_player && !target->is_dead && self != target;
 }
 
-bool ai_default_detect_combat(struct wld_mob *self)
+// determines combat if within vision of hostile target
+bool ai_detect_combat_visible_hostile(struct wld_mob *self)
 {
 	// I need to see if I can see an enemy that is a threat to me
 	// This is expensive to run on a bunch of mobs
@@ -1747,12 +1781,13 @@ bool ai_default_detect_combat(struct wld_mob *self)
 	return detect_enemy;
 }
 
-void ai_default_decide_combat(struct wld_mob *self) // melee approach, melee attack
+// if healthy seek for_melee, if not flee away
+void ai_decide_combat_melee_with_flee(struct wld_mob *self)
 {
 	// Basic melee combat to attack hostile neighbors
 	// if health is above 50%, otherwise it flees
 	double hp = (double)self->health / (double)self->maxhealth;
-	if (hp > .5) { // healthy enough to fight
+	if (hp > self->flee_threshold) { // healthy enough to fight
 		struct wld_mob* hostile_neighbor = NULL;
 		void inspect(int x, int y) {
 			struct wld_mob *neighbor = wld_map_get_mob_at(self->map, x, y);
@@ -1773,14 +1808,34 @@ void ai_default_decide_combat(struct wld_mob *self) // melee approach, melee att
 				self->queue_x = dm_randii(0, 3) - 1;
 				self->queue_y = dm_randii(0, 3) - 1;
 			} else {
-				if (x < self->map_x)
-					self->queue_x += -1;
-				else if (x > self->map_x)
-					self->queue_x += 1;
-				if (y < self->map_y)
-					self->queue_y += -1;
-				else if (y > self->map_y)
-					self->queue_y += 1;
+				// get path
+				int path_count = 0;
+				void on_path(struct wld_tile *tile) {
+					dmlog("on path");
+					if (path_count == 1) { // first tile
+						dmlogii("first", tile->map_x, tile->map_y);
+						if (tile->map_x < self->map_x)
+							self->queue_x += -1;
+						else if (tile->map_x > self->map_x)
+							self->queue_x += 1;
+						if (tile->map_y < self->map_y)
+							self->queue_y += -1;
+						else if (tile->map_y > self->map_y)
+							self->queue_y += 1;
+					}
+					path_count++;
+				}
+				wld_mob_path_to(self, x, y, false, on_path);
+				// this was a direct line
+				// we should sometimes try to astar our way to them
+				//if (x < self->map_x)
+				//	self->queue_x += -1;
+				//else if (x > self->map_x)
+				//	self->queue_x += 1;
+				//if (y < self->map_y)
+				//	self->queue_y += -1;
+				//else if (y > self->map_y)
+				//	self->queue_y += 1;
 			}
 		}
 	} else { // badly hurt, gonna go lick my wounds
@@ -2159,6 +2214,36 @@ void wld_update_mob(struct wld_mob *mob)
 				mutation->on_update(mob);
 		}
 	}
+}
+
+// astar pathfinding for mob movement
+void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*inspect)(struct wld_tile*))
+{
+	bool is_blocked(struct dm_astarnode* node) {
+		struct wld_tile *tile = (struct wld_tile*)node->owner;
+		// see if we want to treat the final node as blocked
+		// this is useful for pathing to an enemy (since blocking the final node would block the path)
+		if (!test_end && tile->map_x == x && tile->map_y == y)
+			return false;
+
+		return !wld_map_can_move_to(mob->map, tile->map_x, tile->map_y);
+	}
+	struct dm_astarnode* get_node(int x, int y) {
+		if (x >= 0 && x < mob->map->cols && y >= 0 && y < mob->map->rows) {
+			struct wld_tile *tile = wld_map_get_tile_at(mob->map, x, y);
+			return tile->astar_node;
+		}
+	}
+	void on_path(struct dm_astarnode* node) {
+		struct wld_tile *tile = (struct wld_tile*)node->owner;
+		inspect(tile);
+	}
+
+	struct wld_tile *start = wld_map_get_tile_at_index(mob->map, mob->map_index);
+	struct wld_tile *end = wld_map_get_tile_at(mob->map, x, y);
+	dmlogii("path start", start->map_x, start->map_y);
+	dmlogii("path end", end->map_x, end->map_y);
+	dm_astar(start->astar_node, end->astar_node, is_blocked, get_node, on_path, false, true); // diagonals, manhattan distance
 }
 
 // MOB AI END
