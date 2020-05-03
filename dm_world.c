@@ -135,15 +135,18 @@ void wld_setup()
 	// copy mob types into malloc
 	struct wld_mobtype mts [] = {
 		// hp, sprite, color, desc, title
-		{ MOB_VOID,	  0, ' ', WCLR_BLACK,   "" },
-		{ MOB_PLAYER,	100, '@', WCLR_MAGENTA, "yourself", "You"},
-		{ MOB_JACKAL,	 35, 'j', WCLR_RED,     "a small jackal", "jackal" },
-		{ MOB_RAT,	 5, 'r', WCLR_RED,     "a hideous rat", "rat" },
+		{ MOB_VOID,	0,	0,	' ',	WCLR_BLACK,	"",			"" },
+		{ MOB_PLAYER,	100,	20,	'@',	WCLR_MAGENTA,	"yourself",		"You" },
+		// mobs elevating in difficulty
+		// name		hp	vision	sprite	color		short desc		title
+		{ MOB_RAT,	5,	5,	'r',	WCLR_RED,	"a hideous rat",	"rat" },
+		{ MOB_JACKAL,	35,	20,	'j',	WCLR_RED,	"a small jackal",	"jackal" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
 		wld_mobtypes[i].type = mts[i].type;
 		wld_mobtypes[i].base_health = mts[i].base_health;
+		wld_mobtypes[i].base_vision = mts[i].base_vision;
 		wld_mobtypes[i].sprite = mts[i].sprite;
 		wld_mobtypes[i].fg_color = mts[i].fg_color;
 		wld_mobtypes[i].short_desc = mts[i].short_desc;
@@ -361,24 +364,22 @@ void wld_teardown()
 ///////////////////////////
 // GENERATORS START
 
-void gen_mob_jackal(struct wld_map* map, int c, int r)
+void gen_mob_rat(struct wld_map* map, int c, int r)
 {
 	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-	wld_init_mob(mob, MOB_JACKAL);
+	wld_init_mob(mob, MOB_RAT);
 	wld_map_new_mob(map, mob, c, r);
-	mob->is_player = false;
 	mob->ai_wander = ai_default_wander;
 	mob->ai_is_hostile = ai_default_is_hostile;
 	mob->ai_detect_combat = ai_default_detect_combat;
 	mob->ai_decide_combat = ai_default_decide_combat;
 }
 
-void gen_mob_rat(struct wld_map* map, int c, int r)
+void gen_mob_jackal(struct wld_map* map, int c, int r)
 {
 	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-	wld_init_mob(mob, MOB_RAT);
+	wld_init_mob(mob, MOB_JACKAL);
 	wld_map_new_mob(map, mob, c, r);
-	mob->is_player = false;
 	mob->ai_wander = ai_default_wander;
 	mob->ai_is_hostile = ai_default_is_hostile;
 	mob->ai_detect_combat = ai_default_detect_combat;
@@ -477,11 +478,10 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 
 void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 {
+	mob->is_player = false;
 	mob->state = MS_START;
 	mob->queue_x = 0;
 	mob->queue_y = 0;
-	mob->basevision = 20; // TODO define based on things
-	mob->vision = mob->basevision;
 	mob->ai_wander = NULL;
 	mob->ai_is_hostile = NULL;
 	mob->ai_detect_combat = NULL;
@@ -497,6 +497,7 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->is_destroy_queued = false;
 	mob->type = &wld_mobtypes[type];
 	mob->active_effects_length = 0;
+	mob->vision = mob->type->base_vision;
 
 	// create inventory (pointers to malloc items)
 	mob->inventory = (struct wld_item**)malloc(INVENTORY_SIZE * sizeof(struct wld_item*));
@@ -2099,7 +2100,7 @@ void wld_update_mob(struct wld_mob *mob)
 		int player_dist = 0;
 		if (mob->map->player)
 			player_dist = dm_disti(mob->map_x, mob->map_y, mob->map->player->map_x, mob->map->player->map_y);
-		bool worth_it = player_dist < (mob->vision * 2);
+		bool worth_it = player_dist < 35;
 
 		switch (mob->state) {
 		case MS_WANDER:

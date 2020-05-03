@@ -135,9 +135,11 @@ struct wld_tile {
 
 enum WLD_MOBTYPE {
 	MOB_VOID = 0,
-	MOB_PLAYER = 1,
-	MOB_JACKAL = 2,
-	MOB_RAT = 3,
+	MOB_PLAYER,
+	// order of difficulty
+	// must match build order on map
+	MOB_RAT,
+	MOB_JACKAL,
 };
 enum WLD_MOB_STATE {
 	MS_START,
@@ -167,6 +169,7 @@ enum TARGET_MODE {
 struct wld_mobtype {
 	enum WLD_MOBTYPE type;
 	int base_health;
+	int base_vision;
 	unsigned long sprite;
 	int fg_color;
 	char *short_desc;
@@ -185,7 +188,7 @@ struct wld_mob {
 	void (*ai_player_input)(struct wld_mob*);
 	int queue_x, queue_y;
 	int health, maxhealth;
-	int vision, basevision;
+	int vision;
 	bool is_player, is_dead;
 	int cursor_target_index; // map index
 	enum MODE mode;

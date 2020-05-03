@@ -1,15 +1,25 @@
+current capabilities:
+- items and inventories
+- active effects (not on tiles)
+- visual effects
+- weapons
+- rpg mathematica
+- ai driven mobs
+- transformable tiles
+- aberrations and mutations
+- dungeons
+- level transitions
+
+
 TODO:
 
 now
+- active effects on tiles
 - ui: equipped items
-- ui: stats / panels
-- rpg defense calculations?
+- ui: stats / mutations panels
+- rpg calculations
 
 later
-- fire tile for grass on fire
-	- run on updates on tiles
-	- convert them to a tile for a while
-	- then convert them back?
 - hide keys better
 - rpg:
 	- dex based coh?
