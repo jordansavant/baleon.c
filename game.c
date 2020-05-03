@@ -1277,6 +1277,7 @@ void ai_player_input(struct wld_mob* player)
 						listen = false;
 						break;
 					case KEY_F(2):
+					case 331: // insert
 						// enable aberate
 						current_map->player->can_aberrate = true;
 						player->mode = MODE_ABERRATE;

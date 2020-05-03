@@ -118,7 +118,7 @@ struct dng_cell {
 	struct dm_astarnode *astar_node;
 
 	bool has_mob;
-	bool mob_style;
+	enum DNG_MOB_STYLES mob_style;
 
 	bool has_item;
 	enum DNG_ITEM_STYLE item_style;

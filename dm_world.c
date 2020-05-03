@@ -1587,23 +1587,51 @@ void wld_mob_inspect_inventory(struct wld_mob *mob, void (*inspect)(struct wld_i
 	}
 }
 
-void mutation_update_test(struct wld_mob *mob)
+void mutation_update_combustion(struct wld_mob *mob)
 {
-	dmlog("mutation update");
-}
-void mutation_apply_test(struct wld_mob *mob)
-{
-	dmlog("mutation apply");
+	if (dm_chance(1,1000))
+		wld_map_add_effect(mob->map, EFFECT_FIRE, mob->map_x, mob->map_y);
 }
 
 void wld_mob_new_mutation(struct wld_mob *mob, struct wld_aberration *ab)
 {
 	struct wld_mutation *mutation = &ab->mutations[ab->mutations_length];
-	snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "%s", "foo bar +2, -3 golden chick");
-	mutation->on_update = mutation_update_test;
-	mutation->on_apply = mutation_apply_test;
-	mutation->on_apply(mob);
+	mutation->on_update = NULL;
+	mutation->on_apply = NULL;
+	if (dm_chance(1, 2)) {
+		// Positive mutations
+		switch (dm_randii(0, 1)) {
+		default:
+		case 0: {
+				// permanent vision improvement
+				int vis = dm_randii(1, 4);
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent +%d to visibility", vis);
+				mob->vision += vis;
+			}
+			break;
+		}
+	} else {
+		// Negative mutations
+		switch (dm_randii(0, 2)) {
+		default:
+		case 0: {
+				// permanent vision loss
+				int vis = dm_randii(1, 4);
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent -%d to visibility", vis);
+				mob->vision -= vis;
+			}
+			break;
+		case 1: {
+				// randomly catch fire
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "you will randomly catch fire");
+				mutation->on_update = mutation_update_combustion;
+			}
+			break;
+		}
+	}
 
+	if (mutation->on_apply)
+		mutation->on_apply(mob);
 	ab->mutations_length++;
 }
 
@@ -2118,6 +2146,16 @@ void wld_update_mob(struct wld_mob *mob)
 		struct wld_effect *effect = &mob->active_effects[i];
 		if (effect->is_active) {
 			effect->type->on_update_mob(effect, mob);
+		}
+	}
+
+	// apply mutations
+	for (int i=0; i < mob->aberrations_length; i++) {
+		struct wld_aberration *aberration = mob->aberrations[i];
+		for (int j=0; j < aberration->mutations_length; j++) {
+			struct wld_mutation *mutation = &aberration->mutations[j];
+			if (mutation->on_update)
+				mutation->on_update(mob);
 		}
 	}
 }
