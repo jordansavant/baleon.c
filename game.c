@@ -91,6 +91,7 @@ int ui_map_border = 1;
 // PLAY UI PANELS
 WINDOW* cmdpanel;
 WINDOW* cursorpanel;
+WINDOW* charpanel;
 WINDOW* logpanel;
 WINDOW* mobpanel;
 WINDOW* inventorypanel;
@@ -101,6 +102,7 @@ struct wld_item *use_item = NULL;
 int use_item_slot = -1;
 
 #define CURSOR_INFO_LENGTH 45
+#define CHAR_PANEL_LENGTH 45
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
 #define INV_LENGTH 48
@@ -544,16 +546,7 @@ void ui_clear(WINDOW *win, int row)
 }
 
 // helper to write to a row in a panel we boxed
-void ui_write_rc_len(WINDOW *win, int row, int col, char *msg, int length)
-{
-	char buffer[length];
-	memcpy(buffer, msg, length);
-
-	dm_clear_row_in_win(win, row + 1);
-	wmove(win, row + 1, col + 2);
-	waddstr(win, buffer);
-}
-void ui_write_char(WINDOW *win, int row, int col, unsigned long ch)
+void ui_printchar(WINDOW *win, int row, int col, unsigned long ch)
 {
 	wmove(win, row + 1, col + 2);
 	waddch(win, ch);
@@ -568,9 +561,28 @@ void ui_write(WINDOW *win, int row, char *msg)
 {
 	ui_write_rc(win, row, 0, msg);
 }
-void ui_write_len(WINDOW *win, int row, char *msg, int length)
+void ui_print(WINDOW *win, int buffer_size, int row, int col, char *msg)
 {
-	ui_write_rc_len(win, row, 0, msg, length);
+	char buffer[buffer_size];
+	memcpy(buffer, msg, buffer_size);
+
+	dm_clear_row_in_win(win, row + 1);
+	wmove(win, row + 1, col + 2);
+	waddstr(win, buffer);
+}
+void ui_printf(WINDOW *win, int buffer_size, int row, int col, char *format, ...)
+{
+	dm_clear_row_in_win(win, row + 1);
+	wmove(win, row + 1, col + 2);
+
+	char buffer[buffer_size];
+
+	va_list argptr;
+	va_start(argptr, format);
+	vsnprintf(buffer, buffer_size, format, argptr);
+	va_end(argptr);
+
+	waddstr(win, buffer);
 }
 
 //void ui_anchor_ur(WINDOW* win, float height, float width)
@@ -707,6 +719,20 @@ void ui_loginfo_ssi(char *msg, char *msg2, char *msg3, int i)
 	ui_loginfo(buffer);
 }
 
+void ui_update_charpanel(struct wld_map *map)
+{
+	// deduce what our context is and provide options
+	//wmove(charpanel, 0, 0);
+	//wclrtoeol(charpanel);
+
+	// stats, health, aberration meter
+	ui_printf(charpanel, CHAR_PANEL_LENGTH, 0, 0, "str: %d  dex: %d", map->player->stat_strength, map->player->stat_dexterity);
+
+	ui_box(charpanel);
+	wrefresh(charpanel);
+}
+
+
 void ui_update_cmdpanel(struct wld_map *map)
 {
 	// deduce what our context is and provide options
@@ -807,9 +833,9 @@ void ui_meter_effect(struct wld_effect *e, int len, int row, int col, int fg, in
 		else
 			wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_RED, WCLR_BLACK)));
 		if (c != '\0')
-			ui_write_char(mobpanel, row, col + i, c);
+			ui_printchar(mobpanel, row, col + i, c);
 		else
-			ui_write_char(mobpanel, row, col + i, ' ');
+			ui_printchar(mobpanel, row, col + i, ' ');
 	}
 	wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 }
@@ -836,18 +862,16 @@ void ui_update_mobpanel(struct wld_map *map)
 			if (mob && !mob->is_dead) { // players are not destroyed
 				bool on_cursor = (mob->map->cursor->index == mob->map_index);
 				// mob name
-				char buffer[VIS_LENGTH];
-				snprintf(buffer, VIS_LENGTH, "- %s", mob->type->title);
-				ui_write_rc(mobpanel, i + offy, offx, buffer);
+				ui_printf(mobpanel, VIS_LENGTH, i + offy, offx, "- %s", mob->type->title);
 				// cursor
 				if (on_cursor) {
 					wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_MAGENTA, WCLR_MAGENTA)));
-					ui_write_char(mobpanel, i + offy, offx - 1, ' ');
+					ui_printchar(mobpanel, i + offy, offx - 1, ' ');
 					wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				}
 				// icon
 				wattrset(mobpanel, COLOR_PAIR(wld_cpair(mob->type->fg_color, WCLR_BLACK)));
-				ui_write_char(mobpanel, i + offy, offx, mob->type->sprite);
+				ui_printchar(mobpanel, i + offy, offx, mob->type->sprite);
 				wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				i++;
 				// health bar
@@ -869,7 +893,7 @@ void ui_update_mobpanel(struct wld_map *map)
 					else
 						wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_BLACK, WCLR_RED)));
 					// render character
-					ui_write_char(mobpanel, i + offy, j + offx + 2, c);
+					ui_printchar(mobpanel, i + offy, j + offx + 2, c);
 					wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				}
 				i++;
@@ -878,30 +902,25 @@ void ui_update_mobpanel(struct wld_map *map)
 					struct wld_effect *e = &mob->active_effects[j];
 					if (e->is_active) {
 						ui_meter_effect(e, VIS_LENGTH - 5, i + offy, offx + 2, 1, 1);
-						//ui_write_rc(mobpanel, i + offy, offx + 2, e->type->title);
 						i++;
 					}
 				}
 			}
 			if (item) {
 				// item name
-				char buffer[VIS_LENGTH];
-				snprintf(buffer, VIS_LENGTH, "- %s", item->type->title);
-				ui_write_rc(mobpanel, i + offy, offx, buffer);
+				ui_printf(mobpanel, VIS_LENGTH, i + offy, offx, "- %s", item->type->title);
 				// icon
 				wattrset(mobpanel, COLOR_PAIR(wld_cpair(item->type->fg_color, WCLR_BLACK)));
-				ui_write_char(mobpanel, i + offy, offx, item->type->sprite);
+				ui_printchar(mobpanel, i + offy, offx, item->type->sprite);
 				wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				i++;
 			}
 			if(tile->dead_mob_type) {
 				// dead mob
-				char buffer[VIS_LENGTH];
-				snprintf(buffer, VIS_LENGTH, "- %s (dead)", tile->dead_mob_type->title);
-				ui_write_rc(mobpanel, i + offy, offx, buffer);
+				ui_printf(mobpanel, VIS_LENGTH, i + offy, offx, "- %s (dead)", tile->dead_mob_type->title);
 				// icon
 				wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_BLACK, WCLR_RED)));
-				ui_write_char(mobpanel, i + offy, offx, tile->dead_mob_type->sprite);
+				ui_printchar(mobpanel, i + offy, offx, tile->dead_mob_type->sprite);
 				wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				i++;
 			}
@@ -922,27 +941,23 @@ void ui_update_inventorypanel(struct wld_map *map)
 		ui_write(inventorypanel, 0, "----------------- Inventory ------------------");
 
 		// list the items in player possession
-		ui_write(inventorypanel, 1, "weapon:");
+		ui_print(inventorypanel, INV_ITEM_LENGTH, 1, 0, "weapon:");
 		struct wld_item *w = map->player->inventory[0];
 		if (w != NULL) {
-			char buffer[INV_ITEM_LENGTH];
-			snprintf(buffer, INV_ITEM_LENGTH, "w: - %s", w->type->title);
-			ui_write_rc(inventorypanel, 2, 1, buffer);
-			ui_write_char(inventorypanel, 2, 4, w->type->sprite);
+			ui_printf(inventorypanel, INV_ITEM_LENGTH, 2, 1, "w: - %s", w->type->title);
+			ui_printchar(inventorypanel, 2, 4, w->type->sprite);
 		}
 		else
 			ui_write_rc(inventorypanel, 2, 1, "-- none --");
 
-		ui_write(inventorypanel, 3, "armor:");
+		ui_print(inventorypanel, INV_ITEM_LENGTH, 3, 0, "armor:");
 		struct wld_item *a = map->player->inventory[1];
 		if (a != NULL) {
-			char buffer[INV_ITEM_LENGTH];
-			snprintf(buffer, INV_ITEM_LENGTH, "a: - %s", a->type->title);
-			ui_write_rc(inventorypanel, 4, 1, buffer);
-			ui_write_char(inventorypanel, 4, 4, a->type->sprite);
+			ui_printf(inventorypanel, INV_ITEM_LENGTH, 4, 1, "a: - %s", a->type->title);
+			ui_printchar(inventorypanel, 4, 4, a->type->sprite);
 		}
 		else
-			ui_write_rc(inventorypanel, 4, 1, "-- none --");
+			ui_print(inventorypanel, INV_ITEM_LENGTH, 4, 1, "-- none --");
 
 		ui_write(inventorypanel, 5, "pack:");
 		int row = 6;
@@ -961,7 +976,6 @@ void ui_update_inventorypanel(struct wld_map *map)
 				case 10: key = '9'; break;
 				case 11: key = '0'; break;
 			}
-			char buffer[INV_ITEM_LENGTH];
 			char *desc;
 			unsigned long sprite;
 			struct wld_item *item = map->player->inventory[i];
@@ -972,12 +986,11 @@ void ui_update_inventorypanel(struct wld_map *map)
 				desc = "--";
 				sprite = '-';
 			}
-			snprintf(buffer, INV_ITEM_LENGTH, "%c: - %s", key, desc);
-			ui_write_rc(inventorypanel, row, 1, buffer);
-			ui_write_char(inventorypanel, row, 4, sprite); // stick sprite over '-'
+			ui_printf(inventorypanel, INV_ITEM_LENGTH, row, 1, "%c: - %s", key, desc);
+			ui_printchar(inventorypanel, row, 4, sprite); // stick sprite over '-'
 			row++;
 		}
-		ui_write_rc(inventorypanel, row + 1, 1, "x: close");
+		ui_print(inventorypanel, INV_ITEM_LENGTH, row + 1, 1, "x: close");
 
 
 		ui_box_color(inventorypanel, TCOLOR_YELLOW);
@@ -1021,15 +1034,11 @@ void ui_update_usepanel(struct wld_map *map)
 		switch (use_type) {
 		case USE_ITEM: {
 				// intro item
-				char buffer[USE_LENGTH];
-				snprintf(buffer, USE_LENGTH, "You prepare to use %s.", use_item->type->short_desc);
-				ui_write(usepanel, 0, buffer);
-				ui_write_len(usepanel, 2, use_item->type->use_text_1, USE_LENGTH);
-				ui_write_len(usepanel, 3, use_item->type->use_text_2, USE_LENGTH);
+				ui_printf(usepanel, USE_LENGTH, 0, 0, "You prepare to use %s.", use_item->type->short_desc);
+				ui_print(usepanel, USE_LENGTH, 2, 0, use_item->type->use_text_1);
+				ui_print(usepanel, USE_LENGTH, 3, 0, use_item->type->use_text_2);
 				if (use_item->map_found > -1) {
-					char b[USE_LENGTH];
-					snprintf(b, USE_LENGTH, "Found on level %d.", use_item->map_found + 1);
-					ui_write_len(usepanel, 4, b, USE_LENGTH);
+					ui_printf(usepanel, USE_LENGTH, 4, 0, "Found on level %d.", use_item->map_found + 1);
 				}
 
 				// give options
@@ -1573,8 +1582,10 @@ void ai_player_input(struct wld_mob* player)
 // call this when the current map changes
 void ps_on_mapchange()
 {
-	if (map_pad)
+	if (map_pad) {
 		delwin(map_pad);
+		clear();
+	}
 
 	// World is large indexed map to start
 	map_pad = newpad(current_map->rows * map_rows_scale + ui_map_border * 2, current_map->cols * map_cols_scale + ui_map_border * 2); // pad extra two for us two draw black around the edges
@@ -1654,8 +1665,14 @@ void ps_layout_ui()
 	ui_map_rows = sy - logpanel_rows - 1;
 
 	// mode bar on the bottom
-	ui_anchor_bl(cursorpanel, logpanel_rows, sx - logpanel_cols - 1, 0, 0);
+	//ui_anchor_bl(cursorpanel, logpanel_rows, sx - logpanel_cols - 1, 0, 0);
+	int cursorpanel_cols = CURSOR_INFO_LENGTH + 2;
+	ui_anchor_bl(cursorpanel, logpanel_rows, cursorpanel_cols, 0, 0);
 	ui_box(cursorpanel);
+
+	// character panel
+	ui_anchor_bl(charpanel, logpanel_rows, sx - logpanel_cols - cursorpanel_cols + 3, 0, cursorpanel_cols - 2);
+	ui_box(charpanel);
 
 	// inventory panel
 	int invpanel_cols = INV_LENGTH + 2;
@@ -1697,6 +1714,7 @@ void ps_build_ui()
 {
 	cmdpanel = newwin(0, 0, 0, 0);
 	cursorpanel = newwin(0, 0, 0, 0);
+	charpanel = newwin(0, 0, 0, 0);
 	logpanel = newwin(0, 0, 0, 0);
 	mobpanel = newwin(0, 0, 0, 0);
 	inventorypanel = newwin(0, 0, 0, 0);
@@ -1715,6 +1733,7 @@ void ps_destroy_ui()
 	delwin(inventorypanel);
 	delwin(mobpanel);
 	delwin(logpanel);
+	delwin(charpanel);
 	delwin(cursorpanel);
 	delwin(cmdpanel);
 }
@@ -1859,6 +1878,7 @@ void ps_play_draw()
 
 	wrefresh(cursorpanel);
 	ui_update_cmdpanel(current_map);
+	ui_update_charpanel(current_map);
 	if (current_map->player->mode == MODE_PLAY)
 		ui_update_mobpanel(current_map);
 	if (current_map->player->mode == MODE_INVENTORY)

@@ -98,11 +98,12 @@ void ui_next_visible_mob();
 void ui_box_color(WINDOW* win, int colorpair);
 void ui_box(WINDOW* win);
 void ui_clear(WINDOW *win, int row);
-void ui_write_rc_len(WINDOW *win, int row, int col, char *msg, int length);
-void ui_write_char(WINDOW *win, int row, int col, unsigned long ch);
+void ui_printchar(WINDOW *win, int row, int col, unsigned long ch);
 void ui_write_rc(WINDOW *win, int row, int col, char *msg);
 void ui_write(WINDOW *win, int row, char *msg);
-void ui_write_len(WINDOW *win, int row, char *msg, int length);
+void ui_print(WINDOW *win, int buffer_size, int row, int col, char *msg);
+void ui_printf(WINDOW *win, int buffer_size, int row, int col, char *format, ...);
+
 void ui_anchor_ur(WINDOW* win, int rows, int cols);
 void ui_anchor_ul(WINDOW *win, int rows, int cols);
 void ui_anchor_br(WINDOW *win, int rows, int cols);

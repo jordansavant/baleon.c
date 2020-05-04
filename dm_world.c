@@ -1418,7 +1418,7 @@ void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*in
 
 	struct wld_tile *start = wld_map_get_tile_at_index(mob->map, mob->map_index);
 	struct wld_tile *end = wld_map_get_tile_at(mob->map, x, y);
-	dm_astar(start->astar_node, end->astar_node, is_blocked, get_node, on_path, false, false); // diagonals, manhattan distance
+	dm_astar(start->astar_node, end->astar_node, is_blocked, get_node, on_path, false, false); // diagonals, no manhattan distance
 }
 
 
@@ -1976,6 +1976,7 @@ void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 		if (dm_randf() < chance) {
 			int dmg = rpg_calc_melee_dmg(aggressor, defender);
 			ai_mob_attack_mob(aggressor, defender, dmg, NULL);
+			wld_map_vfx_dmg(aggressor->map, defender->map_x, defender->map_y);
 			return;
 		}
 	}
