@@ -366,9 +366,7 @@ void wld_teardown()
 
 void gen_mob_rat(struct wld_map* map, int c, int r)
 {
-	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-	wld_init_mob(mob, MOB_RAT);
-	wld_map_new_mob(map, mob, c, r);
+	struct wld_mob *mob = wld_new_mob(map, MOB_RAT, c, r);
 	mob->ai_wander = ai_default_wander;
 	mob->ai_is_hostile = ai_is_hostile_player;
 	mob->ai_detect_combat = ai_detect_combat_visible_hostile;
@@ -378,9 +376,7 @@ void gen_mob_rat(struct wld_map* map, int c, int r)
 
 void gen_mob_jackal(struct wld_map* map, int c, int r)
 {
-	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-	wld_init_mob(mob, MOB_JACKAL);
-	wld_map_new_mob(map, mob, c, r);
+	struct wld_mob *mob = wld_new_mob(map, MOB_JACKAL, c, r);
 	mob->ai_wander = ai_default_wander;
 	mob->ai_is_hostile = ai_is_hostile_player;
 	mob->ai_detect_combat = ai_detect_combat_visible_hostile;
@@ -434,8 +430,6 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 			tile->astar_node->owner = (void*)tile;
 			tile->astar_node->get_x = wld_tile_get_x;
 			tile->astar_node->get_y = wld_tile_get_y;
-			dmlogii("astar assign", tile->map_x, tile->map_y);
-			dmlogii("astar test", tile->astar_node->get_x(tile->astar_node), tile->astar_node->get_y(tile->astar_node));
 
 			// TODO more
 			if (cell->is_wall) {
@@ -484,8 +478,9 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 	map->item_map = item_map_array;
 }
 
-void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
+struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, int y)
 {
+	struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
 	mob->is_player = false;
 	mob->state = MS_START;
 	mob->queue_x = 0;
@@ -557,6 +552,9 @@ void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type)
 	mob->health = conf * mob->type->base_health;
 	mob->maxhealth = conf * mob->type->base_health;
 
+	wld_map_new_mob(map, mob, x, y);
+
+	return mob;
 }
 
 void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
@@ -572,9 +570,7 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 
 			// Spawn player and first dungeon entrance
 			if (cell->is_entrance_transition && map->is_first_map) {
-				struct wld_mob *mob = (struct wld_mob*)malloc(sizeof(struct wld_mob));
-				wld_init_mob(mob, MOB_PLAYER);
-				wld_map_new_mob(map, mob, c, r);
+				struct wld_mob *mob = wld_new_mob(map, MOB_PLAYER, c, r);
 				mob->is_player = true;
 				map->player = mob; // assign to map specifically
 
@@ -1150,7 +1146,6 @@ void wld_effect_on_fire(struct wld_effect *effect, struct wld_mob *mob)
 		ai_effect_attack_mob(effect, mob, dm_randii(1, 4));
 		effect->current_iterations++;
 	} else {
-		dmlog("deactivate fire");
 		effect->is_active = false;
 	}
 }
@@ -1389,8 +1384,6 @@ void wld_mob_move(struct wld_mob *mob, int relx, int rely, bool trigger_events)
 	// TODO need to make sure they do not diagonally move around corners
 	int newx = mob->map_x + relx;
 	int newy = mob->map_y + rely;
-	if (mob->is_player)
-		dmlogii("move", newx, newy);
 
 	if (wld_mob_can_move_to(mob, mob->map_x, mob->map_y, newx, newy))
 		wld_mob_emplace(mob, newx, newy, trigger_events);
@@ -1423,8 +1416,6 @@ void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*in
 
 	struct wld_tile *start = wld_map_get_tile_at_index(mob->map, mob->map_index);
 	struct wld_tile *end = wld_map_get_tile_at(mob->map, x, y);
-	dmlogii("path start", start->map_x, start->map_y);
-	dmlogii("path end", end->map_x, end->map_y);
 	dm_astar(start->astar_node, end->astar_node, is_blocked, get_node, on_path, false, true); // diagonals, manhattan distance
 }
 
@@ -1838,9 +1829,7 @@ void ai_decide_combat_melee_with_flee(struct wld_mob *self)
 				// get path
 				int path_count = 0;
 				void on_path(struct wld_tile *tile) {
-					dmlog("on path");
 					if (path_count == 1) { // first tile
-						dmlogii("first", tile->map_x, tile->map_y);
 						if (tile->map_x < self->map_x)
 							self->queue_x += -1;
 						else if (tile->map_x > self->map_x)

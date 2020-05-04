@@ -345,7 +345,7 @@ void gen_mob_rat(struct wld_map* map, int c, int r);
 
 // MAP INITIALIZATION
 void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap);
-void wld_init_mob(struct wld_mob *mob, enum WLD_MOBTYPE type);
+struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, int y);
 void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap);
 void wld_init_item(struct wld_item* item, enum WLD_ITEMTYPE type);
 void wld_generate_items(struct wld_map *map, struct dng_cellmap* cellmap);
