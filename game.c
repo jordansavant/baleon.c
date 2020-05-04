@@ -106,9 +106,8 @@ int use_item_slot = -1;
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
 #define INV_LENGTH 48
-#define INV_ITEM_LENGTH 46
-#define USE_LENGTH 58
-#define ABE_LENGTH 58
+#define USE_LENGTH 60
+#define ABE_LENGTH 60
 #define VIS_LENGTH 30
 #define CMD_LENGTH 100
 char logs[LOG_COUNT][LOG_LENGTH];
@@ -551,19 +550,10 @@ void ui_printchar(WINDOW *win, int row, int col, unsigned long ch)
 	wmove(win, row + 1, col + 2);
 	waddch(win, ch);
 }
-void ui_write_rc(WINDOW *win, int row, int col, char *msg)
-{
-	dm_clear_row_in_win(win, row + 1);
-	wmove(win, row + 1, col + 2);
-	waddstr(win, msg);
-}
-void ui_write(WINDOW *win, int row, char *msg)
-{
-	ui_write_rc(win, row, 0, msg);
-}
 void ui_print(WINDOW *win, int buffer_size, int row, int col, char *msg)
 {
-	char buffer[buffer_size];
+	char buffer[buffer_size + 1];
+	buffer[buffer_size] = '\0';
 	memcpy(buffer, msg, buffer_size);
 
 	dm_clear_row_in_win(win, row + 1);
@@ -575,7 +565,8 @@ void ui_printf(WINDOW *win, int buffer_size, int row, int col, char *format, ...
 	dm_clear_row_in_win(win, row + 1);
 	wmove(win, row + 1, col + 2);
 
-	char buffer[buffer_size];
+	char buffer[buffer_size + 1];
+	buffer[buffer_size] = '\0';
 
 	va_list argptr;
 	va_start(argptr, format);
@@ -633,39 +624,30 @@ void ui_clear_win(WINDOW *win)
 
 void ui_cursorinfo(char *msg)
 {
-	if (msg[0] != '\0') {
-		char buffer[CURSOR_INFO_LENGTH];
-		snprintf(buffer, CURSOR_INFO_LENGTH, "ghost :%s", msg);
-		ui_write(cursorpanel, 0, buffer);
-	} else {
-		ui_write(cursorpanel, 0, "--");
-	}
+	if (msg[0] != '\0')
+		ui_printf(cursorpanel, CURSOR_INFO_LENGTH, 0, 0, "ghost :%s", msg);
+	else
+		ui_print(cursorpanel, CURSOR_INFO_LENGTH, 0, 0, "--");
 	ui_box(cursorpanel);
 	wrefresh(cursorpanel);
 }
 
 void ui_positioninfo(char *msg)
 {
-	if (msg[0] != '\0') {
-		char buffer[CURSOR_INFO_LENGTH];
-		snprintf(buffer, CURSOR_INFO_LENGTH, "@ :%s", msg);
-		ui_write(cursorpanel, 1, buffer);
-	} else {
-		ui_write(cursorpanel, 1, "--");
-	}
+	if (msg[0] != '\0')
+		ui_printf(cursorpanel, CURSOR_INFO_LENGTH, 1, 0, "@ :%s", msg);
+	else
+		ui_print(cursorpanel, CURSOR_INFO_LENGTH, 1, 0, "--");
 	ui_box(cursorpanel);
 	wrefresh(cursorpanel);
 }
 
 void ui_modeinfo(char *msg)
 {
-	if (msg[0] != '\0') {
-		char buffer[CURSOR_INFO_LENGTH];
-		snprintf(buffer, CURSOR_INFO_LENGTH, "y :%s", msg);
-		ui_write(cursorpanel, 2, buffer);
-	} else {
-		ui_write(cursorpanel, 2, "");
-	}
+	if (msg[0] != '\0')
+		ui_printf(cursorpanel, CURSOR_INFO_LENGTH, 2, 0, "y :%s", msg);
+	else
+		ui_print(cursorpanel, CURSOR_INFO_LENGTH, 2, 0, "");
 	ui_box(cursorpanel);
 	wrefresh(cursorpanel);
 }
@@ -744,7 +726,7 @@ void ui_update_cmdpanel(struct wld_map *map)
 	if (current_map->player->mode == MODE_PLAY) {
 		struct wld_tile *t = wld_map_get_tile_at_index(current_map, current_map->player->map_index);
 		if (current_map->player->target_mode == TMODE_ACTIVE) {
-			strncat(buffer, "  x: exit", 9);
+			strncat(buffer, "  x: exit  space: use", 9);
 		} else {
 			strncat(buffer, "  y: wield  i: inventory  p: rest", 21);
 		}
@@ -757,7 +739,7 @@ void ui_update_cmdpanel(struct wld_map *map)
 	}
 
 	if (buffer[0] != '\0')
-		ui_write_rc(cmdpanel, 0, 0, buffer);
+		ui_print(cmdpanel, CMD_LENGTH, 0, 0, buffer);
 	wrefresh(cmdpanel);
 }
 
@@ -813,9 +795,8 @@ void ui_update_positioninfo(struct wld_map *map)
 
 void ui_update_logpanel(struct wld_map *map)
 {
-	for (int i=0; i < LOG_COUNT; i++) {
-		ui_write(logpanel, i, logs[i]);
-	}
+	for (int i=0; i < LOG_COUNT; i++)
+		ui_print(logpanel, LOG_LENGTH, i, 0, logs[i]);
 
 	ui_box(logpanel);
 	wrefresh(logpanel);
@@ -845,7 +826,7 @@ void ui_update_mobpanel(struct wld_map *map)
 {
 	// probably just need to do a shadowcast event each turn to get mobs in vision
 	if (map->player->mode == MODE_PLAY) {
-		ui_write(mobpanel, 0, "-------- Visible ---------");
+		ui_print(mobpanel, VIS_LENGTH, 0, 0, "--------- Visible ----------");
 		int offx = 1;
 		int offy = 2;
 		for (int i =0; i < last_mob_list_length; i++) {
@@ -938,28 +919,28 @@ void ui_update_inventorypanel(struct wld_map *map)
 {
 	if (map->player->mode == MODE_INVENTORY) {
 		// probably just need to do a shadowcast event each turn to get mobs in vision
-		ui_write(inventorypanel, 0, "----------------- Inventory ------------------");
+		ui_print(inventorypanel, INV_LENGTH, 0, 0, "------------------ Inventory -------------------");
 
 		// list the items in player possession
-		ui_print(inventorypanel, INV_ITEM_LENGTH, 1, 0, "weapon:");
+		ui_print(inventorypanel, INV_LENGTH, 1, 0, "weapon:");
 		struct wld_item *w = map->player->inventory[0];
 		if (w != NULL) {
-			ui_printf(inventorypanel, INV_ITEM_LENGTH, 2, 1, "w: - %s", w->type->title);
+			ui_printf(inventorypanel, INV_LENGTH, 2, 1, "w: - %s", w->type->title);
 			ui_printchar(inventorypanel, 2, 4, w->type->sprite);
 		}
 		else
-			ui_write_rc(inventorypanel, 2, 1, "-- none --");
+			ui_print(inventorypanel, INV_LENGTH, 3, 0,  "-- none --");
 
-		ui_print(inventorypanel, INV_ITEM_LENGTH, 3, 0, "armor:");
+		ui_print(inventorypanel, INV_LENGTH, 3, 0, "armor:");
 		struct wld_item *a = map->player->inventory[1];
 		if (a != NULL) {
-			ui_printf(inventorypanel, INV_ITEM_LENGTH, 4, 1, "a: - %s", a->type->title);
+			ui_printf(inventorypanel, INV_LENGTH, 4, 1, "a: - %s", a->type->title);
 			ui_printchar(inventorypanel, 4, 4, a->type->sprite);
 		}
 		else
-			ui_print(inventorypanel, INV_ITEM_LENGTH, 4, 1, "-- none --");
+			ui_print(inventorypanel, INV_LENGTH, 4, 1, "-- none --");
 
-		ui_write(inventorypanel, 5, "pack:");
+		ui_print(inventorypanel, INV_LENGTH, 5, 0, "pack:");
 		int row = 6;
 		for (int i=2; i<INVENTORY_SIZE; i++) {
 			// depending on position of item designate interation key
@@ -986,11 +967,11 @@ void ui_update_inventorypanel(struct wld_map *map)
 				desc = "--";
 				sprite = '-';
 			}
-			ui_printf(inventorypanel, INV_ITEM_LENGTH, row, 1, "%c: - %s", key, desc);
+			ui_printf(inventorypanel, INV_LENGTH, row, 1, "%c: - %s", key, desc);
 			ui_printchar(inventorypanel, row, 4, sprite); // stick sprite over '-'
 			row++;
 		}
-		ui_print(inventorypanel, INV_ITEM_LENGTH, row + 1, 1, "x: close");
+		ui_print(inventorypanel, INV_LENGTH, row + 1, 1, "x: close");
 
 
 		ui_box_color(inventorypanel, TCOLOR_YELLOW);
@@ -1000,27 +981,27 @@ void ui_update_inventorypanel(struct wld_map *map)
 
 void ui_update_aberratepanel(struct wld_map *map)
 {
-	ui_write(aberratepanel, 0, "----------------------- Aberration -----------------------");
-	ui_write(aberratepanel, 2, "Looking at the dead beneath your feet the lust for");
-	ui_write(aberratepanel, 3, "evolution and mutation grows. Will you mutate?");
+	ui_print(aberratepanel, ABE_LENGTH, 0, 0, "------------------------ Aberration ------------------------");
+	ui_print(aberratepanel, ABE_LENGTH, 2, 0, "Looking at the dead beneath your feet the lust for");
+	ui_print(aberratepanel, ABE_LENGTH, 3, 0, "evolution and mutation grows. Will you mutate?");
 
 	if (map->player->current_aberration != NULL) {
 		int offy = 5;
 		for (int i=0; i < map->player->current_aberration->mutations_length; i++) {
 			struct wld_mutation *mut = &map->player->current_aberration->mutations[i];
-			ui_write(aberratepanel, offy, mut->desc);
+			ui_print(aberratepanel, ABE_LENGTH, offy, 0, mut->desc);
 			offy++;
 		}
 		ui_clear(aberratepanel, offy);
 		if (map->player->can_aberrate_more) {
-			ui_write(aberratepanel, ++offy, "Press for more?");
-			ui_write(aberratepanel, ++offy, "y: yes  x: exit");
+			ui_print(aberratepanel, ABE_LENGTH, ++offy, 0, "Press for more?");
+			ui_print(aberratepanel, ABE_LENGTH, ++offy, 0, "y: yes  x: exit");
 		} else {
-			ui_write(aberratepanel, ++offy, "Mutations exhausted...");
-			ui_write(aberratepanel, ++offy, "x: exit");
+			ui_print(aberratepanel, ABE_LENGTH, ++offy, 0, "Mutations exhausted...");
+			ui_print(aberratepanel, ABE_LENGTH, ++offy, 0, "x: exit");
 		}
 	} else {
-		ui_write(aberratepanel, 5, "y: yes  x: exit");
+		ui_print(aberratepanel, ABE_LENGTH, 5, 0, "y: yes  x: exit");
 	}
 
 	ui_box(aberratepanel);
@@ -1029,40 +1010,36 @@ void ui_update_aberratepanel(struct wld_map *map)
 
 void ui_update_usepanel(struct wld_map *map)
 {
-	// probably just need to do a shadowcast event each turn to get mobs in vision
 	if (map->player->mode == MODE_USE) {
 		switch (use_type) {
 		case USE_ITEM: {
 				// intro item
-				ui_printf(usepanel, USE_LENGTH, 0, 0, "You prepare to use %s.", use_item->type->short_desc);
-				ui_print(usepanel, USE_LENGTH, 2, 0, use_item->type->use_text_1);
-				ui_print(usepanel, USE_LENGTH, 3, 0, use_item->type->use_text_2);
+				ui_print(usepanel, USE_LENGTH, 0, 0, "------------------------- Use Item -------------------------");
+				ui_printf(usepanel, USE_LENGTH, 2, 0, "You prepare to use %s.", use_item->type->short_desc);
+				ui_print(usepanel, USE_LENGTH, 3, 0, use_item->type->use_text_1);
+				ui_print(usepanel, USE_LENGTH, 4, 0, use_item->type->use_text_2);
 				if (use_item->map_found > -1) {
-					ui_printf(usepanel, USE_LENGTH, 4, 0, "Found on level %d.", use_item->map_found + 1);
+					ui_printf(usepanel, USE_LENGTH, 5, 0, "Found on level %d.", use_item->map_found + 1);
 				}
 
 				// give options
-				int offset = 6;
+				int offset = 7;
 				bool equippable = use_item->type->is_weq || use_item->type->is_aeq;
 				if (use_item_slot == 0 || use_item_slot == 1) {
-					ui_write(usepanel, offset, "e: unequip");
+					ui_print(usepanel, USE_LENGTH, offset, 0, "e: unequip");
 					offset++;
 				} else if (equippable) {
-					ui_write(usepanel, offset, "e: equip");
+					ui_print(usepanel, USE_LENGTH, offset, 0, "e: equip");
 					offset++;
 				}
 				if (use_item->type->fn_use != NULL) {
-					char label[USE_LENGTH];
-					snprintf(label, USE_LENGTH, "u: %s", use_item->type->use_label);
-					ui_write(usepanel, offset++, label);
+					ui_printf(usepanel, USE_LENGTH, offset++, 0, "u: %s", use_item->type->use_label);
 				}
 				if (use_item->type->fn_drink != NULL) {
-					char label[USE_LENGTH];
-					snprintf(label, USE_LENGTH, "q: %s", use_item->type->drink_label);
-					ui_write(usepanel, offset++, label);
+					ui_printf(usepanel, USE_LENGTH, offset++, 0, "q: %s", use_item->type->drink_label);
 				}
-				ui_write(usepanel, offset++, "d: drop");
-				ui_write(usepanel, ++offset, "x: close");
+				ui_print(usepanel, USE_LENGTH, offset++, 0, "d: drop");
+				ui_print(usepanel, USE_LENGTH, ++offset, 0, "x: close");
 			}
 			break;
 		}
@@ -1675,7 +1652,7 @@ void ps_layout_ui()
 	ui_box(charpanel);
 
 	// inventory panel
-	int invpanel_cols = INV_LENGTH + 2;
+	int invpanel_cols = INV_LENGTH + 4;
 	int invpanel_rows = sy - logpanel_rows;
 	ui_anchor_ur(inventorypanel, invpanel_rows, invpanel_cols);
 	ui_box(inventorypanel);
