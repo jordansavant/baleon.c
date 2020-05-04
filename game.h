@@ -111,13 +111,10 @@ void ui_clear_win(WINDOW *win);
 void ui_cursorinfo(char *msg);
 void ui_positioninfo(char *msg);
 void ui_modeinfo(char *msg);
-void ui_loginfo(char *msg);
-void ui_loginfo_s(char *msg, char *msg2);
-void ui_loginfo_i(char *msg, int i);
-void ui_loginfo_is(char *msg, int i, char *msg2);
-void ui_loginfo_si(char *msg, char *msg2, int i);
-void ui_loginfo_ss(char *msg, char *msg2, char *msg3);
-void ui_loginfo_ssi(char *msg, char *msg2, char *msg3, int i);
+
+void ui_log(char *msg);
+void ui_logf(char *msg, ...);
+
 void ui_update_cmdpanel(struct wld_map *map);
 void ui_update_cursorinfo(struct wld_map *map);
 void ui_update_positioninfo(struct wld_map *map);

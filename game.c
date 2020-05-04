@@ -223,8 +223,8 @@ void g_newgame()
 
 			break;
 		case PS_GAMEOVER:
-			ui_loginfo("After many weary battles you succumb to the darkness.");
-			ui_loginfo("Death overtakes you.");
+			ui_log("After many weary battles you succumb to the darkness.");
+			ui_log("Death overtakes you.");
 			ps_play_draw();
 
 			getch();
@@ -232,8 +232,8 @@ void g_newgame()
 			play_state = PS_END;
 			break;
 		case PS_WIN:
-			ui_loginfo("Congratulations!");
-			ui_loginfo("After many weary battles you have overcome Baleon.");
+			ui_log("Congratulations!");
+			ui_log("After many weary battles you have overcome Baleon.");
 			ps_play_draw();
 
 			getch();
@@ -652,10 +652,10 @@ void ui_modeinfo(char *msg)
 	wrefresh(cursorpanel);
 }
 
-void ui_loginfo(char *msg)
+void ui_log(char *msg)
 {
 	dmlog(msg);
-	char buffer [LOG_LENGTH];
+	char buffer[LOG_LENGTH];
 	strncpy(buffer, msg, LOG_LENGTH);
 	// rotate strings onto log
 	for (int i=0; i < LOG_COUNT - 1; i++) {
@@ -663,42 +663,14 @@ void ui_loginfo(char *msg)
 	}
 	strcpy(logs[LOG_COUNT - 1], buffer);
 }
-
-void ui_loginfo_s(char *msg, char *msg2)
+void ui_logf(char *format, ...)
 {
-	char buffer [LOG_LENGTH];
-	snprintf(buffer, LOG_LENGTH, msg, msg2);
-	ui_loginfo(buffer);
-}
-void ui_loginfo_i(char *msg, int i)
-{
-	char buffer [LOG_LENGTH];
-	snprintf(buffer, LOG_LENGTH, msg, i);
-	ui_loginfo(buffer);
-}
-void ui_loginfo_is(char *msg, int i, char *msg2)
-{
-	char buffer [LOG_LENGTH];
-	snprintf(buffer, LOG_LENGTH, msg, i, msg2);
-	ui_loginfo(buffer);
-}
-void ui_loginfo_si(char *msg, char *msg2, int i)
-{
-	char buffer [LOG_LENGTH];
-	snprintf(buffer, LOG_LENGTH, msg, msg2, i);
-	ui_loginfo(buffer);
-}
-void ui_loginfo_ss(char *msg, char *msg2, char *msg3)
-{
-	char buffer [LOG_LENGTH];
-	snprintf(buffer, LOG_LENGTH, msg, msg2, msg3);
-	ui_loginfo(buffer);
-}
-void ui_loginfo_ssi(char *msg, char *msg2, char *msg3, int i)
-{
-	char buffer [LOG_LENGTH];
-	snprintf(buffer, LOG_LENGTH, msg, msg2, msg3, i);
-	ui_loginfo(buffer);
+	char buffer[LOG_LENGTH];
+	va_list argptr;
+	va_start(argptr, format);
+	vsnprintf(buffer, LOG_LENGTH, format, argptr);
+	va_end(argptr);
+	ui_log(buffer);
 }
 
 void ui_update_charpanel(struct wld_map *map)
@@ -1139,7 +1111,7 @@ void map_on_player_transition(struct wld_map *map, struct wld_mob *player, bool 
 		int map_id = map->id;
 		if (map_id == 0) {
 			// no where to go back too
-			ui_loginfo("Though aflame in fear, you cannot retreat.");
+			ui_log("Though aflame in fear, you cannot retreat.");
 		} else {
 			// transition player to prior map
 			wld_transition_player(world, map, world->maps[map_id - 1], forward);
@@ -1163,79 +1135,79 @@ void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y
 void map_on_mob_heal(struct wld_map *map, struct wld_mob* mob, int amt, struct wld_item* item)
 {
 	if (item != NULL) {
-		ui_loginfo_ssi("The %s healed %s for %d.", item->type->title, mob->type->short_desc, amt);
+		ui_logf("The %s healed %s for %d.", item->type->title, mob->type->short_desc, amt);
 	} else
-		ui_loginfo_si("%s healed for %d.", mob->type->short_desc, amt);
+		ui_logf("%s healed for %d.", mob->type->short_desc, amt);
 }
 
 void map_on_mob_attack_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, int dmg, struct wld_item* item)
 {
-	ui_loginfo_is("You were attacked for %d by %s.", dmg, aggressor->type->short_desc);
+	ui_logf("You were attacked for %d by %s.", dmg, aggressor->type->short_desc);
 }
 
 void map_on_mob_whiff_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo_s("Attack from %s misses.", aggressor->type->short_desc);
+	ui_logf("Attack from %s misses.", aggressor->type->short_desc);
 }
 
 void map_on_mob_kill_player(struct wld_map *map, struct wld_mob* aggressor, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo_s("You were killed by %s.", aggressor->type->short_desc);
+	ui_logf("You were killed by %s.", aggressor->type->short_desc);
 	play_state = PS_GAMEOVER;
 }
 
 void map_on_player_heal(struct wld_map *map, struct wld_mob* player, int amt, struct wld_item* item)
 {
 	if (item != NULL) {
-		ui_loginfo_si("The %s healed you for %d.", item->type->title, amt);
+		ui_logf("The %s healed you for %d.", item->type->title, amt);
 	} else
-		ui_loginfo_i("You healed for %d.", amt);
+		ui_logf("You healed for %d.", amt);
 }
 
 void map_on_player_attack_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, int dmg, struct wld_item* item)
 {
 	if (item != NULL) {
-		ui_loginfo_ssi("With %s you attacked %s for %d.", item->type->title, defender->type->short_desc, dmg);
+		ui_logf("With %s you attacked %s for %d.", item->type->title, defender->type->short_desc, dmg);
 	} else
-		ui_loginfo_si("You attacked %s for %d.", defender->type->short_desc, dmg);
+		ui_logf("You attacked %s for %d.", defender->type->short_desc, dmg);
 }
 
 void map_on_player_whiff(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo("You attacked and missed.");
+	ui_log("You attacked and missed.");
 }
 
 void map_on_player_whiff_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, struct wld_item* item)
 {
-	ui_loginfo_s("You attacked and missed %s.", defender->type->short_desc);
+	ui_logf("You attacked and missed %s.", defender->type->short_desc);
 }
 
 void map_on_player_kill_mob(struct wld_map *map, struct wld_mob* player, struct wld_mob* defender, struct wld_item* item)
 {
-	if (item != NULL) {
-		ui_loginfo_ss("You killed %s with your %s.", defender->type->short_desc, item->type->title);
-	} else
-		ui_loginfo_s("You killed %s.", defender->type->short_desc);
+	if (item != NULL)
+		ui_logf("You killed %s with your %s.", defender->type->short_desc, item->type->title);
+	else
+		ui_logf("You killed %s.", defender->type->short_desc);
 }
 
 void map_on_player_pickup_item(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo_s("You picked up %s.", item->type->short_desc);
+	ui_logf("You picked up %s.", item->type->short_desc);
 }
 
 void map_on_player_pickup_item_fail(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo("Inventory is full.");
+	ui_log("Inventory is full.");
 }
 
 void map_on_player_drop_item(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo_s("You dropped %s to the floor.", item->type->short_desc);
+	ui_logf("You dropped %s to the floor.", item->type->short_desc);
 }
 
 void map_on_player_drop_item_fail(struct wld_map *map, struct wld_mob* player, struct wld_item* item)
 {
-	ui_loginfo("Unable to drop; floor is occupied by another item.");
+	ui_log("Unable to drop; floor is occupied by another item.");
 }
 
 
@@ -1321,7 +1293,7 @@ void ai_player_input(struct wld_mob* player)
 					case KEY_p:
 						trigger_world = ai_rest(player);
 						listen = false;
-						ui_loginfo("You rested.");
+						ui_log("You rested.");
 						break;
 					case KEY_g:
 						trigger_world = ai_get(player, 0, 0);
@@ -1332,7 +1304,7 @@ void ai_player_input(struct wld_mob* player)
 						// enter targeting mode for active weapon
 						if (ai_player_draw_weapon(player)) {
 							// trigger targeting mode
-							ui_loginfo("You draw your weapon.");
+							ui_log("You draw your weapon.");
 							//switch (player->target_mode) {
 							//	//case TARGET_PASSIVE: ui_modeinfo("passive"); break; // not a thing for weapons
 							//	//case TARGET_SELF: ui_modeinfo("self"); break; // not a thing for weapons
@@ -1343,7 +1315,7 @@ void ai_player_input(struct wld_mob* player)
 							//	case TARGET_RANGED_TEL_AOE: ui_modeinfo("tele aoe"); break;
 							//}
 						} else {
-							ui_loginfo("You are unequipped and grasp at nothing.");
+							ui_log("You are unequipped and grasp at nothing.");
 						}
 						listen = false;
 						break;
@@ -1380,7 +1352,7 @@ void ai_player_input(struct wld_mob* player)
 							trigger_world = ai_player_trigger_target(player);
 						}
 						if (!trigger_world)
-							ui_loginfo("Incapable of such attempt.");
+							ui_log("Incapable of such attempt.");
 						listen = false;
 						break;
 					// exiting target mode
@@ -1392,7 +1364,7 @@ void ai_player_input(struct wld_mob* player)
 					case KEY_y:
 						// escape targeting mode
 						if (ai_player_sheath_weapon(player))
-						ui_loginfo("You sheath your weapon.");
+						ui_log("You sheath your weapon.");
 						listen = false;
 						break;
 					}
@@ -1507,10 +1479,10 @@ void ai_player_input(struct wld_mob* player)
 						if (!wld_mob_unequip(player, use_item_slot))
 							// switch to new slot?
 							// TODO make callback events?
-							ui_loginfo("Cannot unequip; inventory is full.");
+							ui_log("Cannot unequip; inventory is full.");
 					} else {
 						if (wld_mob_equip(player, use_item_slot))
-							ui_loginfo("Item equipped.");
+							ui_log("Item equipped.");
 					}
 					ui_unset_use();
 					ui_clear_win(usepanel);
@@ -1700,7 +1672,7 @@ void ps_build_ui()
 
 	ps_layout_ui();
 
-	ui_loginfo("You awake in darkness, then a light appears...");
+	ui_log("You awake in darkness, then a light appears...");
 }
 
 void ps_destroy_ui()
@@ -1954,27 +1926,27 @@ void ps_menu_input()
 
 void wld_log(char *msg)
 {
-	ui_loginfo(msg);
+	ui_log(msg);
 }
 void wld_log_s(char *msg, char *s)
 {
-	ui_loginfo_s(msg, s);
+	ui_logf(msg, s);
 }
 void wld_log_ss(char *msg, char *s, char *s2)
 {
-	ui_loginfo_ss(msg, s, s2);
+	ui_logf(msg, s, s2);
 }
 void wld_log_ms(char* msg, struct wld_mob* mob)
 {
-	ui_loginfo_s(msg, mob->type->short_desc);
+	ui_logf(msg, mob->type->short_desc);
 }
 void wld_log_it(char* msg, struct wld_item* item)
 {
-	ui_loginfo_s(msg, item->type->title);
+	ui_logf(msg, item->type->title);
 }
 void wld_log_ts(char* msg, struct wld_tile* tile)
 {
-	ui_loginfo_s(msg, tile->type->short_desc);
+	ui_logf(msg, tile->type->short_desc);
 }
 
 // LOGGER LINKS END
