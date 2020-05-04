@@ -372,6 +372,14 @@ void gen_mob_rat(struct wld_map* map, int c, int r)
 	mob->ai_detect_combat = ai_detect_combat_visible_hostile;
 	mob->ai_decide_combat = ai_decide_combat_melee_with_flee;
 	mob->flee_threshold = .5;
+
+	mob->stat_strength = dm_randii(2, 8);
+	mob->stat_dexterity = dm_randii(3, 8);
+	mob->stat_constitution = dm_randii(4, 8);
+
+	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
+	mob->health = conf * mob->type->base_health;
+	mob->maxhealth = conf * mob->type->base_health;
 }
 
 void gen_mob_jackal(struct wld_map* map, int c, int r)
@@ -382,6 +390,14 @@ void gen_mob_jackal(struct wld_map* map, int c, int r)
 	mob->ai_detect_combat = ai_detect_combat_visible_hostile;
 	mob->ai_decide_combat = ai_decide_combat_melee_with_flee;
 	mob->flee_threshold = .4;
+
+	mob->stat_strength = dm_randii(3, 16);
+	mob->stat_dexterity = dm_randii(3, 16);
+	mob->stat_constitution = dm_randii(3, 16);
+
+	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
+	mob->health = conf * mob->type->base_health;
+	mob->maxhealth = conf * mob->type->base_health;
 }
 
 // GENERATORS END
@@ -519,39 +535,6 @@ struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, i
 	mob->current_aberration = NULL;
 	mob->can_aberrate_more = false;
 
-	// stats TODO roll these in some sort of character rolling menu?
-	switch (type) {
-	case MOB_PLAYER:
-		mob->stat_strength = dm_randii(5, 16);
-		mob->stat_dexterity = dm_randii(5, 16);
-		mob->stat_constitution = dm_randii(5, 16);
-
-		// lets give him some items for playtesting
-		mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
-		wld_init_item(mob->inventory[0], ITEM_WEAPON_SHORTSWORD);
-
-		mob->inventory[2] = (struct wld_item*)malloc(sizeof(struct wld_item));
-		wld_init_item(mob->inventory[2], ITEM_SCROLL_FIREBOMB);
-
-		mob->inventory[3] = (struct wld_item*)malloc(sizeof(struct wld_item));
-		wld_init_item(mob->inventory[3], ITEM_WEAPON_SHORTBOW);
-
-		mob->inventory[4] = (struct wld_item*)malloc(sizeof(struct wld_item));
-		wld_init_item(mob->inventory[4], ITEM_POTION_MINOR_HEAL);
-		mob->inventory[5] = (struct wld_item*)malloc(sizeof(struct wld_item));
-		wld_init_item(mob->inventory[5], ITEM_POTION_MINOR_HEAL);
-		dmlogiii("str, dex, con", mob->stat_strength, mob->stat_dexterity, mob->stat_constitution);
-		break;
-	default:
-		mob->stat_strength = dm_randii(3, 16);
-		mob->stat_dexterity = dm_randii(3, 16);
-		mob->stat_constitution = dm_randii(3, 16);
-		break;
-	}
-	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
-	mob->health = conf * mob->type->base_health;
-	mob->maxhealth = conf * mob->type->base_health;
-
 	wld_map_new_mob(map, mob, x, y);
 
 	return mob;
@@ -573,6 +556,25 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 				struct wld_mob *mob = wld_new_mob(map, MOB_PLAYER, c, r);
 				mob->is_player = true;
 				map->player = mob; // assign to map specifically
+				// lets give him some items for playtesting
+				mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
+				wld_init_item(mob->inventory[0], ITEM_WEAPON_SHORTSWORD);
+				mob->inventory[2] = (struct wld_item*)malloc(sizeof(struct wld_item));
+				wld_init_item(mob->inventory[2], ITEM_SCROLL_FIREBOMB);
+				mob->inventory[3] = (struct wld_item*)malloc(sizeof(struct wld_item));
+				wld_init_item(mob->inventory[3], ITEM_WEAPON_SHORTBOW);
+				mob->inventory[4] = (struct wld_item*)malloc(sizeof(struct wld_item));
+				wld_init_item(mob->inventory[4], ITEM_POTION_MINOR_HEAL);
+				mob->inventory[5] = (struct wld_item*)malloc(sizeof(struct wld_item));
+				wld_init_item(mob->inventory[5], ITEM_POTION_MINOR_HEAL);
+
+				mob->stat_strength = dm_randii(5, 16);
+				mob->stat_dexterity = dm_randii(5, 16);
+				mob->stat_constitution = dm_randii(5, 16);
+				double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
+				mob->health = conf * mob->type->base_health;
+				mob->maxhealth = conf * mob->type->base_health;
+				dmlogiii("str, dex, con", mob->stat_strength, mob->stat_dexterity, mob->stat_constitution);
 
 				// set cursor nearby
 				map->cursor->x = mob->map_x + 2;
