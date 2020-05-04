@@ -410,7 +410,7 @@ int wld_cpair_bg(int tiletype);
 // MOB METHODS
 int wld_mob_dist_tile(struct wld_mob *mob, struct wld_tile *tile);
 void wld_mob_emplace(struct wld_mob *mob, int x, int y, bool trigger_events);
-bool wld_mob_can_move_to(struct wld_mob *mob, int x, int y);
+bool wld_mob_can_move_to(struct wld_mob *mob, int x1, int y1, int x2, int y2);
 void wld_mob_teleport(struct wld_mob *mob, int relx, int rely, bool trigger_events);
 void wld_mob_move(struct wld_mob *mob, int relx, int rely, bool trigger_events);
 void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*inspect)(struct wld_tile*));

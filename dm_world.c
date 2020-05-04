@@ -1322,26 +1322,27 @@ int wld_mob_dist_tile(struct wld_mob *mob, struct wld_tile *tile)
 	return dm_disti(mx, my, tx, ty);
 }
 
-bool wld_mob_can_move_to(struct wld_mob *mob, int x, int y)
+// from and to is passed in for potential move checks
+bool wld_mob_can_move_to(struct wld_mob *mob, int x1, int y1, int x2, int y2)
 {
 	// we cannot physically move around corners
-	int relx = x - mob->map_x;
-	int rely = y - mob->map_y;
+	int relx = x2 - x1;
+	int rely = y2 - y1;
 
 	if (relx != 0 && rely != 0) {
 		double dirf_x, dirf_y;
-		dm_direction((double)mob->map_x, (double)mob->map_y, (double)x, (double)y, &dirf_x, &dirf_y);
+		dm_direction((double)x1, (double)y1, (double)x2, (double)y2, &dirf_x, &dirf_y);
 		int rx = (int)dm_ceil_out(dirf_x);
 		int ry = (int)dm_ceil_out(dirf_y);
-		struct wld_tile *t1 = wld_map_get_tile_at(mob->map, x, y - ry);
-		struct wld_tile *t2 = wld_map_get_tile_at(mob->map, x - rx, y);
+		struct wld_tile *t1 = wld_map_get_tile_at(mob->map, x2, y2 - ry);
+		struct wld_tile *t2 = wld_map_get_tile_at(mob->map, x2 - rx, y2);
 		if ((t1 && wld_tile_is_blocked_movement(t1)) || (t2 && wld_tile_is_blocked_movement(t2))) {
 			return false;
 		}
 	}
 
 	// test if we can do this move
-	if (!wld_map_is_not_occupied(mob->map, x, y))
+	if (!wld_map_is_not_occupied(mob->map, x2, y2))
 		return false;
 
 	return true;
@@ -1391,7 +1392,7 @@ void wld_mob_move(struct wld_mob *mob, int relx, int rely, bool trigger_events)
 	if (mob->is_player)
 		dmlogii("move", newx, newy);
 
-	if (wld_mob_can_move_to(mob, newx, newy))
+	if (wld_mob_can_move_to(mob, mob->map_x, mob->map_y, newx, newy))
 		wld_mob_emplace(mob, newx, newy, trigger_events);
 		return;
 }
@@ -1400,13 +1401,14 @@ void wld_mob_move(struct wld_mob *mob, int relx, int rely, bool trigger_events)
 void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*inspect)(struct wld_tile*))
 {
 	bool is_blocked(struct dm_astarnode* from_node, struct dm_astarnode* to_node) {
-		struct wld_tile *tile = (struct wld_tile*)to_node->owner;
+		struct wld_tile *from_tile = (struct wld_tile*)from_node->owner;
+		struct wld_tile *to_tile = (struct wld_tile*)to_node->owner;
 		// see if we want to treat the final to_node as blocked
 		// this is useful for pathing to an enemy (since blocking the final to_node would block the path)
-		if (!test_end && tile->map_x == x && tile->map_y == y)
+		if (!test_end && to_tile->map_x == x && to_tile->map_y == y)
 			return false;
 
-		return !wld_map_is_not_occupied(mob->map, tile->map_x, tile->map_y);
+		return !wld_mob_can_move_to(mob, from_tile->map_x, from_tile->map_y, to_tile->map_x, to_tile->map_y);
 	}
 	struct dm_astarnode* get_node(int x, int y) {
 		if (x >= 0 && x < mob->map->cols && y >= 0 && y < mob->map->rows) {
