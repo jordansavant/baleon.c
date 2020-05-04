@@ -945,7 +945,7 @@ void dng_cellmap_get_room_connection_path(struct dng_cellmap *cellmap, struct dn
 	unsigned int other_center_y = room_b->y + room_b->height / 2;
 	struct dng_cell *room_b_center_cell = dng_cellmap_get_cell_at_position(cellmap, other_center_x, other_center_y);
 
-	bool is_blocked(struct dm_astarnode* node) {
+	bool is_blocked(struct dm_astarnode *from_node, struct dm_astarnode* node) {
 		struct dng_cell *cell = (struct dng_cell*)node->owner;
 		return (cell->room == NULL && !cell->is_tunnel && !cell->is_door && !cell->is_cellular_open) || cell->temp_wall;
 	}

@@ -367,7 +367,7 @@ void wld_map_destroy_mob(struct wld_map* map, struct wld_mob* mob);
 void wld_map_remove_mob(struct wld_map* map, struct wld_mob* mob);
 void wld_map_add_mob_at_entrance(struct wld_map* map, struct wld_mob* mob);
 void wld_map_add_mob_at_exit(struct wld_map* map, struct wld_mob* mob);
-bool wld_map_can_move_to(struct wld_map *map, int x, int y);
+bool wld_map_is_not_occupied(struct wld_map *map, int x, int y);
 void wld_map_move_cursor(struct wld_map *map, int relx, int rely);
 void wld_map_set_cursor_pos(struct wld_map *map, int newx, int newy);
 struct wld_tile* wld_map_get_tile_at(struct wld_map *map, int x, int y);
@@ -409,8 +409,12 @@ int wld_cpair_bg(int tiletype);
 
 // MOB METHODS
 int wld_mob_dist_tile(struct wld_mob *mob, struct wld_tile *tile);
+void wld_mob_emplace(struct wld_mob *mob, int x, int y, bool trigger_events);
+bool wld_mob_can_move_to(struct wld_mob *mob, int x, int y);
 void wld_mob_teleport(struct wld_mob *mob, int relx, int rely, bool trigger_events);
 void wld_mob_move(struct wld_mob *mob, int relx, int rely, bool trigger_events);
+void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*inspect)(struct wld_tile*));
+
 void wld_mob_vision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double));
 bool wld_mob_is_next_to_tile(struct wld_mob *mob, struct wld_tile* tile);
 bool wld_mob_is_next_to_mob(struct wld_mob* ma, struct wld_mob* mb);
@@ -431,7 +435,6 @@ void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
 void wld_mob_new_aberration(struct wld_mob *mob);
 void wld_mob_push_aberration(struct wld_mob *mob);
-void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*inspect)(struct wld_tile*));
 
 // MOB AI
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);

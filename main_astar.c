@@ -91,10 +91,15 @@ int main(void)
 		}
 	}
 
-	bool is_blocked(struct dm_astarnode* node) {
-		struct cell *cell = (struct cell*)node->owner;
-		int index = cell->y * width + cell->x;
-		return map[index] != 1;
+	bool is_blocked(struct dm_astarnode* from_node, struct dm_astarnode* to_node) {
+		struct cell *from_cell = (struct cell*)from_node->owner;
+		struct cell *to_cell = (struct cell*)to_node->owner;
+		int index = to_cell->y * width + to_cell->x;
+		bool blocked = map[index] != 1;
+		if (!blocked) {
+			printf("from %d %d to %d %d\n", from_cell->x, from_cell->y, to_cell->x, to_cell->y);
+		}
+		return blocked;
 
 	}
 	struct dm_astarnode* get_node(int x, int y) {

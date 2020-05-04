@@ -486,7 +486,7 @@ struct neighbor {
 void dm_astar(
 	struct dm_astarnode *start_node,
 	struct dm_astarnode *end_node,
-	bool (*is_blocked)(struct dm_astarnode*),
+	bool (*is_blocked)(struct dm_astarnode*, struct dm_astarnode*),
 	struct dm_astarnode* (*get_node)(int, int),
 	void (*on_path)(struct dm_astarnode*),
 	bool is_cardinal_only,
@@ -633,7 +633,7 @@ void dm_astar_check(
 	int neighbor_x,
 	int neighbor_y,
 	struct dm_astarlist *open_list,
-	bool (*is_blocked)(struct dm_astarnode*),
+	bool (*is_blocked)(struct dm_astarnode*, struct dm_astarnode*),
 	struct dm_astarnode* (*get_node)(int, int),
 	bool is_manhattan
 )
@@ -700,7 +700,7 @@ void dm_astar_check(
 	}
 
 	// Skip nodes that are blocked or already closed
-	if (!is_blocked(check_node) && !check_node->astar_closed) {
+	if (!is_blocked(current_node, check_node) && !check_node->astar_closed) {
 		//printf("--- in\n");
 		if (!check_node->astar_opened) {
 			//printf("    astarpush open\n");

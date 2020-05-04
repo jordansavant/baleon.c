@@ -931,7 +931,7 @@ void wld_map_add_mob_at_exit(struct wld_map* map, struct wld_mob* mob)
 	wld_map_new_mob(map, mob, map->exit_tile->map_x, map->exit_tile->map_y);
 }
 
-bool wld_map_can_move_to(struct wld_map *map, int x, int y)
+bool wld_map_is_not_occupied(struct wld_map *map, int x, int y)
 {
 	// make sure its in bounds
 	if (x >= map->cols || y >= map->rows || x < 0 || y < 0) {
@@ -1215,7 +1215,7 @@ void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* ti
 			bool summoned = false;
 			for (int i=0; i<4; i++) {
 				struct wld_tile *node = wld_map_get_tile_at(map, tile->map_x + dirs[i].x, tile->map_y + dirs[i].y);
-				if (node->type->is_transformable && wld_map_can_move_to(map, node->map_x, node->map_y)) {
+				if (node->type->is_transformable && wld_map_is_not_occupied(map, node->map_x, node->map_y)) {
 					gen_mob_jackal(map, node->map_x, node->map_y);
 					node->type = wld_get_tiletype(TILE_SUMMONCIRCLE_NODE);
 					summoned = true;
@@ -1313,7 +1313,6 @@ int wld_cpair_bg(int tiletype)
 ///////////////////////////
 // MOB METHODS START
 
-
 int wld_mob_dist_tile(struct wld_mob *mob, struct wld_tile *tile)
 {
 	int mx = mob->map_x;
@@ -1323,35 +1322,64 @@ int wld_mob_dist_tile(struct wld_mob *mob, struct wld_tile *tile)
 	return dm_disti(mx, my, tx, ty);
 }
 
+bool wld_mob_can_move_to(struct wld_mob *mob, int x, int y)
+{
+	// we cannot physically move around corners
+	int relx = x - mob->map_x;
+	int rely = y - mob->map_y;
+
+	if (relx != 0 && rely != 0) {
+		double dirf_x, dirf_y;
+		dm_direction((double)mob->map_x, (double)mob->map_y, (double)x, (double)y, &dirf_x, &dirf_y);
+		int rx = (int)dm_ceil_out(dirf_x);
+		int ry = (int)dm_ceil_out(dirf_y);
+		struct wld_tile *t1 = wld_map_get_tile_at(mob->map, x, y - ry);
+		struct wld_tile *t2 = wld_map_get_tile_at(mob->map, x - rx, y);
+		if ((t1 && wld_tile_is_blocked_movement(t1)) || (t2 && wld_tile_is_blocked_movement(t2))) {
+			return false;
+		}
+	}
+
+	// test if we can do this move
+	if (!wld_map_is_not_occupied(mob->map, x, y))
+		return false;
+
+	return true;
+}
+
+void wld_mob_emplace(struct wld_mob *mob, int x, int y, bool trigger_events)
+{
+	int old_index = mob->map_index;
+	int new_index = wld_calcindex(x, y, mob->map->cols);
+
+	// update indexes
+	mob->map->mob_map[new_index] = mob->id;
+	mob->map->mob_map[old_index] = -1; // vacated
+
+	// update position
+	mob->map_index = new_index;
+	mob->map_x = x;
+	mob->map_y = y;
+
+	if (trigger_events) {
+		// run tile on enter event
+		struct wld_tile* tile = wld_map_get_tile_at(mob->map, mob->map_x, mob->map_y);
+		if (tile->on_mob_enter)
+			tile->on_mob_enter(mob->map, tile, mob);
+
+		// if player, collect items he walks over unless he dropped it before
+		struct wld_item *item = wld_map_get_item_at(mob->map, mob->map_x, mob->map_y);
+		if (mob->is_player && item != NULL && !item->has_dropped && wld_mob_has_inventory(mob)) {
+			wld_mob_pickup_item(mob, item);
+		}
+	}
+}
+
 // TODO code duplicate with wld_mob_move
 void wld_mob_teleport(struct wld_mob *mob, int x, int y, bool trigger_events)
 {
-	if (wld_map_can_move_to(mob->map, x, y)) {
-		int old_index = mob->map_index;
-		int new_index = wld_calcindex(x, y, mob->map->cols);
-
-		// update indexes
-		mob->map->mob_map[new_index] = mob->id;
-		mob->map->mob_map[old_index] = -1; // vacated
-
-		// update position
-		mob->map_index = new_index;
-		mob->map_x = x;
-		mob->map_y = y;
-
-		if (trigger_events) {
-			// run tile on enter event
-			struct wld_tile* tile = wld_map_get_tile_at(mob->map, mob->map_x, mob->map_y);
-			if (tile->on_mob_enter)
-				tile->on_mob_enter(mob->map, tile, mob);
-
-			// if player, collect items he walks over unless he dropped it before
-			struct wld_item *item = wld_map_get_item_at(mob->map, mob->map_x, mob->map_y);
-			if (mob->is_player && item != NULL && !item->has_dropped && wld_mob_has_inventory(mob)) {
-				wld_mob_pickup_item(mob, item);
-			}
-		}
-	}
+	if (wld_map_is_not_occupied(mob->map, x, y))
+		wld_mob_emplace(mob, x, y, trigger_events);
 }
 
 void wld_mob_move(struct wld_mob *mob, int relx, int rely, bool trigger_events)
@@ -1360,48 +1388,45 @@ void wld_mob_move(struct wld_mob *mob, int relx, int rely, bool trigger_events)
 	// TODO need to make sure they do not diagonally move around corners
 	int newx = mob->map_x + relx;
 	int newy = mob->map_y + rely;
+	if (mob->is_player)
+		dmlogii("move", newx, newy);
 
-	// we cannot physically move around corners
-	if (relx != 0 && rely != 0) {
-		double dirf_x, dirf_y;
-		dm_direction((double)mob->map_x, (double)mob->map_y, (double)newx, (double)newy, &dirf_x, &dirf_y);
-		int rx = (int)dm_ceil_out(dirf_x);
-		int ry = (int)dm_ceil_out(dirf_y);
-		struct wld_tile *t1 = wld_map_get_tile_at(mob->map, newx, newy - ry);
-		struct wld_tile *t2 = wld_map_get_tile_at(mob->map, newx - rx, newy);
-		if ((t1 && wld_tile_is_blocked_movement(t1)) || (t2 && wld_tile_is_blocked_movement(t2))) {
-			return;
-		}
-	}
-
-	// test if we can do this move
-	if (wld_map_can_move_to(mob->map, newx, newy)) {
-		int old_index = mob->map_index;
-		int new_index = wld_calcindex(newx, newy, mob->map->cols);
-
-		// update indexes
-		mob->map->mob_map[new_index] = mob->id;
-		mob->map->mob_map[old_index] = -1; // vacated
-
-		// update position
-		mob->map_index = new_index;
-		mob->map_x = newx;
-		mob->map_y = newy;
-
-		if (trigger_events) {
-			// run tile on enter event
-			struct wld_tile* tile = wld_map_get_tile_at(mob->map, mob->map_x, mob->map_y);
-			if (tile->on_mob_enter)
-				tile->on_mob_enter(mob->map, tile, mob);
-
-			// if player, collect items he walks over unless he dropped it before
-			struct wld_item *item = wld_map_get_item_at(mob->map, mob->map_x, mob->map_y);
-			if (mob->is_player && item != NULL && !item->has_dropped && wld_mob_has_inventory(mob)) {
-				wld_mob_pickup_item(mob, item);
-			}
-		}
-	}
+	if (wld_mob_can_move_to(mob, newx, newy))
+		wld_mob_emplace(mob, newx, newy, trigger_events);
+		return;
 }
+
+// astar pathfinding for mob movement
+void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*inspect)(struct wld_tile*))
+{
+	bool is_blocked(struct dm_astarnode* from_node, struct dm_astarnode* to_node) {
+		struct wld_tile *tile = (struct wld_tile*)to_node->owner;
+		// see if we want to treat the final to_node as blocked
+		// this is useful for pathing to an enemy (since blocking the final to_node would block the path)
+		if (!test_end && tile->map_x == x && tile->map_y == y)
+			return false;
+
+		return !wld_map_is_not_occupied(mob->map, tile->map_x, tile->map_y);
+	}
+	struct dm_astarnode* get_node(int x, int y) {
+		if (x >= 0 && x < mob->map->cols && y >= 0 && y < mob->map->rows) {
+			struct wld_tile *tile = wld_map_get_tile_at(mob->map, x, y);
+			return tile->astar_node;
+		}
+	}
+	void on_path(struct dm_astarnode* node) {
+		struct wld_tile *tile = (struct wld_tile*)node->owner;
+		inspect(tile);
+	}
+
+	struct wld_tile *start = wld_map_get_tile_at_index(mob->map, mob->map_index);
+	struct wld_tile *end = wld_map_get_tile_at(mob->map, x, y);
+	dmlogii("path start", start->map_x, start->map_y);
+	dmlogii("path end", end->map_x, end->map_y);
+	dm_astar(start->astar_node, end->astar_node, is_blocked, get_node, on_path, false, true); // diagonals, manhattan distance
+}
+
+
 void wld_mob_vision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, int, double))
 {
 	// todo get radius of mobs vision?
@@ -1725,13 +1750,13 @@ void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy)
 	int diri_x = -dm_round(dirf_x);
 	int diri_y = -dm_round(dirf_y);
 	// move away from closest enemy
-	if (wld_map_can_move_to(self->map, self->map_x + diri_x, self->map_y + diri_y)) {
+	if (wld_map_is_not_occupied(self->map, self->map_x + diri_x, self->map_y + diri_y)) {
 		self->queue_x += diri_x;
 		self->queue_y += diri_y;
-	} else if(wld_map_can_move_to(self->map, self->map_x + diri_x, self->map_y)) {
+	} else if(wld_map_is_not_occupied(self->map, self->map_x + diri_x, self->map_y)) {
 		self->queue_x += diri_x;
 		self->queue_y;
-	} else if(wld_map_can_move_to(self->map, self->map_x, self->map_y + diri_y)) {
+	} else if(wld_map_is_not_occupied(self->map, self->map_x, self->map_y + diri_y)) {
 		self->queue_x;
 		self->queue_y += diri_y;
 	} else {
@@ -2058,7 +2083,7 @@ bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely)
 {
 	int newx = mob->map_x + relx;
 	int newy = mob->map_y + rely;
-	if (wld_map_can_move_to(mob->map, newx, newy)) {
+	if (wld_map_is_not_occupied(mob->map, newx, newy)) {
 		mob->queue_x += relx;
 		mob->queue_y += rely;
 		return true;
@@ -2097,7 +2122,7 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 			}
 			wld_mob_inspect_inventory(mob, inspect);
 		}
-		if (wld_map_can_move_to(mob->map, newx, newy)) {
+		if (wld_map_is_not_occupied(mob->map, newx, newy)) {
 			return ai_queuemobmove(mob, relx, rely);
 		} else {
 			// I may not be able to move here because the tile
@@ -2214,36 +2239,6 @@ void wld_update_mob(struct wld_mob *mob)
 				mutation->on_update(mob);
 		}
 	}
-}
-
-// astar pathfinding for mob movement
-void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*inspect)(struct wld_tile*))
-{
-	bool is_blocked(struct dm_astarnode* node) {
-		struct wld_tile *tile = (struct wld_tile*)node->owner;
-		// see if we want to treat the final node as blocked
-		// this is useful for pathing to an enemy (since blocking the final node would block the path)
-		if (!test_end && tile->map_x == x && tile->map_y == y)
-			return false;
-
-		return !wld_map_can_move_to(mob->map, tile->map_x, tile->map_y);
-	}
-	struct dm_astarnode* get_node(int x, int y) {
-		if (x >= 0 && x < mob->map->cols && y >= 0 && y < mob->map->rows) {
-			struct wld_tile *tile = wld_map_get_tile_at(mob->map, x, y);
-			return tile->astar_node;
-		}
-	}
-	void on_path(struct dm_astarnode* node) {
-		struct wld_tile *tile = (struct wld_tile*)node->owner;
-		inspect(tile);
-	}
-
-	struct wld_tile *start = wld_map_get_tile_at_index(mob->map, mob->map_index);
-	struct wld_tile *end = wld_map_get_tile_at(mob->map, x, y);
-	dmlogii("path start", start->map_x, start->map_y);
-	dmlogii("path end", end->map_x, end->map_y);
-	dm_astar(start->astar_node, end->astar_node, is_blocked, get_node, on_path, false, true); // diagonals, manhattan distance
 }
 
 // MOB AI END
