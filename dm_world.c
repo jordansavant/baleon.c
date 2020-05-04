@@ -139,7 +139,7 @@ void wld_setup()
 		{ MOB_PLAYER,	100,	20,	'@',	WCLR_MAGENTA,	"yourself",		"You" },
 		// mobs elevating in difficulty
 		// name		hp	vision	sprite	color		short desc		title
-		{ MOB_RAT,	5,	5,	'r',	WCLR_RED,	"a hideous rat",	"rat" },
+		{ MOB_RAT,	5,	7,	'r',	WCLR_RED,	"a hideous rat",	"rat" },
 		{ MOB_JACKAL,	35,	20,	'j',	WCLR_RED,	"a small jackal",	"jackal" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
@@ -1418,7 +1418,7 @@ void wld_mob_path_to(struct wld_mob *mob, int x, int y, bool test_end, void (*in
 
 	struct wld_tile *start = wld_map_get_tile_at_index(mob->map, mob->map_index);
 	struct wld_tile *end = wld_map_get_tile_at(mob->map, x, y);
-	dm_astar(start->astar_node, end->astar_node, is_blocked, get_node, on_path, false, true); // diagonals, manhattan distance
+	dm_astar(start->astar_node, end->astar_node, is_blocked, get_node, on_path, false, false); // diagonals, manhattan distance
 }
 
 
@@ -1823,7 +1823,7 @@ void ai_decide_combat_melee_with_flee(struct wld_mob *self)
 			int x = self->map->player->map_x;
 			int y = self->map->player->map_y;
 			// move to target
-			if (dm_chance(1,6)) {
+			if (dm_chance(1,12) && false) {
 				// random movement
 				self->queue_x = dm_randii(0, 3) - 1;
 				self->queue_y = dm_randii(0, 3) - 1;

@@ -834,10 +834,17 @@ void ui_update_mobpanel(struct wld_map *map)
 			struct wld_item *item = wld_map_get_item_at(map, x, y);
 
 			if (mob && !mob->is_dead) { // players are not destroyed
+				bool on_cursor = (mob->map->cursor->index == mob->map_index);
 				// mob name
 				char buffer[VIS_LENGTH];
 				snprintf(buffer, VIS_LENGTH, "- %s", mob->type->title);
 				ui_write_rc(mobpanel, i + offy, offx, buffer);
+				// cursor
+				if (on_cursor) {
+					wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_MAGENTA, WCLR_MAGENTA)));
+					ui_write_char(mobpanel, i + offy, offx - 1, ' ');
+					wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
+				}
 				// icon
 				wattrset(mobpanel, COLOR_PAIR(wld_cpair(mob->type->fg_color, WCLR_BLACK)));
 				ui_write_char(mobpanel, i + offy, offx, mob->type->sprite);
