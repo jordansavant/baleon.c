@@ -574,7 +574,6 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 				double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
 				mob->health = conf * mob->type->base_health;
 				mob->maxhealth = conf * mob->type->base_health;
-				dmlogiii("str, dex, con", mob->stat_strength, mob->stat_dexterity, mob->stat_constitution);
 
 				// set cursor nearby
 				map->cursor->x = mob->map_x + 2;
