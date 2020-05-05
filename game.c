@@ -663,6 +663,12 @@ void ui_log(char *msg)
 	}
 	strcpy(logs[LOG_COUNT - 1], buffer);
 }
+void ui_vlogf(char *format, va_list argptr)
+{
+	char buffer[LOG_LENGTH];
+	vsnprintf(buffer, LOG_LENGTH, format, argptr);
+	ui_log(buffer);
+}
 void ui_logf(char *format, ...)
 {
 	char buffer[LOG_LENGTH];
@@ -1928,25 +1934,12 @@ void wld_log(char *msg)
 {
 	ui_log(msg);
 }
-void wld_log_s(char *msg, char *s)
+void wld_logf(char *format, ...)
 {
-	ui_logf(msg, s);
-}
-void wld_log_ss(char *msg, char *s, char *s2)
-{
-	ui_logf(msg, s, s2);
-}
-void wld_log_ms(char* msg, struct wld_mob* mob)
-{
-	ui_logf(msg, mob->type->short_desc);
-}
-void wld_log_it(char* msg, struct wld_item* item)
-{
-	ui_logf(msg, item->type->title);
-}
-void wld_log_ts(char* msg, struct wld_tile* tile)
-{
-	ui_logf(msg, tile->type->short_desc);
+	va_list argptr;
+	va_start(argptr, format);
+	ui_vlogf(format, argptr);
+	va_end(argptr);
 }
 
 // LOGGER LINKS END

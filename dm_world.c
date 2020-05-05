@@ -1515,7 +1515,7 @@ void wld_mob_destroy_item_in_slot(struct wld_mob* mob, int itemslot)
 {
 	struct wld_item *item = mob->inventory[itemslot];
 	if (mob->is_player)
-		wld_log_it("Your %s was destroyed.", item);
+		wld_logf("Your %s was destroyed.", item->type->title);
 
 	if (item == mob->active_item)
 		mob->active_item = NULL;
@@ -2452,7 +2452,7 @@ void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 		struct wld_tile* tile = wld_map_get_tile_at(user->map, x, y);
 		if (wld_tile_is_blocked_movement(tile)) {
 			if (user->is_player)
-				wld_log_ts("It strikes %s.", tile);
+				wld_logf("It strikes %s.", tile->type->short_desc);
 			return true;
 		}
 
@@ -2516,14 +2516,14 @@ void itm_use_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* c
 		// do not increment uses so it is "used" when it opens the door
 	} else {
 		item->uses++; // increment uses so the key remains in inventory
-		wld_log_ss("The %s failed to open %s.", item->type->title, cursor_tile->type->short_desc);
+		wld_logf("The %s failed to open %s.", item->type->title, cursor_tile->type->short_desc);
 	}
 }
 
 void itm_hit_key(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
 {
 	tile->is_door_locked = false;
-	wld_log_ss("You used %s to open %s.", item->type->short_desc, tile->type->short_desc);
+	wld_logf("You used %s to open %s.", item->type->short_desc, tile->type->short_desc);
 }
 
 
@@ -2645,7 +2645,7 @@ void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, st
 	// TODO make this apply item effects to mobs
 	// TODO make this destroy certain terrains?
 	// perform a blast based on t
-	wld_log_it("The %s blasts throughout the area.", item);
+	wld_logf("The %s blasts throughout the area.", item->type->title);
 	int blast_radius = item->type->base_radius;
 	int min_damage = item->type->min_val;
 	int max_damage = item->type->max_val;

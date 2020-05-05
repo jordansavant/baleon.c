@@ -114,6 +114,7 @@ void ui_modeinfo(char *msg);
 
 void ui_log(char *msg);
 void ui_logf(char *msg, ...);
+void ui_vlogf(char *msg, va_list argptr);
 
 void ui_update_cmdpanel(struct wld_map *map);
 void ui_update_cursorinfo(struct wld_map *map);
@@ -163,13 +164,5 @@ void ps_play_update();
 // PLAY MENU
 void ps_menu_draw();
 void ps_menu_input();
-
-// LOGGER LINKS
-void wld_log(char *msg);
-void wld_log_s(char *msg, char *s);
-void wld_log_ss(char *msg, char *s, char *s2);
-void wld_log_ms(char* msg, struct wld_mob* mob);
-void wld_log_it(char* msg, struct wld_item* item);
-void wld_log_ts(char* msg, struct wld_tile* tile);
 
 #endif
