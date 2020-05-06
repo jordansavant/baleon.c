@@ -27,7 +27,13 @@ current capabilities:
 TODO:
 
 now
-- health on rest, mutation loss over time, mutation gain on kills
+- remove hardcoded mutate values
+	- add base mob type mutate values
+		- maybe just based on depth of dungeon?
+	- increase next ding cap each mutation
+	- add increasing risk/reward on push
+- health on rest
+	- health meter in char panel
 - active effects on tiles
 - ui: equipped items
 - ui: stats / mutations panels
