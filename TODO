@@ -28,8 +28,8 @@ TODO:
 
 now
 - remove hardcoded mutate values
-	- add base mob type mutate values
-		- maybe just based on depth of dungeon?
+	- add base mob type mutate values (float?)
+		- mob float * depth constant
 	- increase next ding cap each mutation
 	- add increasing risk/reward on push
 - health on rest

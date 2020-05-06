@@ -1869,6 +1869,7 @@ void ps_play_draw()
 		ui_update_aberratepanel(current_map);
 }
 
+int update_counter = 0;
 void ps_play_update()
 {
 	// depending on input change and trigger various updates
@@ -1888,7 +1889,7 @@ void ps_play_update()
 	for (int i=0; i < current_map->mobs_length; i++) {
 		struct wld_mob *m = current_map->mobs[i];
 		if (trigger_world) {
-			wld_update_mob(m);
+			wld_update_mob(m, update_counter++);
 		}
 	}
 

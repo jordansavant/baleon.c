@@ -134,19 +134,20 @@ void wld_setup()
 
 	// copy mob types into malloc
 	struct wld_mobtype mts [] = {
-		// hp, sprite, color, desc, title
-		{ MOB_VOID,	0,	0,	' ',	WCLR_BLACK,	"",			"" },
-		{ MOB_PLAYER,	100,	20,	'@',	WCLR_MAGENTA,	"yourself",		"You" },
+		// hp, difficuly sprite, color, desc, title
+		{ MOB_VOID,	0,	0,	0,	' ',	WCLR_BLACK,	"",			"" },
+		{ MOB_PLAYER,	100,	20,	0,	'@',	WCLR_MAGENTA,	"yourself",		"You" },
 		// mobs elevating in difficulty
-		// name		hp	vision	sprite	color		short desc		title
-		{ MOB_RAT,	5,	7,	'r',	WCLR_RED,	"a hideous rat",	"rat" },
-		{ MOB_JACKAL,	35,	20,	'j',	WCLR_RED,	"a small jackal",	"jackal" },
+		// name		hp	vision	dffclty	sprite	color		short desc		title
+		{ MOB_RAT,	5,	7,	1,	'r',	WCLR_RED,	"a hideous rat",	"rat" },
+		{ MOB_JACKAL,	35,	20,	3,	'j',	WCLR_RED,	"a small jackal",	"jackal" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
 		wld_mobtypes[i].type = mts[i].type;
 		wld_mobtypes[i].base_health = mts[i].base_health;
 		wld_mobtypes[i].base_vision = mts[i].base_vision;
+		wld_mobtypes[i].difficulty = mts[i].difficulty;
 		wld_mobtypes[i].sprite = mts[i].sprite;
 		wld_mobtypes[i].fg_color = mts[i].fg_color;
 		wld_mobtypes[i].short_desc = mts[i].short_desc;
@@ -368,7 +369,8 @@ struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r)
 {
 	struct wld_mob *mob = wld_new_mob(map, MOB_PLAYER, c, r);
 	mob->is_player = true;
-	mob->mutate_ding = 100;
+	mob->mutate_ding = XP_START;
+	mob->mutate_drain_rate = 3; // every three cycles
 	map->player = mob; // assign to map specifically
 
 	// lets give him some items for playtesting
@@ -562,6 +564,7 @@ struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, i
 	mob->can_mutate = false;
 	mob->mutate_xp = 0;
 	mob->mutate_ding = 0;
+	mob->mutate_drain_rate = 0;
 	mob->aberrations = (struct wld_aberration**)malloc(MAX_ABERRATIONS * sizeof(struct wld_aberration*));
 	for (int j=0; j < MAX_ABERRATIONS; j++) {
 		mob->aberrations[j] = NULL;
@@ -1734,6 +1737,7 @@ void wld_mutate_end(struct wld_mob *mob)
 	// subtract the mutation amount equal to the level
 	mob->current_aberration = NULL;
 	mob->can_mutate = false;
+	mob->mutate_ding *= XP_LEVEL_FACTOR;
 	wld_mutate_drain(mob, 0 - mob->mutate_ding);
 	wld_mutate_check(mob); // still more for another level?
 }
@@ -1752,6 +1756,14 @@ void wld_mutate_check(struct wld_mob *mob)
 // can mutate is checked in update
 // because we want them to be able
 // to level multiple times
+void wld_mutate_xp_kill(struct wld_mob *mob, struct wld_mob *victim)
+{
+	// difficulty 1, enemy factor .5 = 50
+	int xp = victim->type->difficulty * XP_MOB_FACTOR; // 25 xp per difficulty of mob
+	dmlogf("xp %s %d", victim->type->title, xp);
+	wld_mutate_xp(mob, xp);
+}
+
 void wld_mutate_xp(struct wld_mob *mob, int amt)
 {
 	mob->mutate_xp += amt;
@@ -1964,7 +1976,7 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct
 	ai_mob_die(defender);
 
 	if (aggressor->is_player)
-		wld_mutate_xp(aggressor, 140);
+		wld_mutate_xp_kill(aggressor, defender);
 
 	// notify event
 	if (!defender->is_player && aggressor->map->on_mob_kill_mob)
@@ -2137,7 +2149,7 @@ bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely)
 {
 	int newx = mob->map_x + relx;
 	int newy = mob->map_y + rely;
-	if (wld_map_is_not_occupied(mob->map, newx, newy)) {
+	if (wld_mob_can_move_to(mob, mob->map_x, mob->map_y, newx, newy)) {
 		mob->queue_x += relx;
 		mob->queue_y += rely;
 		return true;
@@ -2178,10 +2190,6 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 		}
 		if (wld_map_is_not_occupied(mob->map, newx, newy)) {
 			return ai_queuemobmove(mob, relx, rely);
-		} else {
-			// I may not be able to move here because the tile
-			// is a locked door, if so search inventory for key
-			// and unlock, then attempt to move again
 		}
 		return false;
 	}
@@ -2226,7 +2234,7 @@ void wld_soft_update_player(struct wld_mob *mob)
 	}
 }
 
-void wld_update_mob(struct wld_mob *mob)
+void wld_update_mob(struct wld_mob *mob, int counter)
 {
 	// setup
 	if (mob->state == MS_START) {
@@ -2272,8 +2280,11 @@ void wld_update_mob(struct wld_mob *mob)
 
 	// mutation growth loses over time
 	// decrement aberation timer
-	wld_mutate_check(mob);
-	wld_mutate_drain(mob, -1);
+	if (mob->is_player) {
+		wld_mutate_check(mob);
+		if (counter % mob->mutate_drain_rate == 0)
+			wld_mutate_drain(mob, -1);
+	}
 
 	// apply changes
 	wld_mob_move(mob, mob->queue_x, mob->queue_y, true);

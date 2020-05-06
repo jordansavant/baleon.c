@@ -16,6 +16,10 @@
 #define MAX_MUTATION_DESC_LEN 35
 #define MAX_ABERRATIONS 20
 
+#define XP_START 1000
+#define XP_MOB_FACTOR 25
+#define XP_LEVEL_FACTOR 1.5
+
 enum WLD_COLOR_INDEX {
 	WCLR_BLACK,   // 0
 	WCLR_GREEN,   // 1
@@ -172,6 +176,7 @@ struct wld_mobtype {
 	enum WLD_MOBTYPE type;
 	int base_health;
 	int base_vision;
+	int difficulty;
 	unsigned long sprite;
 	int fg_color;
 	char *short_desc;
@@ -214,6 +219,7 @@ struct wld_mob {
 	int aberrations_length;
 	struct wld_aberration *current_aberration;
 	bool can_mutate_more;
+	int mutate_drain_rate;
 };
 
 
@@ -439,6 +445,7 @@ void wld_mob_new_aberration(struct wld_mob *mob);
 void wld_mob_push_aberration(struct wld_mob *mob);
 void wld_mutate_end(struct wld_mob *mob);
 void wld_mutate_check(struct wld_mob *mob);
+void wld_mutate_xp_kill(struct wld_mob *mob, struct wld_mob *victim);
 void wld_mutate_xp(struct wld_mob *mob, int amt);
 void wld_mutate_drain(struct wld_mob *mob, int amt);
 
@@ -472,7 +479,7 @@ bool ai_rest(struct wld_mob *mob);
 bool ai_get(struct wld_mob *mob, int relx, int rely);
 bool ai_can_get(struct wld_mob *mob, int relx, int rely);
 void wld_soft_update_player(struct wld_mob *mob);
-void wld_update_mob(struct wld_mob *mob);
+void wld_update_mob(struct wld_mob *mob, int iter);
 
 // CHEATS
 void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob*);
