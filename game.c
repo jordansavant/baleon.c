@@ -714,12 +714,12 @@ void ui_update_charpanel(struct wld_map *map)
 	ui_printf(charpanel, CHAR_PANEL_LENGTH, 0, 0, "str: %d  dex: %d  con: %d", map->player->stat_strength, map->player->stat_dexterity, map->player->stat_constitution);
 
 	// aberrate meter
-	if (map->player->can_aberrate)
-		ui_meter(charpanel, 1, 0, 25, "mutate ready!", map->player->aberration_tick, map->player->aberration_max, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+	if (map->player->can_mutate)
+		ui_meter(charpanel, 1, 0, 25, "mutate ready!", map->player->mutate_xp, map->player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
 	else {
 		char lbl[25];
-		snprintf(lbl, 25, "mutate %d/%d", map->player->aberration_tick, map->player->aberration_max);
-		ui_meter(charpanel, 1, 0, 25, lbl, map->player->aberration_tick, map->player->aberration_max, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+		snprintf(lbl, 25, "mutate %d/%d", map->player->mutate_xp, map->player->mutate_ding);
+		ui_meter(charpanel, 1, 0, 25, lbl, map->player->mutate_xp, map->player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
 	}
 
 	// TODO health meter
@@ -749,7 +749,7 @@ void ui_update_cmdpanel(struct wld_map *map)
 		if (ai_can_get(current_map->player, 0, 0)) {
 			strncat(buffer, "  g: get", 8);
 		}
-		if (t->dead_mob_type && current_map->player->can_aberrate) {
+		if (t->dead_mob_type && current_map->player->can_mutate) {
 			strncat(buffer, "  b: aberrate", 13);
 		}
 	}
@@ -995,7 +995,7 @@ void ui_update_aberratepanel(struct wld_map *map)
 			offy++;
 		}
 		ui_clear(aberratepanel, offy);
-		if (map->player->can_aberrate_more) {
+		if (map->player->can_mutate_more) {
 			ui_print(aberratepanel, ABE_LENGTH, ++offy, 0, "Press for more?");
 			ui_print(aberratepanel, ABE_LENGTH, ++offy, 0, "y: yes  x: exit");
 		} else {
@@ -1356,7 +1356,7 @@ void ai_player_input(struct wld_mob* player)
 						break;
 					case KEY_b:
 						// enter aberration mode
-						if (player->can_aberrate) {
+						if (player->can_mutate) {
 							struct wld_tile *t = wld_map_get_tile_at_index(player->map, player->map_index);
 							if (t->dead_mob_type) {
 								player->mode = MODE_ABERRATE;
@@ -1479,15 +1479,15 @@ void ai_player_input(struct wld_mob* player)
 					ui_clear_win(aberratepanel);
 					player->mode = MODE_PLAY;
 					player->current_aberration = NULL;
-					player->aberration_tick = 0;
-					player->can_aberrate = false;
+					player->mutate_xp = 0;
+					player->can_mutate = false;
 					listen = false;
 					break;
 				case KEY_y:
-					if (player->can_aberrate) {
+					if (player->can_mutate) {
 						if (player->current_aberration == NULL)
 							wld_mob_new_aberration(player);
-						else if (player->can_aberrate_more)
+						else if (player->can_mutate_more)
 							wld_mob_push_aberration(player);
 					}
 					listen = false;

@@ -364,7 +364,36 @@ void wld_teardown()
 ///////////////////////////
 // GENERATORS START
 
-void gen_mob_rat(struct wld_map* map, int c, int r)
+struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r)
+{
+	struct wld_mob *mob = wld_new_mob(map, MOB_PLAYER, c, r);
+	mob->is_player = true;
+	mob->mutate_ding = 100;
+	map->player = mob; // assign to map specifically
+
+	// lets give him some items for playtesting
+	mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
+	wld_init_item(mob->inventory[0], ITEM_WEAPON_SHORTSWORD);
+	mob->inventory[2] = (struct wld_item*)malloc(sizeof(struct wld_item));
+	wld_init_item(mob->inventory[2], ITEM_SCROLL_FIREBOMB);
+	mob->inventory[3] = (struct wld_item*)malloc(sizeof(struct wld_item));
+	wld_init_item(mob->inventory[3], ITEM_WEAPON_SHORTBOW);
+	mob->inventory[4] = (struct wld_item*)malloc(sizeof(struct wld_item));
+	wld_init_item(mob->inventory[4], ITEM_POTION_MINOR_HEAL);
+	mob->inventory[5] = (struct wld_item*)malloc(sizeof(struct wld_item));
+	wld_init_item(mob->inventory[5], ITEM_POTION_MINOR_HEAL);
+
+	mob->stat_strength = dm_randii(5, 16);
+	mob->stat_dexterity = dm_randii(5, 16);
+	mob->stat_constitution = dm_randii(5, 16);
+	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
+	mob->health = conf * mob->type->base_health;
+	mob->maxhealth = conf * mob->type->base_health;
+
+	return mob;
+}
+
+struct wld_mob* gen_mob_rat(struct wld_map* map, int c, int r)
 {
 	struct wld_mob *mob = wld_new_mob(map, MOB_RAT, c, r);
 	mob->ai_wander = ai_default_wander;
@@ -380,9 +409,11 @@ void gen_mob_rat(struct wld_map* map, int c, int r)
 	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
 	mob->health = conf * mob->type->base_health;
 	mob->maxhealth = conf * mob->type->base_health;
+
+	return mob;
 }
 
-void gen_mob_jackal(struct wld_map* map, int c, int r)
+struct wld_mob* gen_mob_jackal(struct wld_map* map, int c, int r)
 {
 	struct wld_mob *mob = wld_new_mob(map, MOB_JACKAL, c, r);
 	mob->ai_wander = ai_default_wander;
@@ -398,6 +429,8 @@ void gen_mob_jackal(struct wld_map* map, int c, int r)
 	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
 	mob->health = conf * mob->type->base_health;
 	mob->maxhealth = conf * mob->type->base_health;
+
+	return mob;
 }
 
 // GENERATORS END
@@ -526,16 +559,16 @@ struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, i
 	}
 
 	// create pointers to aberrations
-	mob->can_aberrate = false;
-	mob->aberration_tick = 0;
-	mob->aberration_max = 0;
+	mob->can_mutate = false;
+	mob->mutate_xp = 0;
+	mob->mutate_ding = 0;
 	mob->aberrations = (struct wld_aberration**)malloc(MAX_ABERRATIONS * sizeof(struct wld_aberration*));
 	for (int j=0; j < MAX_ABERRATIONS; j++) {
 		mob->aberrations[j] = NULL;
 	}
 	mob->aberrations_length = 0;
 	mob->current_aberration = NULL;
-	mob->can_aberrate_more = false;
+	mob->can_mutate_more = false;
 
 	wld_map_new_mob(map, mob, x, y);
 
@@ -555,28 +588,7 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 
 			// Spawn player and first dungeon entrance
 			if (cell->is_entrance_transition && map->is_first_map) {
-				struct wld_mob *mob = wld_new_mob(map, MOB_PLAYER, c, r);
-				mob->is_player = true;
-				mob->aberration_max = 100;
-				map->player = mob; // assign to map specifically
-				// lets give him some items for playtesting
-				mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
-				wld_init_item(mob->inventory[0], ITEM_WEAPON_SHORTSWORD);
-				mob->inventory[2] = (struct wld_item*)malloc(sizeof(struct wld_item));
-				wld_init_item(mob->inventory[2], ITEM_SCROLL_FIREBOMB);
-				mob->inventory[3] = (struct wld_item*)malloc(sizeof(struct wld_item));
-				wld_init_item(mob->inventory[3], ITEM_WEAPON_SHORTBOW);
-				mob->inventory[4] = (struct wld_item*)malloc(sizeof(struct wld_item));
-				wld_init_item(mob->inventory[4], ITEM_POTION_MINOR_HEAL);
-				mob->inventory[5] = (struct wld_item*)malloc(sizeof(struct wld_item));
-				wld_init_item(mob->inventory[5], ITEM_POTION_MINOR_HEAL);
-
-				mob->stat_strength = dm_randii(5, 16);
-				mob->stat_dexterity = dm_randii(5, 16);
-				mob->stat_constitution = dm_randii(5, 16);
-				double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
-				mob->health = conf * mob->type->base_health;
-				mob->maxhealth = conf * mob->type->base_health;
+				struct wld_mob *mob = gen_mob_player(map, c, r);
 
 				// set cursor nearby
 				map->cursor->x = mob->map_x + 2;
@@ -1696,7 +1708,7 @@ void wld_mob_new_aberration(struct wld_mob *mob)
 	mob->current_aberration = aberration;
 	mob->aberrations[mob->aberrations_length] = aberration;
 	mob->aberrations_length++;
-	mob->can_aberrate_more = true;
+	mob->can_mutate_more = true;
 	aberration->mutations_length = 0;
 
 	// form first mutation
@@ -1708,11 +1720,44 @@ void wld_mob_push_aberration(struct wld_mob *mob)
 	if (mob->current_aberration) {
 		wld_mob_new_mutation(mob, mob->current_aberration);
 		if (mob->current_aberration->mutations_length >= MAX_MUTATIONS) {
-			mob->can_aberrate_more = false;
-			mob->can_aberrate = false;
-			mob->aberration_tick = 0;
+			mob->can_mutate_more = false;
+			mob->can_mutate = false;
+			mob->mutate_xp = 0;
 		}
 	}
+}
+
+
+// used to check if the mutation has
+// exceeded the cap
+void wld_mutate_check(struct wld_mob *mob)
+{
+	if (mob->mutate_xp >= mob->mutate_ding)
+		mob->can_mutate = true;
+}
+
+// add xp to the mutate meter
+// if it exceeds the next level then
+// can mutate = true!a
+// can mutate is checked in update
+// because we want them to be able
+// to level multiple times
+void wld_mutate_xp(struct wld_mob *mob, int amt)
+{
+	mob->mutate_xp += amt;
+	wld_mutate_check(mob);
+}
+
+// used to drain mutation meter over
+// time, cannot drop below zero
+// cannot drop below last ding level
+void wld_mutate_drain(struct wld_mob *mob, int amt)
+{
+	int new = mob->mutate_xp += amt;
+	if (new < 0)
+		new = 0;
+	if (mob->can_mutate == false)
+		mob->mutate_xp = new;
 }
 
 // MOB METHODS END
@@ -1910,7 +1955,7 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct
 	ai_mob_die(defender);
 
 	if (aggressor->is_player)
-		aggressor->aberration_tick += 100;
+		wld_mutate_xp(aggressor, 100);
 
 	// notify event
 	if (!defender->is_player && aggressor->map->on_mob_kill_mob)
@@ -2218,12 +2263,8 @@ void wld_update_mob(struct wld_mob *mob)
 
 	// mutation growth loses over time
 	// decrement aberation timer
-	if (mob->aberration_tick >= mob->aberration_max)
-		mob->aberration_tick = mob->aberration_max;
-	mob->can_aberrate = mob->aberration_tick == mob->aberration_max;
-	mob->aberration_tick--;
-	if (mob->aberration_tick <= 0)
-		mob->aberration_tick = 0;
+	wld_mutate_check(mob);
+	wld_mutate_drain(mob, -1);
 
 	// apply changes
 	wld_mob_move(mob, mob->queue_x, mob->queue_y, true);

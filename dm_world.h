@@ -208,12 +208,12 @@ struct wld_mob {
 	struct wld_effect active_effects[MAX_ACTIVE_EFFECTS];
 	int active_effects_length;
 
-	bool can_aberrate;
-	int aberration_tick, aberration_max;
+	bool can_mutate;
+	int mutate_xp, mutate_ding;
 	struct wld_aberration **aberrations;
 	int aberrations_length;
 	struct wld_aberration *current_aberration;
-	bool can_aberrate_more;
+	bool can_mutate_more;
 };
 
 
@@ -341,8 +341,9 @@ void wld_delete_world(struct wld_world*);
 void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_map *to, bool at_entrance);
 
 // GENERATORS
-void gen_mob_jackal(struct wld_map* map, int c, int r);
-void gen_mob_rat(struct wld_map* map, int c, int r);
+struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r);
+struct wld_mob* gen_mob_jackal(struct wld_map* map, int c, int r);
+struct wld_mob* gen_mob_rat(struct wld_map* map, int c, int r);
 
 // MAP INITIALIZATION
 void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap);
@@ -436,6 +437,9 @@ void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
 void wld_mob_new_aberration(struct wld_mob *mob);
 void wld_mob_push_aberration(struct wld_mob *mob);
+void wld_mutate_check(struct wld_mob *mob);
+void wld_mutate_xp(struct wld_mob *mob, int amt);
+void wld_mutate_drain(struct wld_mob *mob, int amt);
 
 // MOB AI
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
