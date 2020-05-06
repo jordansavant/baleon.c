@@ -437,6 +437,7 @@ void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
 void wld_mob_new_aberration(struct wld_mob *mob);
 void wld_mob_push_aberration(struct wld_mob *mob);
+void wld_mutate_end(struct wld_mob *mob);
 void wld_mutate_check(struct wld_mob *mob);
 void wld_mutate_xp(struct wld_mob *mob, int amt);
 void wld_mutate_drain(struct wld_mob *mob, int amt);

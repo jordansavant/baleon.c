@@ -680,7 +680,7 @@ void ui_logf(char *format, ...)
 }
 
 
-void ui_meter(WINDOW *win, int row, int col, int size, char* label, int current, int max, int labelfg, int wfg, int wbg, bool deplete_left)
+void ui_meter(WINDOW *win, int row, int col, int size, char* label, int current, int max, int labelclr, int fillclr, int emptyclr, bool deplete_left)
 {
 	int fill;
 	if (deplete_left)
@@ -691,10 +691,10 @@ void ui_meter(WINDOW *win, int row, int col, int size, char* label, int current,
 	for (int i=0; i < size; i++) {
 		if (c != '\0')
 			c = label[i];
-		if (i < fill)
-			wattrset(win, COLOR_PAIR(wld_cpair(labelfg, wfg)));
+		if (i < fill || fill == size)
+			wattrset(win, COLOR_PAIR(wld_cpair(labelclr, fillclr)));
 		else
-			wattrset(win, COLOR_PAIR(wld_cpair(labelfg, wbg)));
+			wattrset(win, COLOR_PAIR(wld_cpair(labelclr, emptyclr)));
 		if (c != '\0')
 			ui_printchar(win, row, col + i, c);
 		else
@@ -714,9 +714,11 @@ void ui_update_charpanel(struct wld_map *map)
 	ui_printf(charpanel, CHAR_PANEL_LENGTH, 0, 0, "str: %d  dex: %d  con: %d", map->player->stat_strength, map->player->stat_dexterity, map->player->stat_constitution);
 
 	// aberrate meter
-	if (map->player->can_mutate)
-		ui_meter(charpanel, 1, 0, 25, "mutate ready!", map->player->mutate_xp, map->player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
-	else {
+	if (map->player->can_mutate) {
+		char lbl[25];
+		snprintf(lbl, 25, "mutate %d/%d ready!", map->player->mutate_xp, map->player->mutate_ding);
+		ui_meter(charpanel, 1, 0, 25, lbl, map->player->mutate_xp, map->player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+	} else {
 		char lbl[25];
 		snprintf(lbl, 25, "mutate %d/%d", map->player->mutate_xp, map->player->mutate_ding);
 		ui_meter(charpanel, 1, 0, 25, lbl, map->player->mutate_xp, map->player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
@@ -1477,10 +1479,8 @@ void ai_player_input(struct wld_mob* player)
 				case KEY_ESC:
 				case KEY_x:
 					ui_clear_win(aberratepanel);
+					wld_mutate_end(player);
 					player->mode = MODE_PLAY;
-					player->current_aberration = NULL;
-					player->mutate_xp = 0;
-					player->can_mutate = false;
 					listen = false;
 					break;
 				case KEY_y:
@@ -1651,7 +1651,7 @@ void ps_layout_ui()
 	ui_box(cursorpanel);
 
 	// character panel
-	ui_anchor_bl(charpanel, logpanel_rows, sx - logpanel_cols - cursorpanel_cols + 3, 0, cursorpanel_cols - 2);
+	ui_anchor_bl(charpanel, logpanel_rows, sx - logpanel_cols - cursorpanel_cols - 2, 0, cursorpanel_cols + 1);
 	ui_box(charpanel);
 
 	// inventory panel

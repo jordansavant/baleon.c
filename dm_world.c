@@ -1722,11 +1722,21 @@ void wld_mob_push_aberration(struct wld_mob *mob)
 		if (mob->current_aberration->mutations_length >= MAX_MUTATIONS) {
 			mob->can_mutate_more = false;
 			mob->can_mutate = false;
-			mob->mutate_xp = 0;
 		}
 	}
 }
 
+
+// called when the mutation process ends
+// from the front end
+void wld_mutate_end(struct wld_mob *mob)
+{
+	// subtract the mutation amount equal to the level
+	mob->current_aberration = NULL;
+	mob->can_mutate = false;
+	wld_mutate_drain(mob, 0 - mob->mutate_ding);
+	wld_mutate_check(mob); // still more for another level?
+}
 
 // used to check if the mutation has
 // exceeded the cap
@@ -1753,11 +1763,10 @@ void wld_mutate_xp(struct wld_mob *mob, int amt)
 // cannot drop below last ding level
 void wld_mutate_drain(struct wld_mob *mob, int amt)
 {
-	int new = mob->mutate_xp += amt;
+	int new = mob->mutate_xp + amt;
 	if (new < 0)
 		new = 0;
-	if (mob->can_mutate == false)
-		mob->mutate_xp = new;
+	mob->mutate_xp = new;
 }
 
 // MOB METHODS END
@@ -1955,7 +1964,7 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct
 	ai_mob_die(defender);
 
 	if (aggressor->is_player)
-		wld_mutate_xp(aggressor, 100);
+		wld_mutate_xp(aggressor, 140);
 
 	// notify event
 	if (!defender->is_player && aggressor->map->on_mob_kill_mob)
