@@ -557,7 +557,7 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 			if (cell->is_entrance_transition && map->is_first_map) {
 				struct wld_mob *mob = wld_new_mob(map, MOB_PLAYER, c, r);
 				mob->is_player = true;
-				mob->aberration_max = 1000;
+				mob->aberration_max = 100;
 				map->player = mob; // assign to map specifically
 				// lets give him some items for playtesting
 				mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
@@ -1909,6 +1909,9 @@ void ai_mob_kill_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct
 {
 	ai_mob_die(defender);
 
+	if (aggressor->is_player)
+		aggressor->aberration_tick += 100;
+
 	// notify event
 	if (!defender->is_player && aggressor->map->on_mob_kill_mob)
 		aggressor->map->on_mob_kill_mob(aggressor->map, aggressor, defender, item);
@@ -2213,11 +2216,14 @@ void wld_update_mob(struct wld_mob *mob)
 		}
 	}
 
-	// increment aberation timer
-	mob->aberration_tick++;
-	if (mob->aberration_tick > mob->aberration_max)
+	// mutation growth loses over time
+	// decrement aberation timer
+	if (mob->aberration_tick >= mob->aberration_max)
 		mob->aberration_tick = mob->aberration_max;
 	mob->can_aberrate = mob->aberration_tick == mob->aberration_max;
+	mob->aberration_tick--;
+	if (mob->aberration_tick <= 0)
+		mob->aberration_tick = 0;
 
 	// apply changes
 	wld_mob_move(mob, mob->queue_x, mob->queue_y, true);

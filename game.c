@@ -716,8 +716,11 @@ void ui_update_charpanel(struct wld_map *map)
 	// aberrate meter
 	if (map->player->can_aberrate)
 		ui_meter(charpanel, 1, 0, 25, "mutate ready!", map->player->aberration_tick, map->player->aberration_max, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
-	else
-		ui_meter(charpanel, 1, 0, 25, "mutate", map->player->aberration_tick, map->player->aberration_max, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+	else {
+		char lbl[25];
+		snprintf(lbl, 25, "mutate %d/%d", map->player->aberration_tick, map->player->aberration_max);
+		ui_meter(charpanel, 1, 0, 25, lbl, map->player->aberration_tick, map->player->aberration_max, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+	}
 
 	// TODO health meter
 
