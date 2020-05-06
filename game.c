@@ -625,9 +625,9 @@ void ui_clear_win(WINDOW *win)
 void ui_cursorinfo(char *msg)
 {
 	if (msg[0] != '\0')
-		ui_printf(cursorpanel, CURSOR_INFO_LENGTH, 0, 0, "ghost :%s", msg);
+		ui_printf(cursorpanel, CURSOR_INFO_LENGTH, 1, 0, "ghost %d,%d: %s", current_map->cursor->x, current_map->cursor->y, msg);
 	else
-		ui_print(cursorpanel, CURSOR_INFO_LENGTH, 0, 0, "--");
+		ui_print(cursorpanel, CURSOR_INFO_LENGTH, 1, 0, "--");
 	ui_box(cursorpanel);
 	wrefresh(cursorpanel);
 }
@@ -635,9 +635,9 @@ void ui_cursorinfo(char *msg)
 void ui_positioninfo(char *msg)
 {
 	if (msg[0] != '\0')
-		ui_printf(cursorpanel, CURSOR_INFO_LENGTH, 1, 0, "@ :%s", msg);
+		ui_printf(cursorpanel, CURSOR_INFO_LENGTH, 0, 0, "@ %d,%d: %s", current_map->player->map_x, current_map->player->map_y, msg);
 	else
-		ui_print(cursorpanel, CURSOR_INFO_LENGTH, 1, 0, "--");
+		ui_print(cursorpanel, CURSOR_INFO_LENGTH, 0, 0, "--");
 	ui_box(cursorpanel);
 	wrefresh(cursorpanel);
 }
@@ -679,6 +679,31 @@ void ui_logf(char *format, ...)
 	ui_log(buffer);
 }
 
+
+void ui_meter(WINDOW *win, int row, int col, int size, char* label, int current, int max, int labelfg, int wfg, int wbg, bool deplete_left)
+{
+	int fill;
+	if (deplete_left)
+		fill = (1 - ((double)current / (double)max)) * size;
+	else
+		fill = (double)current / (double)max * size;
+	char c = ' ';
+	for (int i=0; i < size; i++) {
+		if (c != '\0')
+			c = label[i];
+		if (i < fill)
+			wattrset(win, COLOR_PAIR(wld_cpair(labelfg, wfg)));
+		else
+			wattrset(win, COLOR_PAIR(wld_cpair(labelfg, wbg)));
+		if (c != '\0')
+			ui_printchar(win, row, col + i, c);
+		else
+			ui_printchar(win, row, col + i, ' ');
+	}
+	wattrset(win, COLOR_PAIR(SCOLOR_NORMAL));
+}
+
+
 void ui_update_charpanel(struct wld_map *map)
 {
 	// deduce what our context is and provide options
@@ -686,7 +711,17 @@ void ui_update_charpanel(struct wld_map *map)
 	//wclrtoeol(charpanel);
 
 	// stats, health, aberration meter
-	ui_printf(charpanel, CHAR_PANEL_LENGTH, 0, 0, "str: %d  dex: %d", map->player->stat_strength, map->player->stat_dexterity);
+	ui_printf(charpanel, CHAR_PANEL_LENGTH, 0, 0, "str: %d  dex: %d  con: %d", map->player->stat_strength, map->player->stat_dexterity, map->player->stat_constitution);
+
+	// aberrate meter
+	if (map->player->can_aberrate)
+		ui_meter(charpanel, 1, 0, 25, "mutate ready!", map->player->aberration_tick, map->player->aberration_max, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+	else
+		ui_meter(charpanel, 1, 0, 25, "mutate", map->player->aberration_tick, map->player->aberration_max, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+
+	// TODO health meter
+
+	// TODO nutrition meter
 
 	ui_box(charpanel);
 	wrefresh(charpanel);
@@ -782,21 +817,7 @@ void ui_update_logpanel(struct wld_map *map)
 
 void ui_meter_effect(struct wld_effect *e, int len, int row, int col, int fg, int bg)
 {
-	int fill = (1 - ((double)e->current_iterations / (double)e->type->iterations)) * len;
-	char c = ' ';
-	for (int i=0; i < len; i++) {
-		if (c != '\0')
-			c = e->type->title[i];
-		if (i <= fill)
-			wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_RED, WCLR_YELLOW)));
-		else
-			wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_RED, WCLR_BLACK)));
-		if (c != '\0')
-			ui_printchar(mobpanel, row, col + i, c);
-		else
-			ui_printchar(mobpanel, row, col + i, ' ');
-	}
-	wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
+	ui_meter(mobpanel, row, col, len, e->type->title, e->current_iterations, e->type->iterations, WCLR_RED, WCLR_YELLOW, WCLR_BLACK, true);
 }
 
 int last_mob_list_length = 0;
@@ -1250,7 +1271,6 @@ void ai_player_input(struct wld_mob* player)
 					case KEY_F(2):
 					case 331: // insert
 						// enable aberate
-						current_map->player->can_aberrate = true;
 						player->mode = MODE_ABERRATE;
 						listen = false;
 						break;
@@ -1456,6 +1476,8 @@ void ai_player_input(struct wld_mob* player)
 					ui_clear_win(aberratepanel);
 					player->mode = MODE_PLAY;
 					player->current_aberration = NULL;
+					player->aberration_tick = 0;
+					player->can_aberrate = false;
 					listen = false;
 					break;
 				case KEY_y:
@@ -1858,11 +1880,11 @@ void ps_play_update()
 	// not triggered, and the result is that mobs
 	// before do not visually update in real time
 	if (current_map->player) {
-		wld_update_mob(current_map->player);
+		wld_soft_update_player(current_map->player);
 	}
 	for (int i=0; i < current_map->mobs_length; i++) {
 		struct wld_mob *m = current_map->mobs[i];
-		if (trigger_world && !m->is_player) {
+		if (trigger_world) {
 			wld_update_mob(m);
 		}
 	}

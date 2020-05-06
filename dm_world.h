@@ -209,6 +209,7 @@ struct wld_mob {
 	int active_effects_length;
 
 	bool can_aberrate;
+	int aberration_tick, aberration_max;
 	struct wld_aberration **aberrations;
 	int aberrations_length;
 	struct wld_aberration *current_aberration;
@@ -465,6 +466,7 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely);
 bool ai_rest(struct wld_mob *mob);
 bool ai_get(struct wld_mob *mob, int relx, int rely);
 bool ai_can_get(struct wld_mob *mob, int relx, int rely);
+void wld_soft_update_player(struct wld_mob *mob);
 void wld_update_mob(struct wld_mob *mob);
 
 // CHEATS

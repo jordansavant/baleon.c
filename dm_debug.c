@@ -24,7 +24,9 @@ void dmlogf(char *format, ...)
 	va_list argptr;
 	va_start(argptr, format);
 	vfprintf(dm_fp, format, argptr);
+	fprintf(dm_fp, "\n");
 	va_end(argptr);
+	fflush(dm_fp);
 }
 
 #endif

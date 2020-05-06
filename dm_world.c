@@ -527,6 +527,8 @@ struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, i
 
 	// create pointers to aberrations
 	mob->can_aberrate = false;
+	mob->aberration_tick = 0;
+	mob->aberration_max = 0;
 	mob->aberrations = (struct wld_aberration**)malloc(MAX_ABERRATIONS * sizeof(struct wld_aberration*));
 	for (int j=0; j < MAX_ABERRATIONS; j++) {
 		mob->aberrations[j] = NULL;
@@ -555,6 +557,7 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 			if (cell->is_entrance_transition && map->is_first_map) {
 				struct wld_mob *mob = wld_new_mob(map, MOB_PLAYER, c, r);
 				mob->is_player = true;
+				mob->aberration_max = 1000;
 				map->player = mob; // assign to map specifically
 				// lets give him some items for playtesting
 				mob->inventory[0] = (struct wld_item*)malloc(sizeof(struct wld_item));
@@ -1707,6 +1710,7 @@ void wld_mob_push_aberration(struct wld_mob *mob)
 		if (mob->current_aberration->mutations_length >= MAX_MUTATIONS) {
 			mob->can_aberrate_more = false;
 			mob->can_aberrate = false;
+			mob->aberration_tick = 0;
 		}
 	}
 }
@@ -2156,6 +2160,15 @@ bool ai_rest(struct wld_mob *mob)
 	return true;
 }
 
+// runs on every cycle, not just world triggering
+// events, then also the update mob runs for the player
+void wld_soft_update_player(struct wld_mob *mob)
+{
+	if (mob->ai_player_input != NULL) {
+		mob->ai_player_input(mob);
+	}
+}
+
 void wld_update_mob(struct wld_mob *mob)
 {
 	// setup
@@ -2198,19 +2211,15 @@ void wld_update_mob(struct wld_mob *mob)
 			}
 			break;
 		}
-	} else {
-		// listen for input commands
-		switch (mob->state) {
-		case MS_WANDER:
-			if (mob->ai_player_input != NULL) {
-				mob->ai_player_input(mob);
-			}
-			break;
-		}
 	}
 
+	// increment aberation timer
+	mob->aberration_tick++;
+	if (mob->aberration_tick > mob->aberration_max)
+		mob->aberration_tick = mob->aberration_max;
+	mob->can_aberrate = mob->aberration_tick == mob->aberration_max;
+
 	// apply changes
-	// TODO maybe this should be a dynamic array?
 	wld_mob_move(mob, mob->queue_x, mob->queue_y, true);
 	mob->queue_x = 0;
 	mob->queue_y = 0;
