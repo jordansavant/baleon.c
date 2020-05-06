@@ -27,11 +27,8 @@ current capabilities:
 TODO:
 
 now
-- remove hardcoded mutate values
-	- add base mob type mutate values (float?)
-		- mob float * depth constant
-	- increase next ding cap each mutation
-	- add increasing risk/reward on push
+- aberration risk reward levels
+- xp got stuck at 675??
 - health on rest
 	- health meter in char panel
 - active effects on tiles

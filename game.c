@@ -1479,7 +1479,7 @@ void ai_player_input(struct wld_mob* player)
 				case KEY_ESC:
 				case KEY_x:
 					ui_clear_win(aberratepanel);
-					wld_mutate_end(player);
+					wld_mob_end_aberration(player);
 					player->mode = MODE_PLAY;
 					listen = false;
 					break;

@@ -1127,7 +1127,7 @@ void wld_map_vfx_summon(struct wld_map *map, int x, int y)
 		map->on_effect(map, &e);
 }
 
-void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT type, int x, int y)
+void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT type, int x, int y, bool source_is_player)
 {
 	struct wld_mob* m = wld_map_get_mob_at(map, x, y);
 	if (m) {
@@ -1147,6 +1147,7 @@ void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT type, int x, int y)
 			m->active_effects[effect_slot].type = wld_get_effectype(type);
 			m->active_effects[effect_slot].is_active = true;
 			m->active_effects[effect_slot].current_iterations = 0;
+			m->active_effects[effect_slot].source_is_player = source_is_player; // track originator for xp
 		}
 	}
 }
@@ -1660,7 +1661,7 @@ void wld_mob_inspect_inventory(struct wld_mob *mob, void (*inspect)(struct wld_i
 void mutation_update_combustion(struct wld_mob *mob)
 {
 	if (dm_chance(1,1000))
-		wld_map_add_effect(mob->map, EFFECT_FIRE, mob->map_x, mob->map_y);
+		wld_map_add_effect(mob->map, EFFECT_FIRE, mob->map_x, mob->map_y, false);
 }
 
 void wld_mob_new_mutation(struct wld_mob *mob, struct wld_aberration *ab)
@@ -1729,17 +1730,19 @@ void wld_mob_push_aberration(struct wld_mob *mob)
 	}
 }
 
-
 // called when the mutation process ends
 // from the front end
-void wld_mutate_end(struct wld_mob *mob)
+void wld_mob_end_aberration(struct wld_mob *mob)
 {
-	// subtract the mutation amount equal to the level
-	mob->current_aberration = NULL;
-	mob->can_mutate = false;
-	mob->mutate_ding *= XP_LEVEL_FACTOR;
-	wld_mutate_drain(mob, 0 - mob->mutate_ding);
-	wld_mutate_check(mob); // still more for another level?
+	// if we aberrated then subtract aberration
+	if (mob->current_aberration != NULL) {
+		wld_mutate_drain(mob, 0 - mob->mutate_ding);
+		mob->current_aberration = NULL;
+		mob->can_mutate = false;
+		mob->mutate_ding *= XP_LEVEL_FACTOR;
+		// subtract the mutation amount equal to the level
+		wld_mutate_check(mob); // still more for another level?
+	}
 }
 
 // used to check if the mutation has
@@ -1760,7 +1763,7 @@ void wld_mutate_xp_kill(struct wld_mob *mob, struct wld_mob *victim)
 {
 	// difficulty 1, enemy factor .5 = 50
 	int xp = victim->type->difficulty * XP_MOB_FACTOR; // 25 xp per difficulty of mob
-	dmlogf("xp %s %d", victim->type->title, xp);
+	dmlogf("Gained %d xp from %s.", xp, victim->type->title);
 	wld_mutate_xp(mob, xp);
 }
 
@@ -1965,6 +1968,9 @@ void ai_mob_die(struct wld_mob *mob)
 void ai_effect_attack_mob(struct wld_effect *effect, struct wld_mob *defender, int amt)
 {
 	defender->health -= amt;
+
+	if (effect->source_is_player && defender->map->player)
+		wld_mutate_xp_kill(defender->map->player, defender);
 
 	if (defender->health <= 0)
 		ai_mob_die(defender);
@@ -2716,8 +2722,6 @@ void itm_use_ranged_aoe(struct wld_item *item, struct wld_mob *user, struct wld_
 
 void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
 {
-	// TODO make this do item damage numbers
-	// TODO make this apply item effects to mobs
 	// TODO make this destroy certain terrains?
 	// perform a blast based on t
 	wld_logf("The %s blasts throughout the area.", item->type->title);
@@ -2739,10 +2743,9 @@ void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, st
 			t->dm_ss_id = ss_id;
 			struct wld_mob *m = wld_map_get_mob_at(user->map, x, y);
 			if (m) {
-				// TODO apply effects and damage here
 				ai_mob_attack_mob(user, m, dmg, item);
 				wld_map_vfx_dmg(user->map, m->map_x, m->map_y);
-				wld_map_add_effect(user->map, EFFECT_FIRE, m->map_x, m->map_y);
+				wld_map_add_effect(user->map, EFFECT_FIRE, m->map_x, m->map_y, user->is_player);
 			}
 		}
 	}

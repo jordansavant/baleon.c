@@ -16,7 +16,7 @@
 #define MAX_MUTATION_DESC_LEN 35
 #define MAX_ABERRATIONS 20
 
-#define XP_START 1000
+#define XP_START 100
 #define XP_MOB_FACTOR 25
 #define XP_LEVEL_FACTOR 1.5
 
@@ -83,6 +83,7 @@ struct wld_effect {
 	struct wld_effecttype *type;
 	bool is_active;
 	int current_iterations;
+	bool source_is_player;
 };
 
 
@@ -388,7 +389,7 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y);
 struct draw_struct wld_map_get_drawstruct_memory(struct wld_map *map, int x, int y);
 void wld_map_vfx_heal(struct wld_map *map, int x, int y);
 void wld_map_vfx_dmg(struct wld_map *map, int x, int y);
-void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT, int x, int y);
+void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT, int x, int y, bool source_is_player);
 
 // EFFECTS
 void wld_effect_on_fire(struct wld_effect *effect, struct wld_mob *mob);
@@ -443,7 +444,7 @@ void wld_mob_inspect_targetables(struct wld_mob*, void (*inspect)(int,int));
 void wld_mob_inspect_inventory(struct wld_mob*, void (*inspect)(struct wld_item*));
 void wld_mob_new_aberration(struct wld_mob *mob);
 void wld_mob_push_aberration(struct wld_mob *mob);
-void wld_mutate_end(struct wld_mob *mob);
+void wld_mob_end_aberration(struct wld_mob *mob);
 void wld_mutate_check(struct wld_mob *mob);
 void wld_mutate_xp_kill(struct wld_mob *mob, struct wld_mob *victim);
 void wld_mutate_xp(struct wld_mob *mob, int amt);
