@@ -688,6 +688,7 @@ void ui_meter(WINDOW *win, int row, int col, int size, char* label, int current,
 	else
 		fill = (double)current / (double)max * size;
 	char c = ' ';
+	dmlogf("%d/%d %d/%d", current, max, fill, size);
 	for (int i=0; i < size; i++) {
 		if (c != '\0')
 			c = label[i];
@@ -820,11 +821,6 @@ void ui_update_logpanel(struct wld_map *map)
 	wrefresh(logpanel);
 }
 
-void ui_meter_effect(struct wld_effect *e, int len, int row, int col, int fg, int bg)
-{
-	ui_meter(mobpanel, row, col, len, e->type->title, e->current_iterations, e->type->iterations, WCLR_RED, WCLR_YELLOW, WCLR_BLACK, true);
-}
-
 int last_mob_list_length = 0;
 void ui_update_mobpanel(struct wld_map *map)
 {
@@ -859,34 +855,20 @@ void ui_update_mobpanel(struct wld_map *map)
 				ui_printchar(mobpanel, i + offy, offx, mob->type->sprite);
 				wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
 				i++;
+
+				// Meters
+				int c = offx + 2;
+				int len = VIS_LENGTH - 5;
 				// health bar
-				char hmsg[VIS_LENGTH - 4];
-				snprintf(hmsg, VIS_LENGTH, "%3d/%3d", mob->health, mob->maxhealth);
-				int hpbarsize = VIS_LENGTH - 5;
-				int hpbar = ((double)mob->health / (double)mob->maxhealth) * hpbarsize;
-				int cj = 0;
-				for (int j=0; j < hpbarsize; j++) {
-					// get the character number total to render over the bar
-					char c = ' ';
-					while (c == ' ' && cj < 7) { // loops until next non blank character found (and less than strlen max)
-						c = hmsg[cj];
-						cj++;
-					}
-					// render green front and red bg
-					if (hpbar >= j)
-						wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_BLACK, WCLR_GREEN)));
-					else
-						wattrset(mobpanel, COLOR_PAIR(wld_cpair(WCLR_BLACK, WCLR_RED)));
-					// render character
-					ui_printchar(mobpanel, i + offy, j + offx + 2, c);
-					wattrset(mobpanel, COLOR_PAIR(SCOLOR_NORMAL));
-				}
+				char lbl[15];
+				snprintf(lbl, 15, "HP %d/%d", mob->health, mob->maxhealth);
+				ui_meter(mobpanel, i + offy, c, len, lbl, mob->health, mob->maxhealth, WCLR_BLACK, WCLR_GREEN, WCLR_RED, false);
 				i++;
 				// active effects
 				for (int j=0; j < mob->active_effects_length; j++) {
 					struct wld_effect *e = &mob->active_effects[j];
 					if (e->is_active) {
-						ui_meter_effect(e, VIS_LENGTH - 5, i + offy, offx + 2, 1, 1);
+						ui_meter(mobpanel, i + offy, c, len, e->type->title, e->current_iterations, e->type->iterations, WCLR_RED, WCLR_YELLOW, WCLR_BLACK, true);
 						i++;
 					}
 				}

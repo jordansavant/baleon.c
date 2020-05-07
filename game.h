@@ -122,7 +122,6 @@ void ui_update_cmdpanel(struct wld_map *map);
 void ui_update_cursorinfo(struct wld_map *map);
 void ui_update_positioninfo(struct wld_map *map);
 void ui_update_logpanel(struct wld_map *map);
-void ui_meter_effect(struct wld_effect *e, int len, int row, int col, int fg, int bg);
 void ui_update_mobpanel(struct wld_map *map);
 void ui_update_inventorypanel(struct wld_map *map);
 void ui_update_usepanel(struct wld_map *map);

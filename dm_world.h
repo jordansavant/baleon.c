@@ -16,7 +16,7 @@
 #define MAX_MUTATION_DESC_LEN 35
 #define MAX_ABERRATIONS 20
 
-#define XP_START 100
+#define XP_START 1000
 #define XP_MOB_FACTOR 25
 #define XP_LEVEL_FACTOR 1.5
 
