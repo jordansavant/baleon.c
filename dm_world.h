@@ -486,6 +486,7 @@ void wld_update_mob(struct wld_mob *mob, int iter);
 void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob*);
 
 // RPG CALCULATIONS
+void rpg_apply_stats(struct wld_mob *mob);
 int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender);
 double rpg_calc_melee_coh(struct wld_mob *aggressor, struct wld_mob *defender);
 int rpg_calc_melee_weapon_dmg(struct wld_mob *aggressor, struct wld_item *weapon, struct wld_mob *defender);

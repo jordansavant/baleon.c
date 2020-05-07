@@ -1276,6 +1276,7 @@ void ai_player_input(struct wld_mob* player)
 					case KEY_F(2):
 					case 331: // insert
 						// enable aberate
+						player->can_mutate = true;
 						player->mode = MODE_ABERRATE;
 						listen = false;
 						break;

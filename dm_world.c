@@ -388,9 +388,9 @@ struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r)
 	mob->stat_strength = dm_randii(5, 16);
 	mob->stat_dexterity = dm_randii(5, 16);
 	mob->stat_constitution = dm_randii(5, 16);
-	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
-	mob->health = conf * mob->type->base_health;
-	mob->maxhealth = conf * mob->type->base_health;
+
+	rpg_apply_stats(mob);
+	mob->health = mob->maxhealth;
 
 	return mob;
 }
@@ -408,9 +408,8 @@ struct wld_mob* gen_mob_rat(struct wld_map* map, int c, int r)
 	mob->stat_dexterity = dm_randii(3, 8);
 	mob->stat_constitution = dm_randii(4, 8);
 
-	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
-	mob->health = conf * mob->type->base_health;
-	mob->maxhealth = conf * mob->type->base_health;
+	rpg_apply_stats(mob);
+	mob->health = mob->maxhealth;
 
 	return mob;
 }
@@ -428,9 +427,8 @@ struct wld_mob* gen_mob_jackal(struct wld_map* map, int c, int r)
 	mob->stat_dexterity = dm_randii(3, 16);
 	mob->stat_constitution = dm_randii(3, 16);
 
-	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
-	mob->health = conf * mob->type->base_health;
-	mob->maxhealth = conf * mob->type->base_health;
+	rpg_apply_stats(mob);
+	mob->health = mob->maxhealth;
 
 	return mob;
 }
@@ -1669,33 +1667,89 @@ void wld_mob_new_mutation(struct wld_mob *mob, struct wld_aberration *ab)
 	struct wld_mutation *mutation = &ab->mutations[ab->mutations_length];
 	mutation->on_update = NULL;
 	mutation->on_apply = NULL;
-	if (dm_chance(1, 2)) {
-		// Positive mutations
-		switch (dm_randii(0, 1)) {
-		default:
-		case 0: {
-				// permanent vision improvement
-				int vis = dm_randii(1, 4);
-				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent +%d to visibility", vis);
-				mob->vision += vis;
-			}
-			break;
-		}
-	} else {
+
+	// the further we push mutations the more powerful they become but the more likely
+	// to produce a negative one, here is a table:
+	// - lvl 1 = 2/10 chance negative
+	// - lvl 2 = 3/10 chance negative
+	// - lvl 3 = 4/10
+	// - lvl 4 = 5/10
+	// - lvl 5 = 6/10 (severe risk)
+	// TODO is potency worth trying to measure?
+	int risk = (ab->mutations_length + 1) * 2;
+	int outof = 11;
+	double potency = ((double)ab->mutations_length + 1) / (double)MAX_MUTATIONS;
+	dmlogf("potency %d/%d %f", risk, outof, potency);
+
+	if (dm_chance(risk, outof)) {
 		// Negative mutations
-		switch (dm_randii(0, 2)) {
+		switch (dm_randii(0, 5)) {
 		default:
 		case 0: {
 				// permanent vision loss
-				int vis = dm_randii(1, 4);
+				int vis = dm_randii(1, 2 + 2 * potency);
 				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent -%d to visibility", vis);
 				mob->vision -= vis;
 			}
 			break;
 		case 1: {
+				int str = dm_randii(1, 2 + 2 * potency);
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent -%d to strength", str);
+				mob->stat_strength -= str;
+				rpg_apply_stats(mob);
+			}
+			break;
+		case 2: {
+				int str = dm_randii(1, 2 + 2 * potency);
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent -%d to dexterity", str);
+				mob->stat_dexterity -= str;
+				rpg_apply_stats(mob);
+			}
+			break;
+		case 3: {
+				int str = dm_randii(1, 2 + 2 * potency);
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent -%d to constitution", str);
+				mob->stat_constitution += str;
+				rpg_apply_stats(mob);
+			}
+			break;
+		case 4: {
 				// randomly catch fire
 				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "you will randomly catch fire");
 				mutation->on_update = mutation_update_combustion;
+			}
+			break;
+		}
+	} else {
+		// Positive mutations
+		switch (dm_randii(0, 4)) {
+		default:
+		case 0: {
+				// permanent vision improvement
+				int vis = dm_randii(1, 2 + 2 * potency);
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent +%d to visibility", vis);
+				mob->vision += vis;
+			}
+			break;
+		case 1: {
+				int str = dm_randii(1, 2 + 2 * potency);
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent +%d to strength", str);
+				mob->stat_strength += str;
+				rpg_apply_stats(mob);
+			}
+			break;
+		case 2: {
+				int str = dm_randii(1, 2 + 2 * potency);
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent +%d to dexterity", str);
+				mob->stat_dexterity += str;
+				rpg_apply_stats(mob);
+			}
+			break;
+		case 3: {
+				int str = dm_randii(1, 2 + 2 * potency);
+				snprintf(mutation->desc, MAX_MUTATION_DESC_LEN, "permanent +%d to constitution", str);
+				mob->stat_constitution += str;
+				rpg_apply_stats(mob);
 			}
 			break;
 		}
@@ -2338,6 +2392,12 @@ void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob* mob)
 
 ///////////////////////////
 // RPG CALCULATIONS START
+
+void rpg_apply_stats(struct wld_mob *mob)
+{
+	double conf = (double)mob->stat_constitution / (double)STAT_CON_BASE;
+	mob->maxhealth = conf * mob->type->base_health;
+}
 
 // fist melee
 int rpg_calc_melee_dmg(struct wld_mob *aggressor, struct wld_mob *defender)
