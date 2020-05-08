@@ -166,6 +166,7 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
+			NULL, // coh
 			NULL,
 			NULL,
 			0,0,//range radius
@@ -186,6 +187,7 @@ void wld_setup()
 			itm_drink_minorhealth,
 			itm_target_ranged_los,
 			itm_can_use_ranged_los,
+			itm_coh_ranged, // coh
 			itm_use_ranged_los,
 			itm_hit_minorhealth,
 			5,0, // range radius
@@ -208,6 +210,7 @@ void wld_setup()
 			NULL,
 			itm_target_melee,
 			itm_can_use_melee,
+			itm_coh_melee, // coh
 			itm_use_melee,
 			itm_hit_melee_swordstyle,
 			1,0, // range radius
@@ -229,6 +232,7 @@ void wld_setup()
 			NULL,
 			itm_target_ranged_los,
 			itm_can_use_ranged_los,
+			itm_coh_ranged, // coh
 			itm_use_ranged_los,
 			itm_hit_ranged_los_bowstyle,
 			10,0, // range radius
@@ -250,6 +254,7 @@ void wld_setup()
 			NULL,
 			itm_target_ranged_aoe,
 			itm_can_use_ranged_aoe,
+			NULL, // coh
 			itm_use_ranged_aoe,
 			itm_hit_ranged_aoe_firebomb,
 			9,3, // base range, radius
@@ -271,6 +276,7 @@ void wld_setup()
 			NULL,
 			NULL,
 			NULL,
+			NULL, // coh
 			NULL,
 			NULL,
 			0,0, // range radius
@@ -292,6 +298,7 @@ void wld_setup()
 			NULL,
 			itm_target_key,
 			itm_can_use_key,
+			NULL, // coh
 			itm_use_key,
 			itm_hit_key,
 			1,0, // range, radius
@@ -317,6 +324,7 @@ void wld_setup()
 		wld_itemtypes[i].fn_drink = its[i].fn_drink;
 		wld_itemtypes[i].fn_target = its[i].fn_target;
 		wld_itemtypes[i].fn_can_use = its[i].fn_can_use;
+		wld_itemtypes[i].fn_coh = its[i].fn_coh;
 		wld_itemtypes[i].fn_use = its[i].fn_use;
 		wld_itemtypes[i].fn_hit = its[i].fn_hit;
 		wld_itemtypes[i].base_range = its[i].base_range;
@@ -1474,6 +1482,14 @@ struct wld_item* wld_mob_get_item_in_slot(struct wld_mob *mob, int slot)
 	struct wld_item *item = mob->inventory[slot];
 	return item;
 }
+struct wld_item* wld_mob_get_equipped_weapon(struct wld_mob *mob)
+{
+	return wld_mob_get_item_in_slot(mob, 0);
+}
+struct wld_item* wld_mob_get_equipped_armor(struct wld_mob *mob)
+{
+	return wld_mob_get_item_in_slot(mob, 1);
+}
 int wld_mob_get_open_inventory_slot(struct wld_mob *mob)
 {
 	// slot 0 reserved for weapon
@@ -2094,7 +2110,7 @@ void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender, struc
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 {
 	// determine melee damage from weapon (or unarmed?)
-	struct wld_item* weapon = wld_mob_get_item_in_slot(aggressor, 0);
+	struct wld_item* weapon = wld_mob_get_equipped_weapon(aggressor);
 	if (weapon != NULL) {
 		struct wld_tile *tile = wld_map_get_tile_at_index(defender->map, defender->map_index);
 		if (weapon->type->fn_can_use(weapon, aggressor, tile)) {
@@ -2175,7 +2191,7 @@ bool ai_player_enter_targeting(struct wld_mob* player)
 
 bool ai_player_draw_weapon(struct wld_mob* player)
 {
-	struct wld_item *weapon = wld_mob_get_item_in_slot(player, 0);
+	struct wld_item *weapon = wld_mob_get_equipped_weapon(player);
 	if (weapon) {
 		player->target_mode = TMODE_ACTIVE;
 		player->active_item = weapon;
@@ -2500,6 +2516,14 @@ bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_t
 	return false;
 }
 
+double itm_coh_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
+{
+	struct wld_mob *target = wld_map_get_mob_at_index(user->map, tile->map_index);
+	if (!target || !item->type->fn_can_use(item, user, tile))
+		return 0.0;
+	return rpg_calc_melee_weapon_coh(user, item, target);
+}
+
 void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
 	// Using a standard melee item just fires on the targeted tile without any calculation
@@ -2512,7 +2536,9 @@ void itm_hit_melee_swordstyle(struct wld_item *weapon, struct wld_mob *user, str
 {
 	// TODO make this do a melee attack with the item's damage etc
 	struct wld_mob *target = wld_map_get_mob_at_index(user->map, tile->map_index);
-	double chance = rpg_calc_melee_weapon_coh(user, weapon, target);
+	double chance = 0.0;
+	if (weapon->type->fn_coh)
+		chance = weapon->type->fn_coh(weapon, user, tile);
 	if (dm_randf() < chance) {
 		int dmg = rpg_calc_melee_weapon_dmg(user, weapon, target);
 		ai_mob_attack_mob(user, target, dmg, weapon);
@@ -2562,6 +2588,14 @@ bool itm_can_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct 
 	//return cursor_tile->is_visible;
 }
 
+double itm_coh_ranged(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
+{
+	struct wld_mob *target = wld_map_get_mob_at_index(user->map, tile->map_index);
+	if (!target || !item->type->fn_can_use(item, user, tile))
+		return 0.0;
+	return rpg_calc_ranged_weapon_coh(user, item, target);
+}
+
 void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile)
 {
 	// draw a bresenham line if I run into a living mob, then hit it
@@ -2609,7 +2643,9 @@ void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, st
 {
 	// when this standard ranged attack hits its first target it will do ranged weapon damage
 	struct wld_mob *target = wld_map_get_mob_at_index(user->map, tile->map_index);
-	double chance = rpg_calc_ranged_weapon_coh(user, item, target);
+	double chance = 0.0;
+	if (item->type->fn_coh)
+		chance = item->type->fn_coh(item, user, tile);
 	if (dm_randf() < chance) {
 		int dmg = rpg_calc_ranged_weapon_dmg(user, item, target);
 		ai_mob_attack_mob(user, target, dmg, item);

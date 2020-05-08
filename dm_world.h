@@ -245,6 +245,7 @@ struct wld_itemtype {
 	void (*fn_drink)(struct wld_item*, struct wld_mob*);
 	void (*fn_target)(struct wld_item*, struct wld_mob*, void (*inspect)(int,int));
 	bool (*fn_can_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
+	double (*fn_coh)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*fn_use)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	void (*fn_hit)(struct wld_item*, struct wld_mob*, struct wld_tile*);
 	int base_range;
@@ -428,6 +429,8 @@ void wld_mob_vision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, in
 bool wld_mob_is_next_to_tile(struct wld_mob *mob, struct wld_tile* tile);
 bool wld_mob_is_next_to_mob(struct wld_mob* ma, struct wld_mob* mb);
 struct wld_item* wld_mob_get_item_in_slot(struct wld_mob *mob, int slot);
+struct wld_item* wld_mob_get_equipped_weapon(struct wld_mob *mob);
+struct wld_item* wld_mob_get_equipped_armor(struct wld_mob *mob);
 int wld_mob_get_open_inventory_slot(struct wld_mob *mob);
 bool wld_mob_has_inventory(struct wld_mob*);
 bool wld_mob_pickup_item(struct wld_mob*, struct wld_item*);
@@ -499,11 +502,13 @@ int rpg_calc_alchemy_boost(struct wld_mob *user, struct wld_item *item);
 // ITEM ACTIONS
 void itm_target_melee(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
 bool itm_can_use_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
+double itm_coh_melee(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
 void itm_use_melee(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_hit_melee_swordstyle(struct wld_item *weapon, struct wld_mob *user, struct wld_tile* tile);
 
 void itm_target_ranged_los(struct wld_item *item, struct wld_mob *user, void(*inspect)(int, int));
 bool itm_can_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
+double itm_coh_ranged(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
 void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_tile* cursor_tile);
 void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile);
 

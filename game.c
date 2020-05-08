@@ -879,6 +879,18 @@ void ui_update_mobpanel(struct wld_map *map)
 						i++;
 					}
 				}
+
+				// if on cursor more details
+				if (on_cursor) {
+					struct wld_item *weapon = wld_mob_get_equipped_weapon(map->player);
+					if (weapon && weapon->type->fn_coh) {
+						double coh = weapon->type->fn_coh(weapon, map->player, tile);
+						wattrset(mobpanel, COLOR_PAIR(TCOLOR_YELLOW));
+						ui_printf(mobpanel, VIS_LENGTH, i + offy, offx + 2, "hit chance: %d%%", (int)(coh * 100));
+						wattrset(mobpanel, COLOR_PAIR(TCOLOR_NORMAL));
+						i++;
+					}
+				}
 			}
 			if (item) {
 				// item name
