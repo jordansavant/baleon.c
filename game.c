@@ -688,7 +688,6 @@ void ui_meter(WINDOW *win, int row, int col, int size, char* label, int current,
 	else
 		fill = (double)current / (double)max * size;
 	char c = ' ';
-	dmlogf("%d/%d %d/%d", current, max, fill, size);
 	for (int i=0; i < size; i++) {
 		if (c != '\0')
 			c = label[i];
@@ -710,22 +709,30 @@ void ui_update_charpanel(struct wld_map *map)
 	// deduce what our context is and provide options
 	//wmove(charpanel, 0, 0);
 	//wclrtoeol(charpanel);
+	struct wld_mob *player = map->player;
 
 	// stats, health, aberration meter
-	ui_printf(charpanel, CHAR_PANEL_LENGTH, 0, 0, "str: %d  dex: %d  con: %d", map->player->stat_strength, map->player->stat_dexterity, map->player->stat_constitution);
+	ui_printf(charpanel, CHAR_PANEL_LENGTH, 0, 0, "str: %d  dex: %d  con: %d", player->stat_strength, player->stat_dexterity, player->stat_constitution);
 
 	// aberrate meter
-	if (map->player->can_mutate) {
+	if (player->can_mutate) {
 		char lbl[25];
-		snprintf(lbl, 25, "mutate %d/%d ready!", map->player->mutate_xp, map->player->mutate_ding);
-		ui_meter(charpanel, 1, 0, 25, lbl, map->player->mutate_xp, map->player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+		snprintf(lbl, 25, "%d/%d mutate ready!", player->mutate_xp, player->mutate_ding);
+		ui_meter(charpanel, 1, 3, 25, lbl, player->mutate_xp, player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
 	} else {
 		char lbl[25];
-		snprintf(lbl, 25, "mutate %d/%d", map->player->mutate_xp, map->player->mutate_ding);
-		ui_meter(charpanel, 1, 0, 25, lbl, map->player->mutate_xp, map->player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+		snprintf(lbl, 25, "%d/%d", player->mutate_xp, player->mutate_ding);
+		ui_meter(charpanel, 1, 3, 25, lbl, player->mutate_xp, player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
 	}
+	ui_printchar(charpanel, 1, 0, 'X');
+	ui_printchar(charpanel, 1, 1, 'P');
 
 	// TODO health meter
+	char lbl[15];
+	snprintf(lbl, 15, "%d/%d", player->health, player->maxhealth);
+	ui_meter(charpanel, 2, 3, 25, lbl, player->health, player->maxhealth, WCLR_BLACK, WCLR_GREEN, WCLR_RED, false);
+	ui_printchar(charpanel, 2, 0, 'H');
+	ui_printchar(charpanel, 2, 1, 'P');
 
 	// TODO nutrition meter
 
@@ -861,7 +868,7 @@ void ui_update_mobpanel(struct wld_map *map)
 				int len = VIS_LENGTH - 5;
 				// health bar
 				char lbl[15];
-				snprintf(lbl, 15, "HP %d/%d", mob->health, mob->maxhealth);
+				snprintf(lbl, 15, "%d/%d", mob->health, mob->maxhealth);
 				ui_meter(mobpanel, i + offy, c, len, lbl, mob->health, mob->maxhealth, WCLR_BLACK, WCLR_GREEN, WCLR_RED, false);
 				i++;
 				// active effects
