@@ -1,36 +1,10 @@
-current capabilities:
-- items and inventories
-- active effects (not on tiles)
-- visual effects
-- weapons
-- rpg mathematica
-- ai driven mobs
-- transformable tiles
-- aberrations and mutations
-- dungeons
-- level transitions
-
-- ALL STATS START RANDOM WITHIN A UNIFORM DISTRIBUTION
-- ALL ADVANCEMENT IS MUTATION BASED
-- MUTATION SURGES WITH KILLS AND OTHER EVENTS (SACRIFICING ITEMS?)
-- MUTATION DECREASES WITH REST
-	- RESTING RETURNS HEALTH OVER TIME BUT AT THE COST OF MUTATION POWERS
-	- MUTATIONS NEED TO SKEW TOWARD THE POSITIVE SINCE THEY ARE REWARDS FOR LEVELING UP
-	- BUT THEY CAN ALSO HAVE NEGATIVES TO MAKE THEM RISKY
-	- PRESS YOUR LUCK INCREASES RESULT POWER LEVELS BUT ALSO EVENS OUT POSTIVE AND NEGATIVE LIKELIHOODS
-		- lvl 1 = 2/10 chance negative
-		- lvl 2 = 3/10 chance negative
-		- lvl 3 = 4/10
-		- lvl 4 = 5/10
-		- lvl 5 = 6/10 (severe risk)
-
 TODO:
 
 now
-- aberration risk reward levels
-- xp got stuck at 675??
 - health on rest
 	- health meter in char panel
+- qol: cursor follows mob if they move and remain in vision
+- xp got stuck at 675??
 - active effects on tiles
 - ui: equipped items
 - ui: stats / mutations panels
