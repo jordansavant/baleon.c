@@ -2023,11 +2023,11 @@ void ai_effect_attack_mob(struct wld_effect *effect, struct wld_mob *defender, i
 {
 	defender->health -= amt;
 
-	if (effect->source_is_player && defender->map->player)
-		wld_mutate_xp_kill(defender->map->player, defender);
-
-	if (defender->health <= 0)
+	if (defender->health <= 0) {
+		if (effect->source_is_player && defender->map->player)
+			wld_mutate_xp_kill(defender->map->player, defender);
 		ai_mob_die(defender);
+	}
 }
 
 
