@@ -1821,8 +1821,14 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	dng_cellmap_buildwalls(cellmap);
 	printf("tags, "); fflush(stdout);
 	dng_cellmap_buildtags(cellmap);
-	printf("machines, "); fflush(stdout);
-	dng_cellmap_machinate(cellmap);
+	switch (difficulty) {
+		case 0: // level 0
+			break;
+		default:
+			printf("machines, "); fflush(stdout);
+			dng_cellmap_machinate(cellmap);
+			break;
+	}
 	printf("decor, "); fflush(stdout);
 	dng_cellmap_decorate(cellmap);
 	printf("DONE"); fflush(stdout);
@@ -1864,20 +1870,24 @@ struct dng_dungeon* dng_gendungeon(int seed, int count)
 
 	for (int map_id = 0; map_id < dungeon->maps_length; map_id++) {
 
+		printf("GEN MAP %2d: ", map_id); fflush(stdout);
 		struct dng_cellmap *cellmap = NULL;
 		switch (map_id) {
+			case 0: {
+				cellmap = dng_genmap(difficulty, map_id, 32, 24);
+				break;
+			}
 			default: {
 				// scale the dungeon with the depth
-				printf("GEN MAP %2d: ", map_id); fflush(stdout);
 				int stepw = map_id * 5;
 				int steph = map_id * 3;
 				int width = dm_randii(minw + stepw/3, maxw + stepw);
 				int height = dm_randii(minh + steph/3, maxh + steph);
 				cellmap = dng_genmap(difficulty, map_id, width, height);
-				printf("\n");
 				break;
 			 }
 		}
+		printf("\n");
 
 		if (parent_cellmap) {
 			dng_cellmap_link(cellmap, parent_cellmap);
