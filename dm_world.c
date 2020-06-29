@@ -379,6 +379,7 @@ struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r)
 	mob->is_player = true;
 	mob->mutate_ding = XP_START;
 	mob->mutate_drain_rate = 3; // every three cycles
+	mob->heal_rate = 5;
 	map->player = mob; // assign to map specifically
 
 	// lets give him some items for playtesting
@@ -571,6 +572,7 @@ struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, i
 	mob->mutate_xp = 0;
 	mob->mutate_ding = 0;
 	mob->mutate_drain_rate = 0;
+	mob->heal_rate = 8; // little slower than player
 	mob->aberrations = (struct wld_aberration**)malloc(MAX_ABERRATIONS * sizeof(struct wld_aberration*));
 	for (int j=0; j < MAX_ABERRATIONS; j++) {
 		mob->aberrations[j] = NULL;
@@ -2010,6 +2012,9 @@ void ai_decide_combat_melee_with_flee(struct wld_mob *self)
 // item can be NULL if it was not an item
 void ai_mob_heal(struct wld_mob *mob, int amt, struct wld_item* item)
 {
+	if (mob->health == mob->maxhealth)
+		return; // skip nonheals
+
 	mob->health += amt;
 	if (mob->health > mob->maxhealth)
 		mob->health = mob->maxhealth;
@@ -2360,6 +2365,11 @@ void wld_update_mob(struct wld_mob *mob, int counter)
 		wld_mutate_check(mob);
 		if (counter % mob->mutate_drain_rate == 0)
 			wld_mutate_drain(mob, -1);
+	}
+
+	// heal over time, should this apply to enemies and players, probably
+	if (counter % mob->heal_rate == 0) {
+		ai_mob_heal(mob, 1, NULL);
 	}
 
 	// apply changes

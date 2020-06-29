@@ -1597,7 +1597,7 @@ void ps_build_world()
 {
 	dm_seed(time(NULL));
 	int seed = dm_randi();
-	seed = 146;
+	//seed = 146;
 	dmlogf("SEED %d", seed);
 	world = wld_new_world(seed, 2);
 	current_map = world->maps[0];
@@ -1887,9 +1887,10 @@ void ps_play_update()
 	for (int i=0; i < current_map->mobs_length; i++) {
 		struct wld_mob *m = current_map->mobs[i];
 		if (trigger_world) {
-			wld_update_mob(m, update_counter++);
+			wld_update_mob(m, update_counter);
 		}
 	}
+	update_counter++;
 
 	// reset map elements
 	// Clear map without flutter

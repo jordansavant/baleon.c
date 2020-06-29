@@ -221,6 +221,7 @@ struct wld_mob {
 	struct wld_aberration *current_aberration;
 	bool can_mutate_more;
 	int mutate_drain_rate;
+	int heal_rate;
 };
 
 

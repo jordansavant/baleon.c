@@ -2,13 +2,13 @@ TODO:
 
 now
 - health on rest
-	- health meter in char panel
 - qol: cursor follows mob if they move and remain in vision
 - xp got stuck at 675??
 - active effects on tiles
 - ui: equipped items
 - ui: stats / mutations panels
 - rpg calculations
+- log reports events for hidden enemies and locations
 
 later
 - nutrition
