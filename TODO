@@ -12,6 +12,7 @@ now
 
 later
 - nutrition
+	- this has been handled by a loss of mutation
 	- we need to pressure them to constantly move
 - hide keys better
 - rpg:
@@ -44,6 +45,7 @@ no use cases yet
 
 scope creep
 - destructable terrain?
+- respawning enemies?
 - fall pits you can fall to next dungeon point
 	- not into walls
 	- not into isolated rooms

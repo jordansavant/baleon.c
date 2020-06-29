@@ -718,21 +718,17 @@ void ui_update_charpanel(struct wld_map *map)
 	if (player->can_mutate) {
 		char lbl[25];
 		snprintf(lbl, 25, "%d/%d mutate ready!", player->mutate_xp, player->mutate_ding);
-		ui_meter(charpanel, 1, 3, 25, lbl, player->mutate_xp, player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+		ui_meter(charpanel, 1, 0, 25, lbl, player->mutate_xp, player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
 	} else {
 		char lbl[25];
-		snprintf(lbl, 25, "%d/%d", player->mutate_xp, player->mutate_ding);
-		ui_meter(charpanel, 1, 3, 25, lbl, player->mutate_xp, player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
+		snprintf(lbl, 25, "mutate %d/%d", player->mutate_xp, player->mutate_ding);
+		ui_meter(charpanel, 1, 0, 25, lbl, player->mutate_xp, player->mutate_ding, WCLR_WHITE, WCLR_MAGENTA, WCLR_BLUE, false);
 	}
-	ui_printchar(charpanel, 1, 0, 'X');
-	ui_printchar(charpanel, 1, 1, 'P');
 
 	// TODO health meter
 	char lbl[15];
-	snprintf(lbl, 15, "%d/%d", player->health, player->maxhealth);
-	ui_meter(charpanel, 2, 3, 25, lbl, player->health, player->maxhealth, WCLR_BLACK, WCLR_GREEN, WCLR_RED, false);
-	ui_printchar(charpanel, 2, 0, 'H');
-	ui_printchar(charpanel, 2, 1, 'P');
+	snprintf(lbl, 15, "health %d/%d", player->health, player->maxhealth);
+	ui_meter(charpanel, 2, 0, 25, lbl, player->health, player->maxhealth, WCLR_BLACK, WCLR_GREEN, WCLR_RED, false);
 
 	// TODO nutrition meter
 
@@ -754,7 +750,7 @@ void ui_update_cmdpanel(struct wld_map *map)
 		if (current_map->player->target_mode == TMODE_ACTIVE) {
 			strncat(buffer, "  x: exit  space: use", 9);
 		} else {
-			strncat(buffer, "  y: wield  i: inventory  p: rest", 21);
+			strncat(buffer, "  y: wield  i: inventory  p: rest", 33);
 		}
 		if (ai_can_get(current_map->player, 0, 0)) {
 			strncat(buffer, "  g: get", 8);
