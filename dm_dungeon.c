@@ -1857,11 +1857,18 @@ struct dng_dungeon* dng_gendungeon(int seed, int count)
 
 	int difficulty = 0;
 	struct dng_cellmap *parent_cellmap = NULL;
+	int minw = 36;
+	int maxw = 46;
+	int minh = 28;
+	int maxh = 38;
 
 	for (int map_id = 0; map_id < dungeon->maps_length; map_id++) {
 
-		int width = dm_randii(46, 92);
-		int height = dm_randii(38, 56);
+		// scale the dungeon with the depth
+		int stepw = map_id * 5;
+		int steph = map_id * 3;
+		int width = dm_randii(minw + stepw/3, maxw + stepw);
+		int height = dm_randii(minh + steph/3, maxh + steph);
 
 		struct dng_cellmap *cellmap = dng_genmap(difficulty, map_id, width, height);
 
