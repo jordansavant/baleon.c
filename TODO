@@ -1,19 +1,15 @@
 TODO:
 
 now
-- health on rest
 - qol: cursor follows mob if they move and remain in vision
 - xp got stuck at 675??
-- active effects on tiles
+- active effects on tiles (fire burn down grass?)
 - ui: equipped items
 - ui: stats / mutations panels
 - rpg calculations
 - log reports events for hidden enemies and locations
 
 later
-- nutrition
-	- this has been handled by a loss of mutation
-	- we need to pressure them to constantly move
 - hide keys better
 - rpg:
 	- dex based coh?
@@ -27,8 +23,6 @@ later
 - dungeons more:
 	- keys for the locked rooms
 	- treasure in the locked rooms
-	- swathes of terrain types, grass
-	- shallow water and deep water (impassible)
 - bug: tunnels are getting stubbed out in little groups and thus not collapsing
 - bug: tunnels can exist in closed loops in the middle of nowhere
 - ranged point test item
@@ -50,24 +44,25 @@ scope creep
 	- not into walls
 	- not into isolated rooms
 - input recorder?
-- return of mouse cursor?
-	- i think this was alleviated with tab controls
 
 PLOT CURVE
 - intro levels
 	- story: intro birth of the "aberrant one"
 	- introduce base mechanics
+	- weaponless
 	- are primitive enemies
 	- basic treasures
 - early levels
 	- story: aberations and evolutions
 	- first aberrations
 	- machinated rooms
+	- more weapon options
+	- advanced items (consumables throwables)
 - mid levels
 	- story: history of men and baleon
 	- story: baleon's shadow appears (you are defeated?)
 	- harder enemies and machinations
-	- ltnt bosses
+	- lieutenant bosses
 - late levels
 	- story: baleon's weakness
 - final level
@@ -83,6 +78,7 @@ ABERRATION IDEAS
 	- you can continue to mutate up to X number of times
 	- each time adds another aberration effect
 negatives:
+- increase/decrease inventory space?
 - catch fire randomly
 - shortened vision (randomly)?
 - all enemy X type appear as Y type
