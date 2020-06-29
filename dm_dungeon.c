@@ -25,7 +25,6 @@ void dng_cellmap_buildground(struct dng_cellmap *cellmap)
 			struct dng_cell* cell = (struct dng_cell*)malloc(sizeof(struct dng_cell));
 			dng_cell_init(cell);
 
-			// TODO is this why it blows up with non-square maps?
 			int index = r * cellmap->width + c;
 			cell->index = index;
 			cell->x = c;
@@ -1796,36 +1795,37 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	cellmap->entrance_room = NULL;
 	cellmap->exit_room = NULL;
 
-	// machintaions
+	// machinations
 	cellmap->keys_length = 0;
 	cellmap->keys_placed = 0;
 
-	//printf("build ground\n");
+	printf("grounds, "); fflush(stdout);
 	dng_cellmap_buildground(cellmap);
-	//printf("build rooms\n");
+	printf("rooms, "); fflush(stdout);
 	dng_cellmap_buildrooms(cellmap);
-	//printf("build tunnels\n");
+	printf("tunnels, "); fflush(stdout);
 	dng_cellmap_buildtunnels(cellmap);
-	//printf("build doors\n");
+	printf("doors, "); fflush(stdout);
 	dng_cellmap_builddoors(cellmap);
-	// printf("build caves\n");
+	printf("cellbomb, "); fflush(stdout);
 	dng_cellmap_cellbomb(cellmap);
-	//printf("build entrance\n");
+	printf("entrance, "); fflush(stdout);
 	dng_cellmap_buildentrance(cellmap);
-	//printf("clean\n");
+	printf("cleanup, "); fflush(stdout);
 	dng_cellmap_cleanup_connections(cellmap);
-	//printf("calc entrance weights\n");
+	printf("calcs, "); fflush(stdout);
 	dng_cellmap_calc_entrance_weights(cellmap);
-	//printf("build exit\n");
+	printf("exit, "); fflush(stdout);
 	dng_cellmap_buildexit(cellmap);
-	//printf("build walls\n");
+	printf("walls, "); fflush(stdout);
 	dng_cellmap_buildwalls(cellmap);
-	//cellMap->buildLights();
-	//printf("build tags\n");
+	printf("tags, "); fflush(stdout);
 	dng_cellmap_buildtags(cellmap);
-	//
+	printf("machines, "); fflush(stdout);
 	dng_cellmap_machinate(cellmap);
+	printf("decor, "); fflush(stdout);
 	dng_cellmap_decorate(cellmap);
+	printf("DONE"); fflush(stdout);
 
 	return cellmap;
 }
@@ -1864,13 +1864,20 @@ struct dng_dungeon* dng_gendungeon(int seed, int count)
 
 	for (int map_id = 0; map_id < dungeon->maps_length; map_id++) {
 
-		// scale the dungeon with the depth
-		int stepw = map_id * 5;
-		int steph = map_id * 3;
-		int width = dm_randii(minw + stepw/3, maxw + stepw);
-		int height = dm_randii(minh + steph/3, maxh + steph);
-
-		struct dng_cellmap *cellmap = dng_genmap(difficulty, map_id, width, height);
+		struct dng_cellmap *cellmap = NULL;
+		switch (map_id) {
+			default: {
+				// scale the dungeon with the depth
+				printf("GEN MAP %2d: ", map_id); fflush(stdout);
+				int stepw = map_id * 5;
+				int steph = map_id * 3;
+				int width = dm_randii(minw + stepw/3, maxw + stepw);
+				int height = dm_randii(minh + steph/3, maxh + steph);
+				cellmap = dng_genmap(difficulty, map_id, width, height);
+				printf("\n");
+				break;
+			 }
+		}
 
 		if (parent_cellmap) {
 			dng_cellmap_link(cellmap, parent_cellmap);

@@ -18,11 +18,22 @@ int main(void)
 
 			struct dng_cellmap* cellmap = dungeon->maps[i];
 
+			// top ruler
+			printf("    ");
+			for (int c=0; c < cellmap->width; c++) {
+				if (c % 10 == 0)
+					if (c == 0)
+						printf("%d ", c / 10);
+					else
+						printf("%19d ", c / 10);
+			}
+			printf("\n");
 			printf("    ");
 			for (int c=0; c < cellmap->width; c++) {
 				printf("%d ", c %10);
 			}
 			printf("\n");
+
 			for (int r=0; r < cellmap->height; r++) {
 				printf("%3d-", r);
 				for (int c=0; c < cellmap->width; c++) {
@@ -40,9 +51,9 @@ int main(void)
 						printf("m ");
 					else if (cell->has_item) {
 						if (cell->item_style == DNG_ITEM_KEY)
-							printf("K ");
+							printf("k ");
 						else
-							printf("I ");
+							printf("i ");
 					}
 					else if (cell->is_tag_unreachable)
 						printf("U ");
@@ -53,7 +64,7 @@ int main(void)
 					else if (cell->is_exit_transition)
 						printf("X ");
 					else if (cell->is_door)
-						printf("D ");
+						printf("+ ");
 					//else if (cell->was_room_fix_tunnel)
 					//	printf("F ");
 					else if (cell->is_tunnel)
