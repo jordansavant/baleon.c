@@ -272,10 +272,10 @@ void dng_cellmap_decorate_water(struct dng_cellmap *cellmap);
 ///////////////////////////
 // OVERALL DUNGEON
 
-struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height);
+struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height, bool report);
 void dng_delmap(struct dng_cellmap*);
 
-struct dng_dungeon* dng_gendungeon(int seed, int count);
+struct dng_dungeon* dng_gendungeon(int seed, int count, bool report);
 void dng_deldungeon(struct dng_dungeon*);
 
 

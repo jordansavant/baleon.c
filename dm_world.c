@@ -44,7 +44,7 @@ struct wld_world* wld_new_world(int seed, int count)
 	world->maps_length = count;
 	world->maps = (struct wld_map**)malloc(world->maps_length * sizeof(struct wld_map*));
 
-	struct dng_dungeon* dungeon = dng_gendungeon(seed, world->maps_length);
+	struct dng_dungeon* dungeon = dng_gendungeon(seed, world->maps_length, false);
 
 	for (int i=0; i < dungeon->maps_length; i++) {
 		// convert dungeon maps to game maps

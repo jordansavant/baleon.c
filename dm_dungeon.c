@@ -1288,6 +1288,14 @@ void dng_cellmap_link(struct dng_cellmap* child, struct dng_cellmap* parent)
 // MACHINATION BEGIN
 void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 {
+	// Introduction level
+	if (cellmap->id == 0) {
+		// randomly place tutorial tombstones?
+		// randomly place tutorial scrolls?
+
+		return;
+	}
+
 	// XoGeni did the following:
 	// 1. machinate_chestKeyTreasure
 	// 2. machinate_boss
@@ -1729,7 +1737,7 @@ struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *c
 
 
 
-struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
+struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height, bool report)
 {
 	struct dng_cellmap *cellmap = (struct dng_cellmap*)malloc(sizeof(struct dng_cellmap));
 	cellmap->id = id;
@@ -1799,39 +1807,34 @@ struct dng_cellmap* dng_genmap(int difficulty, int id, int width, int height)
 	cellmap->keys_length = 0;
 	cellmap->keys_placed = 0;
 
-	printf("grounds, "); fflush(stdout);
+	if (report) { printf("grounds, "); fflush(stdout); }
 	dng_cellmap_buildground(cellmap);
-	printf("rooms, "); fflush(stdout);
+	if (report) { printf("rooms, "); fflush(stdout); }
 	dng_cellmap_buildrooms(cellmap);
-	printf("tunnels, "); fflush(stdout);
+	if (report) { printf("tunnels, "); fflush(stdout); }
 	dng_cellmap_buildtunnels(cellmap);
-	printf("doors, "); fflush(stdout);
+	if (report) { printf("doors, "); fflush(stdout); }
 	dng_cellmap_builddoors(cellmap);
-	printf("cellbomb, "); fflush(stdout);
+	if (report) { printf("cellbomb, "); fflush(stdout); }
 	dng_cellmap_cellbomb(cellmap);
-	printf("entrance, "); fflush(stdout);
+	if (report) { printf("entrance, "); fflush(stdout); }
 	dng_cellmap_buildentrance(cellmap);
-	printf("cleanup, "); fflush(stdout);
+	if (report) { printf("cleanup, "); fflush(stdout); }
 	dng_cellmap_cleanup_connections(cellmap);
-	printf("calcs, "); fflush(stdout);
+	if (report) { printf("calcs, "); fflush(stdout); }
 	dng_cellmap_calc_entrance_weights(cellmap);
-	printf("exit, "); fflush(stdout);
+	if (report) { printf("exit, "); fflush(stdout); }
 	dng_cellmap_buildexit(cellmap);
-	printf("walls, "); fflush(stdout);
+	if (report) { printf("walls, "); fflush(stdout); }
 	dng_cellmap_buildwalls(cellmap);
-	printf("tags, "); fflush(stdout);
+	if (report) { printf("tags, "); fflush(stdout); }
 	dng_cellmap_buildtags(cellmap);
-	switch (difficulty) {
-		case 0: // level 0
-			break;
-		default:
-			printf("machines, "); fflush(stdout);
-			dng_cellmap_machinate(cellmap);
-			break;
-	}
-	printf("decor, "); fflush(stdout);
+	// generate machines for the depth
+	if (report) { printf("machines, "); fflush(stdout); }
+	dng_cellmap_machinate(cellmap);
+	if (report) { printf("decor, "); fflush(stdout); }
 	dng_cellmap_decorate(cellmap);
-	printf("DONE"); fflush(stdout);
+	if (report) {printf("DONE"); fflush(stdout); }
 
 	return cellmap;
 }
@@ -1852,7 +1855,7 @@ void dng_delmap(struct dng_cellmap *cellmap)
 	free(cellmap);
 }
 
-struct dng_dungeon* dng_gendungeon(int seed, int count)
+struct dng_dungeon* dng_gendungeon(int seed, int count, bool report)
 {
 	struct dng_dungeon* dungeon = (struct dng_dungeon*)malloc(sizeof(struct dng_dungeon));
 	dungeon->seed = seed;
@@ -1870,11 +1873,11 @@ struct dng_dungeon* dng_gendungeon(int seed, int count)
 
 	for (int map_id = 0; map_id < dungeon->maps_length; map_id++) {
 
-		printf("GEN MAP %2d: ", map_id); fflush(stdout);
+		if (report) { printf("GEN MAP %2d: ", map_id); fflush(stdout); }
 		struct dng_cellmap *cellmap = NULL;
 		switch (map_id) {
 			case 0: {
-				cellmap = dng_genmap(difficulty, map_id, 32, 24);
+				cellmap = dng_genmap(difficulty, map_id, 32, 24, report);
 				break;
 			}
 			default: {
@@ -1883,11 +1886,11 @@ struct dng_dungeon* dng_gendungeon(int seed, int count)
 				int steph = map_id * 3;
 				int width = dm_randii(minw + stepw/3, maxw + stepw);
 				int height = dm_randii(minh + steph/3, maxh + steph);
-				cellmap = dng_genmap(difficulty, map_id, width, height);
+				cellmap = dng_genmap(difficulty, map_id, width, height, report);
 				break;
 			 }
 		}
-		printf("\n");
+		if (report) { printf("\n"); }
 
 		if (parent_cellmap) {
 			dng_cellmap_link(cellmap, parent_cellmap);

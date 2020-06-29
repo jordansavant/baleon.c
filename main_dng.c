@@ -11,7 +11,7 @@ int main(void)
 		char *blue = "\033[0;34m";
 		char *def = "\033[0m";
 		printf("SEED %d\n", seed);
-		struct dng_dungeon *dungeon = dng_gendungeon(seed, 10);
+		struct dng_dungeon *dungeon = dng_gendungeon(seed, 10, true);
 
 		for (int i=0; i < dungeon->maps_length; i++) {
 			printf("MAP %d\n", i);
