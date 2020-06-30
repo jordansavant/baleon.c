@@ -1013,45 +1013,16 @@ void ui_update_aberratepanel(struct wld_map *map)
 
 void ui_update_interruptpanel(struct wld_map *map, char *message)
 {
-	//int wordlen = 0;
-	//int linelen = 0;
-	//char words[100][30];
-	//char lines[20][100];
-	//dm_splitstr(message, ' ', words, &wordlen);
-	//dm_lines(words, INT_LENGTH, lines, linelen);
-	//for (int i=0; i < linelen; i++) {
-	//	char *line = lines[i]; // null terminated
-	//	ui_print(interruptpanel, INT_LENGTH, i, 0, line);
-	//}
-
-	// interrupt panel shows raw text interrupts during the game
-	// with only option being to close and move to next action
-	// its like a pause with an event notification
-	int content_width = INT_LENGTH;
-	int mlen = strlen(message);
-	int lines = dm_ceil_out((double)mlen / (double)content_width);
-	// dmlogf("%s is [%d wide] [%d len] [%d lines]", message, content_width, mlen, lines);
-	int line_index = 0;
-	for (int i=0; i<lines; i++) {
-		int charindex = i * content_width;
-		if (i < lines - 1) {
-			// if not the last line, just print the chunk
-			char subbuff[content_width + 1];
-			memcpy(subbuff, &message[charindex], content_width);
-			subbuff[content_width] = '\0';
-			//dmlogf("charindex %d, line %d, mlen %d [%s]", charindex, i, mlen, subbuff);
-			ui_print(interruptpanel, INT_LENGTH, i, 0, subbuff);
-		} else {
-			// if this is the last line, then print the message until the null character
-			int len = mlen - charindex;
-			char subbuff[len + 1];
-			memcpy(subbuff, &message[charindex], len);
-			subbuff[len] = '\0';
-			//dmlogf("charindex %d, final line, mlen %d [%s]", charindex, i, mlen, subbuff);
-			ui_print(interruptpanel, INT_LENGTH, i, 0, subbuff);
-		}
+	int wordlen = 0;
+	char words[100][20];
+	int linelen = 0;
+	char lines[20][100];
+	dm_splitstr(message, ' ', 100, 20, words, &wordlen);
+	dm_lines(wordlen, 20, words, INT_LENGTH, 20, 100, lines, &linelen);
+	for (int i=0; i<linelen; i++) {
+		char *line = lines[i]; // null terminated
+		ui_print(interruptpanel, INT_LENGTH, i, 0, line);
 	}
-	//ui_print(interruptpanel, INT_LENGTH, 0, 0, message);
 	ui_box(interruptpanel);
 	wrefresh(interruptpanel);
 }

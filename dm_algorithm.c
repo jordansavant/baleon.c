@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <limits.h>
+#include <string.h>
 #include "dm_defines.h"
 #include "mt_rand.h"
 #include "dm_algorithm.h"
@@ -396,9 +397,51 @@ double dm_ceil_out(double val)
 
 ///////////////////////////
 // STRING START
-void dm_splitstr(char *text, char splitter, char **words, int *wordlen)
+void dm_splitstr(char *text, char splitter, int m, int n, char words[m][n], int *wordlen)
 {
+	//this is the mother who likes to speak and use the language of the underground to be able to tell players what they can and cannot do
 	// split the text int a bunch of sub strings that represent the words
+	int wordcount = 0;
+	int spacepos = 0;
+	for (int i=0; i < strlen(text) + 1; i++) {
+		if (text[i] == splitter || text[i] == '\0') {
+			// copy characters from last space pos to current position
+			int wordsize = i - spacepos;
+			memcpy(&words[wordcount], &text[spacepos], wordsize);
+			words[wordcount][wordsize] = '\0';
+			//dmlogf("wordcount %d wordsize %d spacepos %d i %d [%s]", wordcount, wordsize, spacepos, i, words[wordcount]);
+			spacepos = i + 1;
+			wordcount++;
+		}
+	}
+	*wordlen = wordcount;
+}
+void dm_lines(int m, int n, char words[m][n], int sentence_size, int o, int p, char lines[o][p], int *linelen)
+{
+	// take a collection of words that are null terminated and a sentence size
+	// and copy them into the lines buffer
+	int cursize = 0;
+	int linepos = 0;
+	for (int i=0; i < m; i++) {
+		char *word = words[i];
+		int wordsize = strlen(word);
+		//dmlogf("compare %d + %d < %d", cursize, wordsize, sentence_size);
+		if (cursize + wordsize< sentence_size) {
+			// append word to line
+			memcpy(&lines[linepos][cursize], word, wordsize);
+			lines[linepos][cursize + wordsize] = ' ';
+			lines[linepos][cursize + wordsize + 1] = '\0';
+			cursize += wordsize + 1;
+		} else {
+			// move to next line, copy the word there
+			linepos++;
+			memcpy(&lines[linepos], word, wordsize);
+			lines[linepos][wordsize] = ' ';
+			lines[linepos][wordsize + 1] = '\0';
+			cursize = wordsize + 1;
+		}
+	}
+	*linelen = linepos + 1;
 }
 // STRING END
 ///////////////////////////
