@@ -51,6 +51,7 @@ double dm_ceil_out(double val);
 // STRING
 void dm_splitstr(char *text, char splitter, int m, int n, char words[m][n], int *wordlen);
 void dm_lines(int m, int n, char words[m][n], int sentence_size, int o, int p, char lines[o][p], int *linelen);
+void dm_wordwrap(char *text, int size, void (*on_line)(char *line));
 
 // ASTAR
 struct dm_astarnode {

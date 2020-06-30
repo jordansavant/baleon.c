@@ -1013,16 +1013,11 @@ void ui_update_aberratepanel(struct wld_map *map)
 
 void ui_update_interruptpanel(struct wld_map *map, char *message)
 {
-	int wordlen = 0;
-	char words[100][20];
-	int linelen = 0;
-	char lines[20][100];
-	dm_splitstr(message, ' ', 100, 20, words, &wordlen);
-	dm_lines(wordlen, 20, words, INT_LENGTH, 20, 100, lines, &linelen);
-	for (int i=0; i<linelen; i++) {
-		char *line = lines[i]; // null terminated
-		ui_print(interruptpanel, INT_LENGTH, i, 0, line);
+	int linepos = 0;
+	void on_line(char *line) {
+		ui_print(interruptpanel, INT_LENGTH, linepos++, 0, line);
 	}
+	dm_wordwrap(message, INT_LENGTH, on_line);
 	ui_box(interruptpanel);
 	wrefresh(interruptpanel);
 }

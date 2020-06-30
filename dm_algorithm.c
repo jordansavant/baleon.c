@@ -443,6 +443,21 @@ void dm_lines(int m, int n, char words[m][n], int sentence_size, int o, int p, c
 	}
 	*linelen = linepos + 1;
 }
+void dm_wordwrap(char *text, int size, void (*on_line)(char *line))
+{
+	int wordlen = 0;
+	char words[1056][32];
+	dm_splitstr(text, ' ', 1056, 32, words, &wordlen);
+
+	int linelen = 0;
+	char lines[64][1056];
+	dm_lines(wordlen, 32, words, size, 64, 1056, lines, &linelen);
+
+	for (int i=0; i<linelen; i++) {
+		char *line = lines[i]; // null terminated
+		on_line(line);
+	}
+}
 // STRING END
 ///////////////////////////
 
