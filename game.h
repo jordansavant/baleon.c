@@ -124,6 +124,7 @@ void ui_update_positioninfo(struct wld_map *map);
 void ui_update_logpanel(struct wld_map *map);
 void ui_update_mobpanel(struct wld_map *map);
 void ui_update_inventorypanel(struct wld_map *map);
+void ui_update_interruptpanel(struct wld_map *map, char* message);
 void ui_update_usepanel(struct wld_map *map);
 void ui_unset_use();
 void ui_set_use_item(struct wld_item* item, int item_slot);
@@ -131,6 +132,7 @@ void ui_use_item_select(struct wld_mob* player, int item_slot);
 
 // MAP EVENTS
 void map_on_effect(struct wld_map *map, struct wld_vfx *effect);
+void map_on_interrupt(struct wld_map *map, char *message);
 void map_on_player_transition(struct wld_map *map, struct wld_mob *player, bool forward);
 void map_on_cursormove(struct wld_map *map, int x, int y, int index);
 void map_on_playermove(struct wld_map *map, struct wld_mob *player, int x, int y, int index);

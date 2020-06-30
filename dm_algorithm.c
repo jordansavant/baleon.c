@@ -395,6 +395,16 @@ double dm_ceil_out(double val)
 
 
 ///////////////////////////
+// STRING START
+void dm_splitstr(char *text, char splitter, char **words, int *wordlen)
+{
+	// split the text int a bunch of sub strings that represent the words
+}
+// STRING END
+///////////////////////////
+
+
+///////////////////////////
 // ASTAR START
 
 #define ASTAR_LIST_LENGTH 25

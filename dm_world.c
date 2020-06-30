@@ -1903,6 +1903,7 @@ struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self)
 
 void ai_npc_intro_converse(struct wld_mob* self_npc, struct wld_mob* other_player)
 {
+	self_npc->map->on_interrupt(self_npc->map, "this is the mother who likes to speak and use the language of the underground to be able to tell players what they can and cannot do");
 	dmlogf("converse %s to %s", self_npc->type->title, other_player->type->title);
 }
 

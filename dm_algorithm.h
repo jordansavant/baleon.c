@@ -48,6 +48,9 @@ void dm_normalize(double x, double y, double *xref, double *yref);
 double dm_round(double val);
 double dm_ceil_out(double val);
 
+// STRING
+void dm_splitstr(char *text, char splitter, char **words, int *wordlen);
+
 // ASTAR
 struct dm_astarnode {
 	unsigned int astar_id;

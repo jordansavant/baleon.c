@@ -95,6 +95,7 @@ WINDOW* charpanel;
 WINDOW* logpanel;
 WINDOW* mobpanel;
 WINDOW* inventorypanel;
+WINDOW* interruptpanel;
 WINDOW* usepanel;
 WINDOW* aberratepanel;
 enum USE_TYPE use_type = USE_NONE;
@@ -106,6 +107,7 @@ int use_item_slot = -1;
 #define LOG_COUNT 7
 #define LOG_LENGTH 60
 #define INV_LENGTH 48
+#define INT_LENGTH 60
 #define USE_LENGTH 60
 #define ABE_LENGTH 60
 #define VIS_LENGTH 30
@@ -1009,6 +1011,51 @@ void ui_update_aberratepanel(struct wld_map *map)
 	wrefresh(aberratepanel);
 }
 
+void ui_update_interruptpanel(struct wld_map *map, char *message)
+{
+	//int wordlen = 0;
+	//int linelen = 0;
+	//char words[100][30];
+	//char lines[20][100];
+	//dm_splitstr(message, ' ', words, &wordlen);
+	//dm_lines(words, INT_LENGTH, lines, linelen);
+	//for (int i=0; i < linelen; i++) {
+	//	char *line = lines[i]; // null terminated
+	//	ui_print(interruptpanel, INT_LENGTH, i, 0, line);
+	//}
+
+	// interrupt panel shows raw text interrupts during the game
+	// with only option being to close and move to next action
+	// its like a pause with an event notification
+	int content_width = INT_LENGTH;
+	int mlen = strlen(message);
+	int lines = dm_ceil_out((double)mlen / (double)content_width);
+	// dmlogf("%s is [%d wide] [%d len] [%d lines]", message, content_width, mlen, lines);
+	int line_index = 0;
+	for (int i=0; i<lines; i++) {
+		int charindex = i * content_width;
+		if (i < lines - 1) {
+			// if not the last line, just print the chunk
+			char subbuff[content_width + 1];
+			memcpy(subbuff, &message[charindex], content_width);
+			subbuff[content_width] = '\0';
+			//dmlogf("charindex %d, line %d, mlen %d [%s]", charindex, i, mlen, subbuff);
+			ui_print(interruptpanel, INT_LENGTH, i, 0, subbuff);
+		} else {
+			// if this is the last line, then print the message until the null character
+			int len = mlen - charindex;
+			char subbuff[len + 1];
+			memcpy(subbuff, &message[charindex], len);
+			subbuff[len] = '\0';
+			//dmlogf("charindex %d, final line, mlen %d [%s]", charindex, i, mlen, subbuff);
+			ui_print(interruptpanel, INT_LENGTH, i, 0, subbuff);
+		}
+	}
+	//ui_print(interruptpanel, INT_LENGTH, 0, 0, message);
+	ui_box(interruptpanel);
+	wrefresh(interruptpanel);
+}
+
 void ui_update_usepanel(struct wld_map *map)
 {
 	if (map->player->mode == MODE_USE) {
@@ -1121,6 +1168,15 @@ void map_on_effect(struct wld_map *map, struct wld_vfx *effect)
 		}
 		break;
 	}
+}
+
+void map_on_interrupt(struct wld_map *map, char *message)
+{
+	ui_clear_win(usepanel);
+	ui_update_interruptpanel(map, message);
+	// getch until (x) is hit then clear interrupt panel and return
+	napms(2000);
+	ui_clear_win(interruptpanel);
 }
 
 void map_on_player_transition(struct wld_map *map, struct wld_mob *player, bool forward)
@@ -1569,6 +1625,7 @@ void ps_on_mapchange()
 	map_pad = newpad(current_map->rows * map_rows_scale + ui_map_border * 2, current_map->cols * map_cols_scale + ui_map_border * 2); // pad extra two for us two draw black around the edges
 
 	current_map->on_effect = map_on_effect;
+	current_map->on_interrupt = map_on_interrupt;
 
 	current_map->on_player_map_transition = map_on_player_transition;
 	current_map->on_cursormove = map_on_cursormove;
@@ -1597,7 +1654,7 @@ void ps_build_world()
 {
 	dm_seed(time(NULL));
 	int seed = dm_randi();
-	//seed = 146;
+	seed = 325319168;//146;
 	dmlogf("SEED %d", seed);
 	world = wld_new_world(seed, 2);
 	current_map = world->maps[0];
@@ -1658,6 +1715,12 @@ void ps_layout_ui()
 	ui_anchor_ur(inventorypanel, invpanel_rows, invpanel_cols);
 	ui_box(inventorypanel);
 
+	// interrupt panel
+	int interruptpanel_cols = INT_LENGTH + 4;
+	int interruptpanel_rows = 16;
+	ui_anchor_center(interruptpanel, interruptpanel_rows, interruptpanel_cols, -(logpanel_rows / 2), 0);
+	ui_box(interruptpanel);
+
 	// use panel
 	int usepanel_cols = USE_LENGTH + 4;
 	int usepanel_rows = 16;
@@ -1696,6 +1759,7 @@ void ps_build_ui()
 	logpanel = newwin(0, 0, 0, 0);
 	mobpanel = newwin(0, 0, 0, 0);
 	inventorypanel = newwin(0, 0, 0, 0);
+	interruptpanel = newwin(0, 0, 0, 0);
 	usepanel = newwin(0, 0, 0, 0);
 	aberratepanel = newwin(0, 0, 0, 0);
 
@@ -1708,6 +1772,7 @@ void ps_destroy_ui()
 {
 	delwin(aberratepanel);
 	delwin(usepanel);
+	delwin(interruptpanel);
 	delwin(inventorypanel);
 	delwin(mobpanel);
 	delwin(logpanel);
