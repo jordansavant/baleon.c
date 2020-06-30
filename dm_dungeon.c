@@ -1292,7 +1292,13 @@ void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 	if (cellmap->id == 0) {
 		// randomly place tutorial tombstones?
 		// randomly place tutorial scrolls?
+		return;
+	}
 
+	// Tutorial level
+	if (cellmap->id == 1) {
+		// randomly place tutorial tombstones?
+		// randomly place tutorial scrolls?
 		return;
 	}
 
@@ -1866,27 +1872,31 @@ struct dng_dungeon* dng_gendungeon(int seed, int count, bool report)
 
 	int difficulty = 0;
 	struct dng_cellmap *parent_cellmap = NULL;
-	int minw = 36;
-	int maxw = 46;
-	int minh = 28;
-	int maxh = 38;
 
 	for (int map_id = 0; map_id < dungeon->maps_length; map_id++) {
 
 		if (report) { printf("GEN MAP %2d: ", map_id); fflush(stdout); }
 		struct dng_cellmap *cellmap = NULL;
 		switch (map_id) {
-			case 0: {
+			case 0:
 				cellmap = dng_genmap(difficulty, map_id, 32, 24, report);
 				break;
-			}
+			case 1:
+				cellmap = dng_genmap(difficulty, map_id, 36, 28, report);
+				break;
 			default: {
 				// scale the dungeon with the depth
 				int stepw = map_id * 5;
 				int steph = map_id * 3;
+				int minw = 36;
+				int maxw = 46;
+				int minh = 28;
+				int maxh = 38;
+
 				int width = dm_randii(minw + stepw/3, maxw + stepw);
 				int height = dm_randii(minh + steph/3, maxh + steph);
 				cellmap = dng_genmap(difficulty, map_id, width, height, report);
+				difficulty++;
 				break;
 			 }
 		}
@@ -1898,8 +1908,6 @@ struct dng_dungeon* dng_gendungeon(int seed, int count, bool report)
 
 		dungeon->maps[map_id] = cellmap;
 		parent_cellmap = cellmap;
-
-		difficulty++;
 	}
 
 	return dungeon;
