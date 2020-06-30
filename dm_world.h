@@ -143,6 +143,7 @@ struct wld_tile {
 enum WLD_MOBTYPE {
 	MOB_VOID = 0,
 	MOB_PLAYER,
+	MOB_NPC_MOTHER,
 	// order of difficulty
 	// must match build order on map
 	MOB_RAT,

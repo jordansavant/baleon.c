@@ -135,12 +135,13 @@ void wld_setup()
 	// copy mob types into malloc
 	struct wld_mobtype mts [] = {
 		// hp, difficuly sprite, color, desc, title
-		{ MOB_VOID,	0,	0,	0,	' ',	WCLR_BLACK,	"",			"" },
-		{ MOB_PLAYER,	100,	20,	0,	'@',	WCLR_MAGENTA,	"yourself",		"You" },
+		{ MOB_VOID,		0,	0,	0,	' ',	WCLR_BLACK,	"",			"" },
+		{ MOB_PLAYER,		100,	20,	0,	'@',	WCLR_MAGENTA,	"yourself",		"You" },
+		{ MOB_NPC_MOTHER,	100,	20,	0,	'@',	WCLR_CYAN,	"mother",		"Mother" },
 		// mobs elevating in difficulty
-		// name		hp	vision	dffclty	sprite	color		short desc		title
-		{ MOB_RAT,	5,	7,	1,	'r',	WCLR_RED,	"a hideous rat",	"rat" },
-		{ MOB_JACKAL,	35,	20,	3,	'j',	WCLR_RED,	"a small jackal",	"jackal" },
+		// name			hp	vision	dffclty	sprite	color		short desc		title
+		{ MOB_RAT,		5,	7,	1,	'r',	WCLR_RED,	"a hideous rat",	"rat" },
+		{ MOB_JACKAL,		35,	20,	3,	'j',	WCLR_RED,	"a small jackal",	"jackal" },
 	};
 	wld_mobtypes = (struct wld_mobtype*)malloc(ARRAY_SIZE(mts) * sizeof(struct wld_mobtype));
 	for (int i=0; i<ARRAY_SIZE(mts); i++) {
@@ -404,6 +405,18 @@ struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r)
 	return mob;
 }
 
+struct wld_mob* gen_mob_npc_mother(struct wld_map* map, int c, int r)
+{
+	struct wld_mob *mob = wld_new_mob(map, MOB_NPC_MOTHER, c, r);
+	mob->ai_wander = ai_default_wander; // moves around
+	mob->stat_strength = 1;
+	mob->stat_dexterity = 1;
+	mob->stat_constitution = 1;
+	rpg_apply_stats(mob);
+	mob->health = mob->maxhealth;
+	return mob;
+}
+
 struct wld_mob* gen_mob_rat(struct wld_map* map, int c, int r)
 {
 	struct wld_mob *mob = wld_new_mob(map, MOB_RAT, c, r);
@@ -608,6 +621,9 @@ void wld_generate_mobs(struct wld_map *map, struct dng_cellmap* cellmap)
 
 			} else if (cell->has_mob) {
 				switch (cell->mob_style) {
+					case DNG_MOB_STYLE_NPC_INTRO:
+						gen_mob_npc_mother(map, c, r);
+						break;
 					case DNG_MOB_STYLE_HOARD:
 						gen_mob_rat(map, c, r);
 						break;

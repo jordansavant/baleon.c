@@ -1290,8 +1290,19 @@ void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 {
 	// Introduction level
 	if (cellmap->id == 0) {
-		// randomly place tutorial tombstones?
-		// randomly place tutorial scrolls?
+		// place intro npc who can talk about basic mechanics
+		// place intro npc who can talk about plotline?
+		struct dng_cell* npc_cell = NULL;
+		int room_size = (cellmap->exit_room->width * cellmap->exit_room->height);
+		bool inspect(struct dng_cell* cell) {
+			if (npc_cell == NULL || dm_chance(2, room_size)) {
+				npc_cell = cell;
+			}
+			return false;
+		}
+		dng_cellmap_inspect_room_cells(cellmap, cellmap->exit_room, inspect);
+		npc_cell->has_mob = true;
+		npc_cell->mob_style = DNG_MOB_STYLE_NPC_INTRO;
 		return;
 	}
 

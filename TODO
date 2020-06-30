@@ -46,31 +46,30 @@ scope creep
 - input recorder?
 
 PLOT CURVE
-- level zero
-	- hardset cellular cave
-	- you alone
-	- altar stones with instructions?
-- intro levels
-	- story: intro birth of the "aberrant one"
-	- introduce base mechanics
-	- weaponless
-	- are primitive enemies
-	- basic treasures
-- early levels
-	- story: aberations and evolutions
-	- first aberrations
-	- machinated rooms
-	- more weapon options
-	- advanced items (consumables throwables)
-- mid levels
-	- story: history of men and baleon
-	- story: baleon's shadow appears (you are defeated?)
-	- harder enemies and machinations
-	- lieutenant bosses
-- late levels
-	- story: baleon's weakness
-- final level
-	- story: baleon's battle
+- level 1:
+	- plot introduction
+	- introduction to plot via npc
+	- introduction to basic mechanics
+		- movement / rest
+		- auto-interactions
+		- doors
+- level 2:
+	- introduction to advanced mechanics
+		- cursor
+		- attacking
+		- inventory
+		- health
+	- attacking noncombatant mobs
+	- basic items ? 1 potion ?
+	- health
+	- tableau of evil?
+- rng levels:
+	- Story Arc is presented:
+		- mutations unlocked
+		- history of men and baleon
+		- baleon's weakness
+- final level:
+	- Baleon battle
 
 
 ABERRATION IDEAS
