@@ -408,7 +408,9 @@ struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r)
 struct wld_mob* gen_mob_npc_mother(struct wld_map* map, int c, int r)
 {
 	struct wld_mob *mob = wld_new_mob(map, MOB_NPC_MOTHER, c, r);
-	mob->ai_wander = ai_default_wander; // moves around
+	mob->is_npc = true;
+	mob->ai_wander = ai_default_wander; // moves around TODO make this wander until within range of player, then stand still
+	mob->ai_converse = ai_npc_intro_converse;
 	mob->stat_strength = 1;
 	mob->stat_dexterity = 1;
 	mob->stat_constitution = 1;
@@ -561,10 +563,12 @@ struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, i
 	mob->ai_detect_combat = NULL;
 	mob->ai_decide_combat = NULL;
 	mob->ai_player_input = NULL;
+	mob->ai_converse = NULL;
 	mob->cursor_target_index = -1;
 	mob->mode = MODE_PLAY;
 	mob->target_mode = TMODE_NONE;
 	mob->is_dead = false;
+	mob->is_npc = false;
 	mob->target_x = 0;
 	mob->target_y = 0;
 	mob->active_item = NULL;
@@ -1415,7 +1419,6 @@ void wld_mob_emplace(struct wld_mob *mob, int x, int y, bool trigger_events)
 	}
 }
 
-// TODO code duplicate with wld_mob_move
 void wld_mob_teleport(struct wld_mob *mob, int x, int y, bool trigger_events)
 {
 	if (wld_map_is_not_occupied(mob->map, x, y))
@@ -1898,6 +1901,11 @@ struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self)
 	return closest_enemy;
 }
 
+void ai_npc_intro_converse(struct wld_mob* self_npc, struct wld_mob* other_player)
+{
+	dmlogf("converse %s to %s", self_npc->type->title, other_player->type->title);
+}
+
 void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy)
 {
 	double dirf_x, dirf_y;
@@ -2128,6 +2136,13 @@ void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender, struc
 		aggressor->map->on_player_whiff_mob(aggressor->map, aggressor, defender, item);
 }
 
+void ai_mob_converse_mob(struct wld_mob *initiator, struct wld_mob *npc)
+{
+	// initiator is player unless I get wierd and have mobs conversing with one another
+	if (npc->ai_converse != NULL)
+		npc->ai_converse(npc, initiator);
+}
+
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender)
 {
 	// determine melee damage from weapon (or unarmed?)
@@ -2253,11 +2268,12 @@ bool ai_queuemobmove(struct wld_mob *mob, int relx, int rely)
 	}
 	return false;
 }
+
 bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 {
 	// inspect objects at position, if tile thats traversable queue walking on to it
-	// if it has a mob then and they are living, melee it (or use active weapon on it)
-	// if it has a mob that is dead, search it
+	// if it has a mob then and they are living and hostile, melee it (or use active weapon on it)
+	// if it has a mob and they are an interactive npc, activate interaction (dialog?)
 	// if it is a tile that is a transition (exit) confirm then descend
 	int newx = mob->map_x + relx;
 	int newy = mob->map_y + rely;
@@ -2266,7 +2282,11 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 	struct wld_mob *mob2 = wld_map_get_mob_at(mob->map, newx, newy);
 	if (mob2 != NULL) {
 		if (!mob2->is_dead) {
-			ai_mob_melee_mob(mob, mob2);
+			if (mob2->is_npc) {
+				ai_mob_converse_mob(mob, mob2);
+			} else {
+				ai_mob_melee_mob(mob, mob2);
+			}
 			return true;
 		} else {
 			// ai_search_mob TODO

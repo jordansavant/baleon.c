@@ -195,10 +195,11 @@ struct wld_mob {
 	bool (*ai_detect_combat)(struct wld_mob*);
 	void (*ai_decide_combat)(struct wld_mob*);
 	void (*ai_player_input)(struct wld_mob*);
+	void (*ai_converse)(struct wld_mob* self, struct wld_mob* other);
 	int queue_x, queue_y;
 	int health, maxhealth;
 	int vision;
-	bool is_player, is_dead;
+	bool is_player, is_dead, is_npc;
 	int cursor_target_index; // map index
 	enum MODE mode;
 	enum TARGET_MODE target_mode;
@@ -352,6 +353,7 @@ void wld_transition_player(struct wld_world*, struct wld_map *from, struct wld_m
 
 // GENERATORS
 struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r);
+struct wld_mob* gen_mob_npc_mother(struct wld_map* map, int c, int r);
 struct wld_mob* gen_mob_jackal(struct wld_map* map, int c, int r);
 struct wld_mob* gen_mob_rat(struct wld_map* map, int c, int r);
 
@@ -457,6 +459,7 @@ void wld_mutate_drain(struct wld_mob *mob, int amt);
 
 // MOB AI
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
+void ai_npc_intro_converse(struct wld_mob* self_npc, struct wld_mob* other_player);
 void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy);
 void ai_default_wander(struct wld_mob *mob);
 bool ai_is_hostile_player(struct wld_mob *self, struct wld_mob *target);
@@ -470,6 +473,7 @@ void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int 
 bool ai_can_melee(struct wld_mob *aggressor, struct wld_mob *defender);
 void ai_mob_whiff(struct wld_mob *aggressor, struct wld_item* item);
 void ai_mob_whiff_mob(struct wld_mob *aggressor, struct wld_mob *defender, struct wld_item* item);
+void ai_mob_converse_mob(struct wld_mob *initiator, struct wld_mob *npc);
 void ai_mob_melee_mob(struct wld_mob *aggressor, struct wld_mob *defender);
 bool ai_mob_use_item(struct wld_mob* mob, struct wld_item* item, struct wld_tile* cursor_tile);
 bool ai_player_use_active_item(struct wld_mob* player);
