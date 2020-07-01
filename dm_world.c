@@ -2469,6 +2469,7 @@ void wld_cheat_teleport_exit(struct wld_map *map, struct wld_mob* mob)
 {
 	struct wld_tile* exit_tile = map->exit_tile;
 	wld_mob_teleport(mob, exit_tile->map_x, exit_tile->map_y, false);
+	exit_tile->on_mob_enter(map, exit_tile, mob);
 }
 
 // CHEATS END
