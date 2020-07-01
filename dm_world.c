@@ -516,8 +516,12 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 				tile->door_lock_id = cell->door_lock_id;
 			} else if (cell->is_exit_transition || cell->is_entrance_transition) {
 				if (cell->is_entrance_transition) {
-					tile->type = &wld_tiletypes[TILE_ENTRANCE];
-					tile->on_mob_enter = wld_tile_on_mob_enter_entrance;
+					if (cellmap->id > 0) { // only make it traversable if it is not the first level
+						tile->type = &wld_tiletypes[TILE_ENTRANCE];
+						tile->on_mob_enter = wld_tile_on_mob_enter_entrance;
+					} else {
+						tile->type = &wld_tiletypes[TILE_STONEFLOOR];
+					}
 					map->entrance_tile = tile;
 				}
 				if (cell->is_exit_transition) {

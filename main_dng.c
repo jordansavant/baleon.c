@@ -4,7 +4,7 @@
 
 int main(void)
 {
-	int seed = 146;
+	int seed = 1501131732;
 	do {
 		char *red = "\033[0;31m";
 		char *green = "\033[0;32m";

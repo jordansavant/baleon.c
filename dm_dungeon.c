@@ -671,69 +671,79 @@ void dng_entrance_init(struct dng_entrance *entrance, int id, int x, int y)
 struct dng_cell* dng_cellmap_pick_transition_cell_for_room(struct dng_cellmap *cellmap, struct dng_room *room)
 {
 	// Default to the center of the room because its guaranteed, though not amazing
-	int center_x = room->x + room->width / 2;
-	int center_y = room->y + room->height / 2;
-	struct dng_cell *pick = dng_cellmap_get_cell_at_position(cellmap, center_x, center_y);
+	struct dng_cell *pick = NULL;
 
-	// First pick is the northwest corner
-	// It must have a wall to north and to west (TODO, this was because of Isometric map display, does not have to be this)
-	switch (dm_randii(0, 4)) {
-	case 0: { // northwest
-			int nw_x = room->x;
-			int nw_y = room->y;
-			struct dng_cell *nw_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y);
-			struct dng_cell *nwn_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y - 1);
-			struct dng_cell *nww_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x - 1, nw_y);
-			if (!nwn_cell->is_door && !nwn_cell->is_tunnel && !nww_cell->is_door && !nww_cell->is_tunnel) {
-				pick = nw_cell;
-				pick->transition_dir_x = 0;
-				pick->transition_dir_y = 1;
-				return pick;
+	// test until we find a suitable entrance or exit
+	while (true) {
+		switch (dm_randii(0, 5)) {
+		case 0: { // northwest
+				int nw_x = room->x;
+				int nw_y = room->y;
+				struct dng_cell *nw_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y);
+				struct dng_cell *nwn_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x, nw_y - 1);
+				struct dng_cell *nww_cell = dng_cellmap_get_cell_at_position(cellmap, nw_x - 1, nw_y);
+				if (!nwn_cell->is_door && !nwn_cell->is_tunnel && !nww_cell->is_door && !nww_cell->is_tunnel && !nw_cell->is_entrance_transition) {
+					pick = nw_cell;
+					pick->transition_dir_x = 0;
+					pick->transition_dir_y = 1;
+					return pick;
+				}
 			}
-		}
-		break;
-	case 1: { // southeast
-			int se_x = room->x + room->width - 1;
-			int se_y = room->y + room->height - 1;
-			struct dng_cell *se_cell = dng_cellmap_get_cell_at_position(cellmap, se_x, se_y);
-			struct dng_cell *ses_cell = dng_cellmap_get_cell_at_position(cellmap, se_x, se_y + 1);
-			struct dng_cell *see_cell = dng_cellmap_get_cell_at_position(cellmap, se_x + 1, se_y);
-			if (!ses_cell->is_door && !ses_cell->is_tunnel && !see_cell->is_door && !see_cell->is_tunnel) {
-				pick = se_cell;
-				pick->transition_dir_x = 0;
-				pick->transition_dir_y = -1;
-				return pick;
+			break;
+		case 1: { // southeast
+				int se_x = room->x + room->width - 1;
+				int se_y = room->y + room->height - 1;
+				struct dng_cell *se_cell = dng_cellmap_get_cell_at_position(cellmap, se_x, se_y);
+				struct dng_cell *ses_cell = dng_cellmap_get_cell_at_position(cellmap, se_x, se_y + 1);
+				struct dng_cell *see_cell = dng_cellmap_get_cell_at_position(cellmap, se_x + 1, se_y);
+				if (!ses_cell->is_door && !ses_cell->is_tunnel && !see_cell->is_door && !see_cell->is_tunnel && !se_cell->is_entrance_transition) {
+					pick = se_cell;
+					pick->transition_dir_x = 0;
+					pick->transition_dir_y = -1;
+					return pick;
+				}
+			break;
 			}
-		break;
-		}
-	case 2: { // northeast
-			int ne_x = room->x + room->width - 1;
-			int ne_y = room->y;
-			struct dng_cell *ne_cell = dng_cellmap_get_cell_at_position(cellmap, ne_x, ne_y);
-			struct dng_cell *nen_cell = dng_cellmap_get_cell_at_position(cellmap, ne_x, ne_y - 1);
-			struct dng_cell *nee_cell = dng_cellmap_get_cell_at_position(cellmap, ne_x + 1, ne_y);
-			if (!nen_cell->is_door && !nen_cell->is_tunnel && !nee_cell->is_door && !nee_cell->is_tunnel) {
-				pick = ne_cell;
-				pick->transition_dir_x = 0;
-				pick->transition_dir_y = 1;
-				return pick;
+		case 2: { // northeast
+				int ne_x = room->x + room->width - 1;
+				int ne_y = room->y;
+				struct dng_cell *ne_cell = dng_cellmap_get_cell_at_position(cellmap, ne_x, ne_y);
+				struct dng_cell *nen_cell = dng_cellmap_get_cell_at_position(cellmap, ne_x, ne_y - 1);
+				struct dng_cell *nee_cell = dng_cellmap_get_cell_at_position(cellmap, ne_x + 1, ne_y);
+				if (!nen_cell->is_door && !nen_cell->is_tunnel && !nee_cell->is_door && !nee_cell->is_tunnel && !ne_cell->is_entrance_transition) {
+					pick = ne_cell;
+					pick->transition_dir_x = 0;
+					pick->transition_dir_y = 1;
+					return pick;
+				}
 			}
-		}
-		break;
-	case 3: { // southwest
-			int sw_x = room->x;
-			int sw_y = room->y + room->height - 1;
-			struct dng_cell *sw_cell = dng_cellmap_get_cell_at_position(cellmap, sw_x, sw_y);
-			struct dng_cell *sws_cell = dng_cellmap_get_cell_at_position(cellmap, sw_x, sw_y - 1);
-			struct dng_cell *sww_cell = dng_cellmap_get_cell_at_position(cellmap, sw_x + 1, sw_y);
-			if (!sws_cell->is_door && !sws_cell->is_tunnel && !sww_cell->is_door && !sww_cell->is_tunnel) {
-				pick = sw_cell;
-				pick->transition_dir_x = 0;
-				pick->transition_dir_y = 1;
-				return pick;
+			break;
+		case 3: { // southwest
+				int sw_x = room->x;
+				int sw_y = room->y + room->height - 1;
+				struct dng_cell *sw_cell = dng_cellmap_get_cell_at_position(cellmap, sw_x, sw_y);
+				struct dng_cell *sws_cell = dng_cellmap_get_cell_at_position(cellmap, sw_x, sw_y - 1);
+				struct dng_cell *sww_cell = dng_cellmap_get_cell_at_position(cellmap, sw_x + 1, sw_y);
+				if (!sws_cell->is_door && !sws_cell->is_tunnel && !sww_cell->is_door && !sww_cell->is_tunnel && !sw_cell->is_entrance_transition) {
+					pick = sw_cell;
+					pick->transition_dir_x = 0;
+					pick->transition_dir_y = 1;
+					return pick;
+				}
 			}
+			break;
+		case 4: { // center
+				int center_x = room->x + room->width / 2;
+				int center_y = room->y + room->height / 2;
+				struct dng_cell *center_cell = dng_cellmap_get_cell_at_position(cellmap, center_x, center_y);
+				if (!center_cell->is_entrance_transition) {
+					pick = center_cell;
+					return pick;
+				}
+
+			}
+			break;
 		}
-		break;
 	}
 
 	return pick;

@@ -1206,6 +1206,7 @@ void map_on_player_transition(struct wld_map *map, struct wld_mob *player, bool 
 			// end of the maps
 			play_state = PS_WIN;
 		} else {
+			ui_log("You ascend further.");
 			// transition player to next map
 			wld_transition_player(world, map, world->maps[map_id + 1], forward);
 			next_map = world->maps[map_id + 1];
@@ -1217,6 +1218,7 @@ void map_on_player_transition(struct wld_map *map, struct wld_mob *player, bool 
 			// no where to go back too
 			ui_log("Though aflame in fear, you cannot retreat.");
 		} else {
+			ui_log("You descend back down.");
 			// transition player to prior map
 			wld_transition_player(world, map, world->maps[map_id - 1], forward);
 			next_map = world->maps[map_id - 1];
@@ -1673,7 +1675,7 @@ void ps_build_world()
 {
 	dm_seed(time(NULL));
 	int seed = dm_randi();
-	//seed = 325319168;//146;
+	seed = 1501131732;//325319168;//146;
 	dmlogf("SEED %d", seed);
 	world = wld_new_world(seed, 8);
 	current_map = world->maps[0];
