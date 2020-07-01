@@ -1018,6 +1018,9 @@ void ui_update_interruptpanel(struct wld_map *map, char *message)
 		ui_print(interruptpanel, INT_LENGTH, linepos++, 0, line);
 	}
 	dm_wordwrap(message, INT_LENGTH, on_line);
+
+	ui_print(interruptpanel, INT_LENGTH, ++linepos, 0, "x: close");
+
 	ui_box(interruptpanel);
 	wrefresh(interruptpanel);
 }
@@ -1141,7 +1144,14 @@ void map_on_interrupt(struct wld_map *map, char *message)
 	ui_clear_win(usepanel);
 	ui_update_interruptpanel(map, message);
 	// getch until (x) is hit then clear interrupt panel and return
-	napms(2000);
+	bool listen = true;
+	while (listen) {
+		switch (getch()) {
+		case KEY_x:
+			listen = false;
+			break;
+		}
+	}
 	ui_clear_win(interruptpanel);
 }
 

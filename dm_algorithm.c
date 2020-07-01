@@ -404,13 +404,20 @@ void dm_splitstr(char *text, char splitter, int m, int n, char words[m][n], int 
 	int wordcount = 0;
 	int spacepos = 0;
 	for (int i=0; i < strlen(text) + 1; i++) {
-		if (text[i] == splitter || text[i] == '\0') {
+		if (text[i] == splitter || text[i] == '\n' || text[i] == '\0') {
 			// copy characters from last space pos to current position
 			int wordsize = i - spacepos;
 			memcpy(&words[wordcount], &text[spacepos], wordsize);
 			words[wordcount][wordsize] = '\0';
 			//dmlogf("wordcount %d wordsize %d spacepos %d i %d [%s]", wordcount, wordsize, spacepos, i, words[wordcount]);
 			spacepos = i + 1;
+			wordcount++;
+		}
+		if (text[i] == '\n') {
+			// we ran into a newline, we want to split and make the prior contents a word, then also inject another word for newline after it
+			// special newline word
+			words[wordcount][0] = '\n';
+			words[wordcount][1] = '\0';
 			wordcount++;
 		}
 	}
@@ -425,8 +432,13 @@ void dm_lines(int m, int n, char words[m][n], int sentence_size, int o, int p, c
 	for (int i=0; i < m; i++) {
 		char *word = words[i];
 		int wordsize = strlen(word);
+		if (word[0] == '\n') {
+			// its a newline word, move to next line, reset space pos
+			cursize = 0;
+			linepos++;
+		}
 		//dmlogf("compare %d + %d < %d", cursize, wordsize, sentence_size);
-		if (cursize + wordsize< sentence_size) {
+		else if (cursize + wordsize < sentence_size) {
 			// append word to line
 			memcpy(&lines[linepos][cursize], word, wordsize);
 			lines[linepos][cursize + wordsize] = ' ';

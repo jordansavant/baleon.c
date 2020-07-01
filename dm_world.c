@@ -1903,8 +1903,12 @@ struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self)
 
 void ai_npc_intro_converse(struct wld_mob* self_npc, struct wld_mob* other_player)
 {
-	self_npc->map->on_interrupt(self_npc->map, "this is the mother who likes to speak and use the language of the underground to be able to tell players what they can and cannot do");
-	dmlogf("converse %s to %s", self_npc->type->title, other_player->type->title);
+	self_npc->map->on_interrupt(self_npc->map,
+			"A woman wanders, wounded, distraught. She looks at you and says,\n\n"
+			"\"Aberrant child, is that you?\" Her voice is but a whisper in the dark. \"Have you arisen "
+			"from discardation? It must not be.\" She pauses and stares at the stone. \"Our people can "
+			"go no deeper. Our souls and bodies are hard pressed and forlorn against His wretched will "
+			"and the will of the sun. Strike me down for strength.\"");
 }
 
 void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy)
