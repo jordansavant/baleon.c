@@ -199,7 +199,8 @@ struct wld_mob {
 	int queue_x, queue_y;
 	int health, maxhealth;
 	int vision;
-	bool is_player, is_dead, is_npc;
+	bool is_player, is_dead;
+	int static_xp_gain; // gain a static amount of xp on killing them
 	int cursor_target_index; // map index
 	enum MODE mode;
 	enum TARGET_MODE target_mode;

@@ -408,12 +408,12 @@ struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r)
 struct wld_mob* gen_mob_npc_mother(struct wld_map* map, int c, int r)
 {
 	struct wld_mob *mob = wld_new_mob(map, MOB_NPC_MOTHER, c, r);
-	mob->is_npc = true;
 	mob->ai_wander = ai_default_wander; // moves around TODO make this wander until within range of player, then stand still
 	mob->ai_converse = ai_npc_intro_converse;
-	mob->stat_strength = 1;
-	mob->stat_dexterity = 1;
-	mob->stat_constitution = 1;
+	mob->stat_strength = dm_randii(2, 5);
+	mob->stat_dexterity = dm_randii(2, 5);
+	mob->stat_constitution = dm_randii(2, 4);
+	mob->static_xp_gain = XP_START;
 	rpg_apply_stats(mob);
 	mob->health = mob->maxhealth;
 	return mob;
@@ -568,7 +568,7 @@ struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, i
 	mob->mode = MODE_PLAY;
 	mob->target_mode = TMODE_NONE;
 	mob->is_dead = false;
-	mob->is_npc = false;
+	mob->static_xp_gain = 0;
 	mob->target_x = 0;
 	mob->target_y = 0;
 	mob->active_item = NULL;
@@ -1852,8 +1852,13 @@ void wld_mutate_check(struct wld_mob *mob)
 // to level multiple times
 void wld_mutate_xp_kill(struct wld_mob *mob, struct wld_mob *victim)
 {
-	// difficulty 1, enemy factor .5 = 50
-	int xp = victim->type->difficulty * XP_MOB_FACTOR; // 25 xp per difficulty of mob
+	int xp;
+	if (victim->static_xp_gain > 0)
+		xp = victim->static_xp_gain;
+	else
+		// difficulty 1, enemy factor .5 = 50
+		xp = victim->type->difficulty * XP_MOB_FACTOR; // 25 xp per difficulty of mob
+
 	dmlogf("Gained %d xp from %s.", xp, victim->type->title);
 	wld_mutate_xp(mob, xp);
 }
@@ -1904,11 +1909,20 @@ struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self)
 void ai_npc_intro_converse(struct wld_mob* self_npc, struct wld_mob* other_player)
 {
 	self_npc->map->on_interrupt(self_npc->map,
-			"A woman wanders, wounded, distraught. She looks at you and says,\n\n"
+			"A woman wanders, wounded, distraught. She looks at you and says,"
+			"\n\n"
 			"\"Aberrant child, is that you?\" Her voice is but a whisper in the dark. \"Have you arisen "
 			"from discardation? It must not be.\" She pauses and stares at the stone. \"Our people can "
 			"go no deeper. Our souls and bodies are hard pressed and forlorn against His wretched will "
-			"and the will of the sun. Strike me down for strength.\"");
+			"and the will of the sun. Strike me down for strength.\""
+			"\n\n"
+			"She pulls a blade from darkness...");
+	// go angrily
+	self_npc->ai_is_hostile = ai_is_hostile_player;
+	self_npc->ai_detect_combat = ai_detect_combat_visible_hostile;
+	self_npc->ai_decide_combat = ai_decide_combat_melee_with_flee;
+	self_npc->flee_threshold = 0.0;
+	self_npc->ai_converse = NULL;
 }
 
 void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy)
@@ -2287,7 +2301,8 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 	struct wld_mob *mob2 = wld_map_get_mob_at(mob->map, newx, newy);
 	if (mob2 != NULL) {
 		if (!mob2->is_dead) {
-			if (mob2->is_npc) {
+			// if the other mob is conversable and not hostile to me
+			if (mob2->ai_converse && (mob2->ai_is_hostile == NULL || mob->ai_is_hostile(mob2, mob) == false)) {
 				ai_mob_converse_mob(mob, mob2);
 			} else {
 				ai_mob_melee_mob(mob, mob2);
