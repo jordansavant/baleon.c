@@ -230,7 +230,6 @@ void g_newgame()
 			break;
 		case PS_MENU:
 			ps_menu_draw();
-			ps_menu_input();
 			break;
 		case PS_MAPCHANGE:
 			current_map = next_map;
@@ -431,7 +430,7 @@ void g_title()
 	dm_center( 7, "    ###+  +###  ##     ##                           ###     ###    ####  ", TCOLOR_RED, TCOLOR_NORMAL, 0);
 	dm_center( 8, "   ##########                                               ##       ##  ", TCOLOR_RED, TCOLOR_NORMAL, 0);
 	dm_center( 9, "  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #         #  ", TCOLOR_RED, TCOLOR_NORMAL, -1);
-	dm_center(10, "    ~~ Aberrati@ns in The Dark ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_YELLOW, TCOLOR_NORMAL, 0);
+	dm_center(10, "    ~~ AND THE RISING OF THE DAWN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   ", TCOLOR_YELLOW, TCOLOR_NORMAL, 0);
 
 	refresh();
 
@@ -557,20 +556,37 @@ void ui_box(WINDOW* win)
 
 void ui_box_title_color(WINDOW* win, int buffer_size, char *text, int colorpair)
 {
+	// @==============================================================@
+	// | ------------------------- ABERRATION ----------------------- |
+	// |                           INVENTORY                          |
+	// buffer_size = 60
+	// wordsize = 10 + 2
+	// halfdash = 60 - 12 = 48 / 2
 	char border = '-';
-	int len = strlen(text);
-	int half = (buffer_size - len) / 2;
-	char title[buffer_size + 1];
-	title[buffer_size] = '\0';
+
+	int textlen = strlen(text);
+	int textlen_wpad = textlen + 2;
+	int half = (buffer_size - textlen_wpad) / 2;
+
+	// build title text will null termination
+	char title[buffer_size + 1]; title[buffer_size] = '\0';
+
+	// print left bar
 	for (int i=0; i<half; i++) {
 		title[i] = border;
 	}
+
+	// print word wrapped in spaces
 	title[half] = ' ';
-	memcpy(&title[half + 1], text, len);
-	title[half + 1 + len] = ' ';
+	memcpy(&title[half + 1], text, textlen);
+	title[half + 1 + textlen] = ' ';
+
+	// print right bar
 	for (int i=0; i < half; i++) {
-		title[half + 1 + len + 1 + i] = border;
+		title[half + textlen_wpad + i] = border;
 	}
+	title[0] = '=';
+	title[buffer_size - 1] = '=';
 
 	wattrset(win, COLOR_PAIR(colorpair));
 	ui_print(win, buffer_size, 0, 0, title);
@@ -873,7 +889,7 @@ void ui_update_mobpanel(struct wld_map *map)
 {
 	// probably just need to do a shadowcast event each turn to get mobs in vision
 	if (map->player->mode == MODE_PLAY) {
-		ui_box_title(mobpanel, VIS_LENGTH, "Visible");
+		ui_box_title(mobpanel, VIS_LENGTH, "VISIBLE");
 		int offx = 1;
 		int offy = 2;
 		for (int i =0; i < last_mob_list_length; i++) {
@@ -964,7 +980,7 @@ void ui_update_inventorypanel(struct wld_map *map)
 {
 	if (map->player->mode == MODE_INVENTORY) {
 		// probably just need to do a shadowcast event each turn to get mobs in vision
-		ui_box_title(inventorypanel, INV_LENGTH, "Inventory");
+		ui_box_title(inventorypanel, INV_LENGTH, "INVENTORY");
 
 		// list the items in player possession
 		ui_print(inventorypanel, INV_LENGTH, 1, 0, "weapon:");
@@ -1027,7 +1043,7 @@ void ui_update_inventorypanel(struct wld_map *map)
 
 void ui_update_aberratepanel(struct wld_map *map)
 {
-	ui_print(aberratepanel, ABE_LENGTH, 0, 0, "------------------------ Aberration ------------------------");
+	ui_box_title(aberratepanel, ABE_LENGTH, "ABERRATION");
 	ui_print(aberratepanel, ABE_LENGTH, 2, 0, "Looking at the dead beneath your feet the lust for");
 	ui_print(aberratepanel, ABE_LENGTH, 3, 0, "evolution and mutation grows. Will you mutate?");
 
@@ -1354,7 +1370,7 @@ void ai_player_input(struct wld_mob* player)
 						listen = false;
 						break;
 					// Player movement
-					case KEY_BACKSPACE:
+					case KEY_ESC:
 						play_state = PS_MENU;
 						listen = false;
 						break;
@@ -2004,29 +2020,92 @@ void ps_play_update()
 
 void ps_menu_draw()
 {
-	dm_center(20, "GAME MENU", TCOLOR_NORMAL, TCOLOR_NORMAL, false);
+	bool g_menu_done = false;
+	//dm_center(20, "GAME MENU", TCOLOR_NORMAL, TCOLOR_NORMAL, false);
 	refresh();
-}
 
-void ps_menu_input()
-{
-	nodelay(stdscr, true);
-	escapedelay(false);
-	bool listen = true;
-	while (listen) {
-		switch (getch()) {
-		case KEY_ESC:
-			play_state = PS_PLAY;
-			listen = false;
+	void on_continue(char *l) {
+		play_state = PS_PLAY;
+		g_menu_done = true;
+	}
+	void on_quit(char *l) {
+		play_state = PS_END;
+		g_menu_done = true;
+	}
+
+	struct choice {
+		char *label;
+		void (*func)(char *);
+	};
+	struct choice choices[] = {
+		{"Continue", on_continue},
+		{"Quit", on_quit},
+	};
+        int n_choices = ARRAY_SIZE(choices);
+
+	int frame_width = 32;
+	int frame_content_width = frame_width - 4;
+
+	WINDOW *parent_win = dm_new_center_win(19, frame_width, 8, 0);
+	WINDOW *menu_menu_win = dm_new_center_win(22, 12, 3, 0); // max choice length + cursor offset by cursor
+	ITEM **menu_items;
+	MENU *menu_menu;
+	keypad(menu_menu_win, TRUE);
+
+	// allocate items
+        menu_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
+        for(int i = 0; i < n_choices; i++) {
+		menu_items[i] = new_item(choices[i].label, "");
+		set_item_userptr(menu_items[i], choices[i].func);
+	}
+	menu_items[n_choices] = (ITEM *)NULL; // last item must be null terminated
+	menu_menu = new_menu((ITEM **)menu_items);
+	set_menu_win(menu_menu, menu_menu_win);
+	set_menu_mark(menu_menu, "@ ");
+	post_menu(menu_menu);
+
+	ui_box_title(parent_win, frame_content_width, "PAUSE");
+	ui_box(parent_win);
+	wrefresh(parent_win);
+
+	// loop and listen
+	while (!g_menu_done) {
+		switch (wgetch(menu_menu_win)) {
+		case KEY_DOWN:
+		case KEY_s:
+			menu_driver(menu_menu, REQ_NEXT_ITEM);
 			break;
-		case KEY_q:
-			play_state = PS_END;
-			listen = false;
+		case KEY_UP:
+		case KEY_w:
+			menu_driver(menu_menu, REQ_PREV_ITEM);
+			break;
+		// Enter
+		case KEY_RETURN:
+		case KEY_ENTER:
+			{
+				void (*func)(char *); // wtf is this? this is the initalization of the function pointer
+				ITEM *cur_item = current_item(menu_menu);
+
+				func = item_userptr(cur_item);
+				func((char *)item_name(cur_item));
+				pos_menu_cursor(menu_menu);
+			}
 			break;
 		}
+		wrefresh(menu_menu_win);
 	}
-	escapedelay(true);
-	nodelay(stdscr, false);
+
+	// free
+	unpost_menu(menu_menu);
+	for(int i = 0; i < n_choices; i++)
+		free_item(menu_items[i]);
+	free_menu(menu_menu);
+	delwin(menu_menu_win);
+	delwin(parent_win);
+
+	//clear();
+	clear();
+	refresh();
 }
 
 // PLAY MENU END
