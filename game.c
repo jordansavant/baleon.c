@@ -196,6 +196,21 @@ void g_newgame()
 		case PS_START:
 			ps_build_ui();
 			ps_build_world();
+			play_state = PS_PLAY_FIRST;
+			break;
+		case PS_PLAY_FIRST:
+			// draw the world
+			ps_play_draw();
+			// display intro dialog
+			map_on_interrupt(current_map, "You awaken in darkness. Slowly a subterranean light begins to seep into your vision.\n\n"
+					"As you fumble to your feet you are filled with rage but cannot recollect as to why. Your blood pumps in "
+					"your veins, pounding. In the darkness around you it is barren and silent.");
+			map_on_interrupt(current_map, "Just as your balance returns, a flash of pain overtakes you.\n\n"
+					"\"The light, warm and nurturing, turned against you. Then the darkness. Then He came, He drove us beneath. We adapted "
+					"and we failed. We are at our end.\"\n\n"
+					"The words of the unknown voice echo in your distant memory.\n\n"
+					"\"You must arise.\"");
+			ui_log("You awake in darkness, then a light appears...");
 			play_state = PS_PLAY;
 			break;
 		case PS_PLAY:
@@ -540,6 +555,33 @@ void ui_box(WINDOW* win)
 	ui_box_color(win, TCOLOR_PURPLE);
 }
 
+void ui_box_title_color(WINDOW* win, int buffer_size, char *text, int colorpair)
+{
+	char border = '-';
+	int len = strlen(text);
+	int half = (buffer_size - len) / 2;
+	char title[buffer_size + 1];
+	title[buffer_size] = '\0';
+	for (int i=0; i<half; i++) {
+		title[i] = border;
+	}
+	title[half] = ' ';
+	memcpy(&title[half + 1], text, len);
+	title[half + 1 + len] = ' ';
+	for (int i=0; i < half; i++) {
+		title[half + 1 + len + 1 + i] = border;
+	}
+
+	wattrset(win, COLOR_PAIR(colorpair));
+	ui_print(win, buffer_size, 0, 0, title);
+	wattrset(win, COLOR_PAIR(TCOLOR_NORMAL));
+}
+
+void ui_box_title(WINDOW* win, int buffer_size, char *text)
+{
+	ui_box_title_color(win, buffer_size, text, TCOLOR_PURPLE);
+}
+
 void ui_clear(WINDOW *win, int row)
 {
 	wmove(win, row + 1, 0);
@@ -831,7 +873,7 @@ void ui_update_mobpanel(struct wld_map *map)
 {
 	// probably just need to do a shadowcast event each turn to get mobs in vision
 	if (map->player->mode == MODE_PLAY) {
-		ui_print(mobpanel, VIS_LENGTH, 0, 0, "--------- Visible ----------");
+		ui_box_title(mobpanel, VIS_LENGTH, "Visible");
 		int offx = 1;
 		int offy = 2;
 		for (int i =0; i < last_mob_list_length; i++) {
@@ -922,7 +964,7 @@ void ui_update_inventorypanel(struct wld_map *map)
 {
 	if (map->player->mode == MODE_INVENTORY) {
 		// probably just need to do a shadowcast event each turn to get mobs in vision
-		ui_print(inventorypanel, INV_LENGTH, 0, 0, "------------------ Inventory -------------------");
+		ui_box_title(inventorypanel, INV_LENGTH, "Inventory");
 
 		// list the items in player possession
 		ui_print(inventorypanel, INV_LENGTH, 1, 0, "weapon:");
@@ -977,7 +1019,8 @@ void ui_update_inventorypanel(struct wld_map *map)
 		ui_print(inventorypanel, INV_LENGTH, row + 1, 1, "x: close");
 
 
-		ui_box_color(inventorypanel, TCOLOR_YELLOW);
+		//ui_box_color(inventorypanel, TCOLOR_YELLOW);
+		ui_box(inventorypanel);
 		wrefresh(inventorypanel);
 	}
 }
@@ -1630,9 +1673,9 @@ void ps_build_world()
 {
 	dm_seed(time(NULL));
 	int seed = dm_randi();
-	seed = 325319168;//146;
+	//seed = 325319168;//146;
 	dmlogf("SEED %d", seed);
-	world = wld_new_world(seed, 2);
+	world = wld_new_world(seed, 8);
 	current_map = world->maps[0];
 
 	// clear visible mob list
@@ -1658,7 +1701,7 @@ void ps_layout_ui()
 	getmaxyx(stdscr,sy,sx);
 
 	// info panel is at bottom
-	int logpanel_cols = LOG_LENGTH + 2;
+	int logpanel_cols = LOG_LENGTH + 4;
 	int logpanel_rows = LOG_COUNT + 2;
 	ui_anchor_br(logpanel, logpanel_rows, logpanel_cols);
 	ui_box(logpanel);
@@ -1666,7 +1709,7 @@ void ps_layout_ui()
 	// anchor mobpanel to right side
 	// TODO make this fit the right side
 	// TODO scrollable?
-	int mobpanel_cols = VIS_LENGTH + 2;
+	int mobpanel_cols = VIS_LENGTH + 4;
 	int mobpanel_rows = sy - logpanel_rows;
 	ui_anchor_ur(mobpanel, mobpanel_rows, mobpanel_cols);
 	ui_box(mobpanel);
@@ -1677,7 +1720,7 @@ void ps_layout_ui()
 
 	// mode bar on the bottom
 	//ui_anchor_bl(cursorpanel, logpanel_rows, sx - logpanel_cols - 1, 0, 0);
-	int cursorpanel_cols = CURSOR_INFO_LENGTH + 2;
+	int cursorpanel_cols = CURSOR_INFO_LENGTH + 4;
 	ui_anchor_bl(cursorpanel, logpanel_rows, cursorpanel_cols, 0, 0);
 	ui_box(cursorpanel);
 
@@ -1740,8 +1783,6 @@ void ps_build_ui()
 	aberratepanel = newwin(0, 0, 0, 0);
 
 	ps_layout_ui();
-
-	ui_log("You awake in darkness, then a light appears...");
 }
 
 void ps_destroy_ui()

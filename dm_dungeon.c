@@ -1288,10 +1288,16 @@ void dng_cellmap_link(struct dng_cellmap* child, struct dng_cellmap* parent)
 // MACHINATION BEGIN
 void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 {
-	// Introduction level
+	// Tutorial level
 	if (cellmap->id == 0) {
-		// place intro npc who can talk about basic mechanics
-		// place intro npc who can talk about plotline?
+		// randomly place tutorial tombstones?
+		// randomly place tutorial scrolls?
+		return;
+	}
+
+	// Introduction level
+	if (cellmap->id == 1) {
+		// place intro npc
 		struct dng_cell* npc_cell = NULL;
 		int room_size = (cellmap->exit_room->width * cellmap->exit_room->height);
 		bool inspect(struct dng_cell* cell) {
@@ -1303,13 +1309,6 @@ void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 		dng_cellmap_inspect_room_cells(cellmap, cellmap->exit_room, inspect);
 		npc_cell->has_mob = true;
 		npc_cell->mob_style = DNG_MOB_STYLE_NPC_INTRO;
-		return;
-	}
-
-	// Tutorial level
-	if (cellmap->id == 1) {
-		// randomly place tutorial tombstones?
-		// randomly place tutorial scrolls?
 		return;
 	}
 

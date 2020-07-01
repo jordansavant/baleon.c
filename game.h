@@ -57,6 +57,7 @@ enum GAME_STATE
 };
 enum PLAY_STATE {
 	PS_START,
+	PS_PLAY_FIRST,
 	PS_PLAY,
 	PS_MENU,
 	PS_MAPCHANGE,
@@ -97,6 +98,8 @@ void ui_clear_visible_mobs(bool full);
 void ui_next_visible_mob();
 void ui_box_color(WINDOW* win, int colorpair);
 void ui_box(WINDOW* win);
+void ui_box_title_color(WINDOW* win, int buffer_size, char *text, int colorpair);
+void ui_box_title(WINDOW* win, int buffer_size, char *text);
 void ui_clear(WINDOW *win, int row);
 void ui_printchar(WINDOW *win, int row, int col, unsigned long ch);
 void ui_print(WINDOW *win, int buffer_size, int row, int col, char *msg);
