@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 
-void test_function(int (*function_pointer) (int x)) {
+void test_function(bool (*function_pointer) (int x)) {
 	printf("addr passed function_pointer %p\n", function_pointer);
 	if (function_pointer(100)) {
 		printf("  run: true\n");
@@ -10,7 +11,7 @@ void test_function(int (*function_pointer) (int x)) {
 	}
 }
 
-int function_outside_main(int x)
+bool function_outside_main(int x)
 {
 	return x < 0;
 }
@@ -22,7 +23,7 @@ int main(void)
 	test_function(function_outside_main);
 
 	// run with function defined in this stack block
-	int function_inside_main(int x) {
+	bool function_inside_main(int x) {
 		return x > 0;
 	}
 	printf("addr function_inside_main %p\n", function_inside_main);
