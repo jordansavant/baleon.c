@@ -203,13 +203,11 @@ void g_newgame()
 			ps_play_draw();
 			// display intro dialog
 			map_on_interrupt(current_map, "You awaken in darkness. Slowly a subterranean light begins to seep into your vision.\n\n"
-					"As you fumble to your feet you are filled with rage but cannot recollect as to why. Your blood pumps in "
-					"your veins, pounding. In the darkness around you it is barren and silent.");
-			map_on_interrupt(current_map, "Just as your balance returns, a flash of pain overtakes you.\n\n"
-					"\"The light, warm and nurturing, turned against you. Then the darkness. Then He came, He drove us beneath. We adapted "
-					"and we failed. We are at our end.\"\n\n"
-					"The words of the unknown voice echo in your distant memory.\n\n"
-					"\"You must arise.\"");
+					"The air is thick with the smell of blood and gore. Beneath your feet lie the remains of discarded men.\n\n"
+					"A flash of pain overtakes you and you hear, \"The light, warm and nurturing, turned against us. Then He came. "
+					"Then the darkness to which He drove us beneath. We failed. We are at our end.\"\n\n"
+					"\"Ascend.\"");
+			map_on_interrupt(current_map, "Move Keys: A W S D");
 			ui_log("You awake in darkness, then a light appears...");
 			play_state = PS_PLAY;
 			break;
