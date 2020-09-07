@@ -393,7 +393,7 @@ struct wld_mob* gen_mob_player(struct wld_map* map, int c, int r)
 	mob->inventory[4] = (struct wld_item*)malloc(sizeof(struct wld_item));
 	wld_init_item(mob->inventory[4], ITEM_POTION_MINOR_HEAL);
 	mob->inventory[5] = (struct wld_item*)malloc(sizeof(struct wld_item));
-	wld_init_item(mob->inventory[5], ITEM_POTION_MINOR_HEAL);
+	wld_init_item(mob->inventory[5], ITEM_WEAPON_SHORTBOW);
 
 	mob->stat_strength = dm_randii(5, 16);
 	mob->stat_dexterity = dm_randii(5, 16);
@@ -426,6 +426,7 @@ struct wld_mob* gen_mob_rat(struct wld_map* map, int c, int r)
 	mob->ai_is_hostile = ai_is_hostile_player;
 	mob->ai_detect_combat = ai_detect_combat_visible_hostile;
 	mob->ai_decide_combat = ai_decide_combat_melee_with_flee;
+	mob->ai_attacked = ai_attacked_trigger_hive;
 	mob->flee_threshold = .5;
 
 	mob->stat_strength = dm_randii(2, 8);
@@ -568,6 +569,8 @@ struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, i
 	mob->ai_decide_combat = NULL;
 	mob->ai_player_input = NULL;
 	mob->ai_converse = NULL;
+	mob->ai_attacked = NULL;
+	mob->ai_killed = NULL;
 	mob->cursor_target_index = -1;
 	mob->mode = MODE_PLAY;
 	mob->target_mode = TMODE_NONE;
@@ -1954,6 +1957,21 @@ void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy)
 	}
 }
 
+// item is nullable
+void ai_attacked_trigger_hive(struct wld_mob *self, struct wld_mob* attacker, int amt, struct wld_item* item)
+{
+	void on_visible(struct wld_mob *myself, int x, int y, double radius) {
+		struct wld_mob *visible_mob = wld_map_get_mob_at(myself->map, x, y);
+		if (visible_mob && myself->type->type == visible_mob->type->type) {
+			// boost their vision to the distance they are from my attacker
+			int dist = dm_disti(visible_mob->map_x, visible_mob->map_y, attacker->map_x, attacker->map_y) + 2;
+			if (visible_mob->vision < dist)
+				visible_mob->vision = dist;
+		}
+	}
+	wld_mob_vision(self, on_visible);
+}
+
 void ai_default_wander(struct wld_mob *mob)
 {
 	// todo pick random destinations to walk to?
@@ -2128,9 +2146,12 @@ void ai_mob_attack_mob(struct wld_mob *aggressor, struct wld_mob *defender, int 
 	if (aggressor->is_player && aggressor->map->on_player_attack_mob)
 		aggressor->map->on_player_attack_mob(aggressor->map, aggressor, defender, amt, item);
 
+	// trigger attack response ai
+	if (defender->ai_attacked)
+		defender->ai_attacked(defender, aggressor, amt, item); // nullable item
+
 	if (defender->health <= 0)
 		ai_mob_kill_mob(aggressor, defender, item);
-
 }
 
 // triggered from inputs that request attack

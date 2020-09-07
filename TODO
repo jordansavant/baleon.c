@@ -1,13 +1,18 @@
 TODO:
 
 now
+- bug: aberrations with constitution increase does not scale health as well
+- bug: trying to open locked door does not trigger notice
+- ai: bow is OP, rats dont attack at range so i can pick them off without them being concerned
+	- got hive done, but need to temporarily frenzy enemies
 - qol: cursor follows mob if they move and remain in vision
-- xp got stuck at 675??
-- active effects on tiles (fire burn down grass?)
+- bug: xp got stuck at 675?? (I think this may have been fixed when I fixed the update counter)
 - ui: equipped items
 - ui: stats / mutations panels
-- rpg calculations
-- log reports events for hidden enemies and locations
+- better rpg calculations
+- bug: log reports events for hidden enemies and locations
+- ui: help menu
+- fix: make items use linewrapping for descriptions
 
 later
 - hide keys better
@@ -18,6 +23,7 @@ later
 - ui: stat panel?
 - ui: interrupt panel
 	- game over, major event interrupts
+- active effects on tiles (fire burn down grass?)
 - dungeon motifs like swathes of grass, water etc
 	- shallow water vs deep water
 - dungeons more:

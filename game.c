@@ -1358,12 +1358,12 @@ void ai_player_input(struct wld_mob* player)
 				case TMODE_NONE:
 					switch (key) {
 					// CHEATS:
-					case KEY_F(1):
+					case KEY_F(10):
 						// teleport to exit and don't trigger exit
 						wld_cheat_teleport_exit(player->map, player);
 						listen = false;
 						break;
-					case KEY_F(2):
+					case KEY_F(11):
 						// enable aberate
 						player->can_mutate = true;
 						player->mode = MODE_ABERRATE;

@@ -196,6 +196,8 @@ struct wld_mob {
 	void (*ai_decide_combat)(struct wld_mob*);
 	void (*ai_player_input)(struct wld_mob*);
 	void (*ai_converse)(struct wld_mob* self, struct wld_mob* other);
+	void (*ai_attacked)(struct wld_mob*, struct wld_mob*, int amt, struct wld_item*);
+	void (*ai_killed)(struct wld_mob*, struct wld_mob*, int amt, struct wld_item*);
 	int queue_x, queue_y;
 	int health, maxhealth;
 	int vision;
@@ -463,6 +465,7 @@ void wld_mutate_drain(struct wld_mob *mob, int amt);
 struct wld_mob* ai_get_closest_visible_enemy(struct wld_mob* self);
 void ai_npc_intro_converse(struct wld_mob* self_npc, struct wld_mob* other_player);
 void ai_flee_enemy(struct wld_mob* self, struct wld_mob *enemy);
+void ai_attacked_trigger_hive(struct wld_mob *self, struct wld_mob* attacker, int amt, struct wld_item* item);
 void ai_default_wander(struct wld_mob *mob);
 bool ai_is_hostile_player(struct wld_mob *self, struct wld_mob *target);
 bool ai_detect_combat_visible_hostile(struct wld_mob *mob);
