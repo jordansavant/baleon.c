@@ -806,15 +806,15 @@ void ui_update_cmdpanel(struct wld_map *map)
 	if (current_map->player->mode == MODE_PLAY) {
 		struct wld_tile *t = wld_map_get_tile_at_index(current_map, current_map->player->map_index);
 		if (current_map->player->target_mode == TMODE_ACTIVE) {
-			strncat(buffer, STR_W_SIZE("  x: exit  space: use"));
+			strcat(buffer, "  x: exit  space: use");
 		} else {
-			strncat(buffer, STR_W_SIZE("  y: wield  i: inventory  p: rest"));
+			strcat(buffer, "  y: wield  i: inventory  p: rest");
 		}
 		if (ai_can_get(current_map->player, 0, 0)) {
-			strncat(buffer, STR_W_SIZE("  g: get"));
+			strcat(buffer, "  g: get");
 		}
 		if (t->dead_mob_type && current_map->player->can_mutate) {
-			strncat(buffer, STR_W_SIZE("  b: aberrate"));
+			strcat(buffer, "  b: aberrate");
 		}
 	}
 
