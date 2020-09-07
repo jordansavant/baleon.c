@@ -445,26 +445,41 @@ void g_title()
 		{"Options", g_title_onundefined},
 		{"Quit", g_title_onquit},
 	};
-        int n_choices = ARRAY_SIZE(choices);
+	int n_choices = ARRAY_SIZE(choices);
 
-	WINDOW *title_menu_win = dm_new_center_win(12, 13, 5, 0); // max choice length + cursor offset by cursor
 	ITEM **title_items;
 	MENU *title_menu;
-	keypad(title_menu_win, TRUE);
+	WINDOW *title_menu_win;
+	int menu_row_start = 12;
+	int menu_item_width = 10;
+	int menu_item_count = n_choices;
 
-	// allocate items
-        title_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
-        for(int i = 0; i < n_choices; i++) {
+	// allocate menu items
+	dmlog("make menu");
+	title_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
+	for(int i = 0; i < n_choices; i++) {
 		title_items[i] = new_item(choices[i].label, "");
 		set_item_userptr(title_items[i], choices[i].func);
 	}
 	title_items[n_choices] = (ITEM *)NULL; // last item must be null terminated
-	title_menu = new_menu((ITEM **)title_items);
-	set_menu_win(title_menu, title_menu_win);
-	set_menu_mark(title_menu, "@ ");
-	post_menu(title_menu);
 
+	// create menu
+	title_menu = new_menu((ITEM **)title_items);
+
+	// create menu subwindow
+	title_menu_win = dm_new_center_win(menu_row_start, menu_item_width, n_choices , 0); // (row, width, height, offx) max choice length + cursor offset by cursor
+	keypad(title_menu_win, TRUE);
+
+	// add menu to subwindow
+	set_menu_win(title_menu, title_menu_win);
+	set_menu_sub(title_menu, derwin(title_menu_win, n_choices, menu_item_width, 0, 0)); // (h, w, offx, offy) from parent window
+
+	set_menu_mark(title_menu, "@ ");
+	//box(title_menu_win, 0, 0);
+
+	post_menu(title_menu);
 	wrefresh(title_menu_win);
+	dmlog("post menu");
 
 	// loop and listen
 	while (!g_title_done) {
@@ -479,8 +494,7 @@ void g_title()
 			break;
 		// Enter
 		case KEY_RETURN:
-		case KEY_ENTER:
-			{
+		case KEY_ENTER: {
 				void (*func)(char *); // wtf is this? this is the initalization of the function pointer
 				ITEM *cur_item = current_item(title_menu);
 
@@ -492,6 +506,7 @@ void g_title()
 		}
 		wrefresh(title_menu_win);
 	}
+
 	// free
 	unpost_menu(title_menu);
 	for(int i = 0; i < n_choices; i++)
@@ -2039,7 +2054,7 @@ void ps_menu_draw()
 		{"Continue", on_continue},
 		{"Quit", on_quit},
 	};
-        int n_choices = ARRAY_SIZE(choices);
+	int n_choices = ARRAY_SIZE(choices);
 
 	int frame_width = 32;
 	int frame_content_width = frame_width - 4;
@@ -2051,8 +2066,8 @@ void ps_menu_draw()
 	keypad(menu_menu_win, TRUE);
 
 	// allocate items
-        menu_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
-        for(int i = 0; i < n_choices; i++) {
+	menu_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
+	for(int i = 0; i < n_choices; i++) {
 		menu_items[i] = new_item(choices[i].label, "");
 		set_item_userptr(menu_items[i], choices[i].func);
 	}
