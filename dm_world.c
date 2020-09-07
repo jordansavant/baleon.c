@@ -103,20 +103,20 @@ void wld_setup()
 	}
 
 	// copy tiletypes into malloc
-	struct wld_tiletype tts[] = { //     bg		 fg		  membg       memfg      block   transformable    short desc
-		{ TILE_VOID,            ' ', WCLR_BLACK, WCLR_BLACK, ' ', WCLR_BLACK, WCLR_BLACK, false, true, "" },
-		{ TILE_GRASS,           '"', WCLR_BLACK, WCLR_GREEN, '"', WCLR_BLACK, WCLR_BLUE,  false, true, "a small tuft of grass" },
-		{ TILE_WATER,           '~', WCLR_BLUE,  WCLR_BLUE,  '~', WCLR_BLACK, WCLR_BLUE,  false, true, "a pool of water glistens" },
-		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  false, true, "a large tree" },
-		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true, false, "a rough stone wall" },
-		{ TILE_STONEFLOOR,	'.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, true, "a rough stone floor" },
-		{ TILE_ENTRANCE,	'>', WCLR_BLACK, WCLR_CYAN,  '>', WCLR_BLACK, WCLR_CYAN,  false, false, "the entrance back up" },
-		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_CYAN,  false, false, "an exit further down" },
-		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  false, false, "an old stone door" },
-		{ TILE_DEEPWATER,       ' ', WCLR_BLACK, WCLR_BLACK, '~', WCLR_BLACK, WCLR_BLUE,  false, false, "an old stone door" },
-		{ TILE_SUMMONCIRCLE_SF_INERT, '.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, true, "a strange stone floor" },
-		{ TILE_SUMMONCIRCLE_ACTIVE, '0', WCLR_BLACK, WCLR_CYAN, '0', WCLR_BLACK, WCLR_BLUE,  false, true, "a runic summon center" },
-		{ TILE_SUMMONCIRCLE_NODE, '+', WCLR_BLACK, WCLR_CYAN, '+', WCLR_BLACK, WCLR_BLUE,  false, true, "a runic summon node" },
+	struct wld_tiletype tts[] = { //     bg		 fg		  membg       memfg      block   transformable    short desc,		title
+		{ TILE_VOID,            ' ', WCLR_BLACK, WCLR_BLACK, ' ', WCLR_BLACK, WCLR_BLACK, false, true, "",				"" },
+		{ TILE_GRASS,           '"', WCLR_BLACK, WCLR_GREEN, '"', WCLR_BLACK, WCLR_BLUE,  false, true, "a small tuft of grass",		"Grass" },
+		{ TILE_WATER,           '~', WCLR_BLUE,  WCLR_BLUE,  '~', WCLR_BLACK, WCLR_BLUE,  false, true, "a pool of water glistens",	"Water" },
+		{ TILE_TREE,            'T', WCLR_BLACK, WCLR_GREEN, 'T', WCLR_BLACK, WCLR_BLUE,  false, true, "a large tree",			"Tree" },
+		{ TILE_STONEWALL,       '#', WCLR_WHITE, WCLR_WHITE, '#', WCLR_BLACK, WCLR_BLUE,  true, false, "a rough stone wall",		"Stone Wall" },
+		{ TILE_STONEFLOOR,	'.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, true, "a rough stone floor",		"Stone Floor" },
+		{ TILE_ENTRANCE,	'>', WCLR_BLACK, WCLR_CYAN,  '>', WCLR_BLACK, WCLR_CYAN,  false, false, "the entrance back up",		"Entrance" },
+		{ TILE_EXIT,		'<', WCLR_BLACK, WCLR_CYAN,  '<', WCLR_BLACK, WCLR_CYAN,  false, false, "an exit further down",		"Exit" },
+		{ TILE_STONEDOOR,       '+', WCLR_BLACK, WCLR_WHITE, '+', WCLR_BLACK, WCLR_BLUE,  false, false, "an old stone door",		"Stone Door" },
+		{ TILE_DEEPWATER,       ' ', WCLR_BLACK, WCLR_BLACK, '~', WCLR_BLACK, WCLR_BLUE,  false, false, "dark and deep water",		"Deep Water" },
+		{ TILE_SUMMONCIRCLE_SF_INERT, '.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, true, "a strange stone floor",	"Strange Stone Floor" },
+		{ TILE_SUMMONCIRCLE_ACTIVE, '0', WCLR_BLACK, WCLR_CYAN, '0', WCLR_BLACK, WCLR_BLUE,  false, true, "a runic summon center",	"Summon Circle"	},
+		{ TILE_SUMMONCIRCLE_NODE, '+', WCLR_BLACK, WCLR_CYAN, '+', WCLR_BLACK, WCLR_BLUE,  false, true, "a runic summon node",		"Summon Node" },
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
@@ -130,6 +130,7 @@ void wld_setup()
 		wld_tiletypes[i].is_block = tts[i].is_block;
 		wld_tiletypes[i].is_transformable = tts[i].is_transformable;
 		wld_tiletypes[i].short_desc = tts[i].short_desc;
+		wld_tiletypes[i].title = tts[i].title;
 	}
 
 	// copy mob types into malloc
@@ -2342,13 +2343,20 @@ bool ai_act_upon(struct wld_mob *mob, int relx, int rely)
 		if (tile->is_door && tile->is_door_locked && tile->door_lock_id > -1) {
 			// search inventory for key
 			struct wld_item *key = NULL;
+			bool keyfound = false;
 			void inspect(struct wld_item *item) {
 				if (!item->type->is_key || !item->type->fn_can_use || !item->type->fn_use)
 					return;
-				if (item->type->fn_can_use(item, mob, tile))
+				if (item->type->fn_can_use(item, mob, tile)) {
 					item->type->fn_use(item, mob, tile);
+					keyfound = true;
+				}
 			}
 			wld_mob_inspect_inventory(mob, inspect);
+			if (!keyfound) {
+				wld_logf("You have no key for %s.", tile->type->short_desc);
+				return true; // costs a turn to try and open the door
+			}
 		}
 		if (wld_map_is_not_occupied(mob->map, newx, newy)) {
 			return ai_queuemobmove(mob, relx, rely);

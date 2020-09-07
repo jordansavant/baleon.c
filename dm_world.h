@@ -116,6 +116,7 @@ struct wld_tiletype {
 	bool is_block;
 	bool is_transformable;
 	char *short_desc;
+	char *title;
 };
 struct wld_tile {
 	int id; // position in tile list
