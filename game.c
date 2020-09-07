@@ -2074,6 +2074,7 @@ void ps_menu_draw()
 	menu_items[n_choices] = (ITEM *)NULL; // last item must be null terminated
 	menu_menu = new_menu((ITEM **)menu_items);
 	set_menu_win(menu_menu, menu_menu_win);
+	set_menu_sub(menu_menu, derwin(menu_menu_win, 3, 12, 0, 0)); // (h, w, offx, offy) from parent window
 	set_menu_mark(menu_menu, "@ ");
 	post_menu(menu_menu);
 

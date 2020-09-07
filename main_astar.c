@@ -71,7 +71,8 @@ int main(void)
 	for (int r=0; r<height; r++) {
 		for (int c=0; c<width; c++) {
 			struct cell *cell = (struct cell*)malloc(sizeof(struct cell));
-			struct dm_astarnode *node = (struct dm_astarnode*)malloc(sizeof(struct dm_astarnode));
+			//struct dm_astarnode *node = (struct dm_astarnode*)malloc(sizeof(struct dm_astarnode));
+			struct dm_astarnode *node = dm_astar_newnode();
 
 			cell->astar_node = node;
 			node->owner = (void*)cell;

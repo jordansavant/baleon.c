@@ -23,9 +23,13 @@ valgrind-full: $(BUILD) $(DEPS)
 
 dng: main_dng.c dm_dungeon.c dm_dungeon.h dm_algorithm.h dm_algorithm.c
 	gcc main_dng.c dm_dungeon.c dm_algorithm.c mt_rand.c -o build/main_dng.out -lm && ./build/main_dng.out
+valgrind-dng: main_dng.c dm_algorithm.c dm_algorithm.h
+	gcc main_dng.c dm_dungeon.c dm_algorithm.c mt_rand.c -o build/main_dng.out -lm && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all ./build/main_dng.out
 
 astar: main_astar.c dm_algorithm.c dm_algorithm.h
 	gcc main_astar.c dm_algorithm.c mt_rand.c -o build/main_astar.out -lm && ./build/main_astar.out
+valgrind-astar: main_astar.c dm_algorithm.c dm_algorithm.h
+	gcc main_astar.c dm_algorithm.c mt_rand.c -o build/main_astar.out -lm && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all ./build/main_astar.out
 
 cell: main_cellular.c dm_algorithm.c dm_algorithm.h
 	gcc main_cellular.c dm_algorithm.c mt_rand.c -o build/main_cellular.out -lm && ./build/main_cellular.out
