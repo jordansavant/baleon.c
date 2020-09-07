@@ -930,7 +930,7 @@ void ui_update_mobpanel(struct wld_map *map)
 				// active effects
 				for (int j=0; j < mob->active_effects_length; j++) {
 					struct wld_effect *e = &mob->active_effects[j];
-					if (e->is_active) {
+					if (e->is_active && e->type->reveal) {
 						ui_meter(mobpanel, i + offy, c, len, e->type->title, e->current_iterations, e->type->iterations, WCLR_RED, WCLR_YELLOW, WCLR_BLACK, true);
 						i++;
 					}

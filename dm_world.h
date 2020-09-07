@@ -68,6 +68,7 @@ struct wld_aberration {
 
 enum WLD_EFFECT {
 	EFFECT_FIRE,
+	EFFECT_VISION_BOOST,
 };
 
 struct wld_effecttype {
@@ -75,13 +76,14 @@ struct wld_effecttype {
 	int iterations;
 	unsigned long sprite;
 	int fg_color, bg_color;
+	bool reveal;
 	void (*on_update_mob)(struct wld_effect *e, struct wld_mob *);
 	char *title;
 };
 
 struct wld_effect {
 	struct wld_effecttype *type;
-	bool is_active;
+	bool is_active, reveal;
 	int current_iterations;
 	bool source_is_player;
 };
@@ -202,6 +204,7 @@ struct wld_mob {
 	int queue_x, queue_y;
 	int health, maxhealth;
 	int vision;
+	int vision_boost;
 	bool is_player, is_dead;
 	int static_xp_gain; // gain a static amount of xp on killing them
 	int cursor_target_index; // map index
@@ -403,6 +406,7 @@ void wld_map_add_effect(struct wld_map *map, enum WLD_EFFECT, int x, int y, bool
 
 // EFFECTS
 void wld_effect_on_fire(struct wld_effect *effect, struct wld_mob *mob);
+void wld_effect_vision_boost(struct wld_effect *effect, struct wld_mob *mob);
 
 // TILE METHODS
 int wld_tile_get_x(struct dm_astarnode *astar_node);

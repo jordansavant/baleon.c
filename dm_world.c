@@ -343,8 +343,9 @@ void wld_setup()
 
 	// Copy effect types into malloc
 	struct wld_effecttype ets [] = {
-		// hp, sprite, color, desc, title
-		{ EFFECT_FIRE,    5, '^', WCLR_YELLOW, -1, wld_effect_on_fire, "fire" }
+		//			iters,	sprite, color,		desc,	reveal,	function			title
+		{ EFFECT_FIRE,		5,	'^',	WCLR_YELLOW,	-1,	true,	wld_effect_on_fire,		"fire" },
+		{ EFFECT_VISION_BOOST,	20,	' ',	WCLR_YELLOW,	-1,	false,	wld_effect_vision_boost,	"vision boost" },
 	};
 	wld_effecttypes = (struct wld_effecttype*)malloc(ARRAY_SIZE(ets) * sizeof(struct wld_effecttype));
 	for (int i=0; i<ARRAY_SIZE(ets); i++) {
@@ -353,6 +354,7 @@ void wld_setup()
 		wld_effecttypes[i].sprite = ets[i].sprite;
 		wld_effecttypes[i].fg_color = ets[i].fg_color;
 		wld_effecttypes[i].bg_color = ets[i].bg_color;
+		wld_effecttypes[i].reveal = ets[i].reveal;
 		wld_effecttypes[i].on_update_mob = ets[i].on_update_mob;
 		wld_effecttypes[i].title = ets[i].title;
 	}
@@ -584,6 +586,7 @@ struct wld_mob* wld_new_mob(struct wld_map *map, enum WLD_MOBTYPE type, int x, i
 	mob->type = &wld_mobtypes[type];
 	mob->active_effects_length = 0;
 	mob->vision = mob->type->base_vision;
+	mob->vision_boost = 0;
 	mob->flee_threshold  = .5;
 
 	// create inventory (pointers to malloc items)
@@ -1094,13 +1097,13 @@ struct draw_struct wld_map_get_drawstruct(struct wld_map *map, int x, int y)
 		if (m->active_effects_length > 0) {
 			struct wld_effect *e = NULL;
 			for (int i=0; i < m->active_effects_length; i++) {
-				if (m->active_effects[i].is_active) {
+				if (m->active_effects[i].is_active && m->active_effects[i].type->reveal) {
 					if (e == NULL) {
 						e = &m->active_effects[i];
 					}
 				}
 			}
-			if (e) {
+			if (e && e->type->sprite != ' ') {
 				cha2 = e->type->sprite;
 				if (e->type->bg_color != -1)
 					colorpair2 = wld_cpair(e->type->fg_color, e->type->bg_color);
@@ -1202,6 +1205,17 @@ void wld_effect_on_fire(struct wld_effect *effect, struct wld_mob *mob)
 		ai_effect_attack_mob(effect, mob, dm_randii(1, 4));
 		effect->current_iterations++;
 	} else {
+		effect->is_active = false;
+	}
+}
+
+void wld_effect_vision_boost(struct wld_effect *effect, struct wld_mob *mob)
+{
+	if (effect->current_iterations < effect->type->iterations) {
+		mob->vision_boost = mob->vision; // boost their vision by their current vision (so making it 2x)
+		effect->current_iterations++;
+	} else {
+		mob->vision_boost = 0;
 		effect->is_active = false;
 	}
 }
@@ -1492,7 +1506,7 @@ void wld_mob_vision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, in
 			t->dm_ss_id = ss_id;
 		}
 	}
-	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, mob->vision, wld_ss_isblocked, wld_ss_onvisible, false); // no leakage allowed
+	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, mob->vision + mob->vision_boost, wld_ss_isblocked, wld_ss_onvisible, false); // no leakage allowed
 }
 bool wld_mob_is_next_to_tile(struct wld_mob *mob, struct wld_tile* tile)
 {
@@ -1965,9 +1979,7 @@ void ai_attacked_trigger_hive(struct wld_mob *self, struct wld_mob* attacker, in
 		struct wld_mob *visible_mob = wld_map_get_mob_at(myself->map, x, y);
 		if (visible_mob && myself->type->type == visible_mob->type->type) {
 			// boost their vision to the distance they are from my attacker
-			int dist = dm_disti(visible_mob->map_x, visible_mob->map_y, attacker->map_x, attacker->map_y) + 2;
-			if (visible_mob->vision < dist)
-				visible_mob->vision = dist;
+			wld_map_add_effect(visible_mob->map, EFFECT_VISION_BOOST, visible_mob->map_x, visible_mob->map_y, myself->is_player);
 		}
 	}
 	wld_mob_vision(self, on_visible);
