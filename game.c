@@ -1103,32 +1103,34 @@ void ui_update_usepanel(struct wld_map *map)
 		switch (use_type) {
 		case USE_ITEM: {
 				// intro item
-				ui_print(usepanel, USE_LENGTH, 0, 0, "------------------------- Use Item -------------------------");
-				ui_printf(usepanel, USE_LENGTH, 2, 0, "You prepare to use %s.", use_item->type->short_desc);
-				ui_print(usepanel, USE_LENGTH, 3, 0, use_item->type->use_text_1);
-				ui_print(usepanel, USE_LENGTH, 4, 0, use_item->type->use_text_2);
-				if (use_item->map_found > -1) {
-					ui_printf(usepanel, USE_LENGTH, 5, 0, "Found on level %d.", use_item->map_found + 1);
+				int linepos = 2;
+				ui_box_title(usepanel, USE_LENGTH, "USE ITEM");
+				ui_printf(usepanel, USE_LENGTH, linepos++, 0, "You prepare to use %s.", use_item->type->short_desc);
+				void on_line(char *line) {
+					dmlog(line);
+					ui_print(usepanel, USE_LENGTH, linepos++, 0, line);
 				}
+				dm_wordwrap(use_item->type->use_text, USE_LENGTH, on_line);
+				if (use_item->map_found > -1) {
+					ui_printf(usepanel, USE_LENGTH, linepos++, 0, "Found on level %d.", use_item->map_found + 1);
+				}
+				linepos++;
 
 				// give options
-				int offset = 7;
 				bool equippable = use_item->type->is_weq || use_item->type->is_aeq;
 				if (use_item_slot == 0 || use_item_slot == 1) {
-					ui_print(usepanel, USE_LENGTH, offset, 0, "e: unequip");
-					offset++;
+					ui_print(usepanel, USE_LENGTH, linepos++, 0, "e: unequip");
 				} else if (equippable) {
-					ui_print(usepanel, USE_LENGTH, offset, 0, "e: equip");
-					offset++;
+					ui_print(usepanel, USE_LENGTH, linepos++, 0, "e: equip");
 				}
 				if (use_item->type->fn_use != NULL) {
-					ui_printf(usepanel, USE_LENGTH, offset++, 0, "u: %s", use_item->type->use_label);
+					ui_printf(usepanel, USE_LENGTH, linepos++, 0, "u: %s", use_item->type->use_label);
 				}
 				if (use_item->type->fn_drink != NULL) {
-					ui_printf(usepanel, USE_LENGTH, offset++, 0, "q: %s", use_item->type->drink_label);
+					ui_printf(usepanel, USE_LENGTH, linepos++, 0, "q: %s", use_item->type->drink_label);
 				}
-				ui_print(usepanel, USE_LENGTH, offset++, 0, "d: drop");
-				ui_print(usepanel, USE_LENGTH, ++offset, 0, "x: close");
+				ui_print(usepanel, USE_LENGTH, linepos++, 0, "d: drop");
+				ui_print(usepanel, USE_LENGTH, ++linepos, 0, "x: close");
 			}
 			break;
 		}

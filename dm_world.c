@@ -176,7 +176,6 @@ void wld_setup()
 			0,0,//min max dmgs
 			"",
 			"",
-			"",
 			""
 		},
 		{
@@ -199,8 +198,7 @@ void wld_setup()
 			"quaff",
 			"throw",
 			/////////////////////////////////////////////////////////
-			"The glass of the potion is warm to the touch, its",
-			"properties should heal a small amount."
+			"The glass of the potion is warm to the touch. Its properties should heal a small amount."
 		},
 		{
 			ITEM_WEAPON_SHORTSWORD,
@@ -221,8 +219,7 @@ void wld_setup()
 			"",
 			"strike",
 			/////////////////////////////////////////////////////////
-			"Though short, its sharp point could plunge deeply into",
-			"a soft skinned enemy."
+			"Though short, its sharp point could plunge deeply into a soft skinned enemy."
 		},
 		{
 			ITEM_WEAPON_SHORTBOW,
@@ -243,8 +240,7 @@ void wld_setup()
 			"",
 			"shoot",
 			/////////////////////////////////////////////////////////
-			"Its string has been worn but the wood is strong, this",
-			"small bow could fell small creatures"
+			"Its string has been worn but the wood is strong, this small bow could fell small creatures."
 		},
 		{
 			ITEM_SCROLL_FIREBOMB,
@@ -265,8 +261,7 @@ void wld_setup()
 			"", // consume
 			"cast", // use
 			/////////////////////////////////////////////////////////
-			"{Daedum Kalkuum Brios Faraos} This runic scroll's surface",
-			"shows a large swathe of fire in a circular arc."
+			"{Daedum Kalkuum Brios Faraos} This runic scroll's surface shows a large swathe of fire in a circular arc."
 		},
 		{
 			ITEM_ARMOR_LEATHER,
@@ -287,8 +282,7 @@ void wld_setup()
 			"",
 			"",
 			/////////////////////////////////////////////////////////
-			"Humble but sturdy this set of leather armor is a rogue's",
-			"favorite friend."
+			"Humble but sturdy this set of leather armor is a rogue's favorite friend."
 		},
 		{
 			ITEM_KEY_BASIC,
@@ -309,8 +303,7 @@ void wld_setup()
 			"",
 			"use",
 			/////////////////////////////////////////////////////////
-			"This lost, tarnished bronze key may fit a lock to a",
-			"nearby door or chest."
+			"This lost, tarnished bronze key may fit a lock to a nearby door or chest."
 		},
 	};
 	wld_itemtypes = (struct wld_itemtype*)malloc(ARRAY_SIZE(its) * sizeof(struct wld_itemtype));
@@ -337,8 +330,7 @@ void wld_setup()
 		wld_itemtypes[i].max_val = its[i].max_val;
 		wld_itemtypes[i].drink_label = its[i].drink_label;
 		wld_itemtypes[i].use_label = its[i].use_label;
-		wld_itemtypes[i].use_text_1 = its[i].use_text_1;
-		wld_itemtypes[i].use_text_2 = its[i].use_text_2;
+		wld_itemtypes[i].use_text = its[i].use_text;
 	}
 
 	// Copy effect types into malloc

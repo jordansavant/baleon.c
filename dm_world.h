@@ -265,8 +265,7 @@ struct wld_itemtype {
 	int min_val, max_val;
 	char *drink_label;
 	char *use_label;
-	char *use_text_1;
-	char *use_text_2;
+	char *use_text;
 };
 struct wld_item {
 	int id;
