@@ -13,7 +13,8 @@ void dm_shadowcast_r(
 	void (*on_visible)(int, int, double, unsigned int),
 	bool allow_leakage,
 	int octant, int row, double start_slope, double end_slope,
-	int xx, int xy, int yx, int yy
+	int xx, int xy, int yx, int yy,
+	int *history
 );
 void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double, unsigned int), bool allow_leakage);
 

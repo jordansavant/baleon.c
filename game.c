@@ -1111,8 +1111,12 @@ void ui_update_usepanel(struct wld_map *map)
 					ui_print(usepanel, USE_LENGTH, linepos++, 0, line);
 				}
 				dm_wordwrap(use_item->type->use_text, USE_LENGTH, on_line);
+				linepos++;
 				if (use_item->map_found > -1) {
 					ui_printf(usepanel, USE_LENGTH, linepos++, 0, "Found on level %d.", use_item->map_found + 1);
+				}
+				if (use_item->type->has_uses) {
+					ui_printf(usepanel, USE_LENGTH, linepos++, 0, "Has %d uses left.", use_item->uses);
 				}
 				linepos++;
 

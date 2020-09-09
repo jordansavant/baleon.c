@@ -31,5 +31,10 @@ astar: main_astar.c dm_algorithm.c dm_algorithm.h
 valgrind-astar: main_astar.c dm_algorithm.c dm_algorithm.h
 	gcc main_astar.c dm_algorithm.c mt_rand.c -o build/main_astar.out -lm && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all ./build/main_astar.out
 
+shadowcast: main_shadowcast.c dm_algorithm.c dm_algorithm.h
+	gcc main_shadowcast.c dm_algorithm.c mt_rand.c -o build/main_shadowcast.out -lm && ./build/main_shadowcast.out
+valgrind-shadowcast: main_shadowcast.c dm_algorithm.c dm_algorithm.h
+	gcc main_shadowcast.c dm_algorithm.c mt_rand.c -o build/main_shadowcast.out -lm && /usr/bin/valgrind --leak-check=full --show-leak-kinds=all ./build/main_shadowcast.out
+
 cell: main_cellular.c dm_algorithm.c dm_algorithm.h
 	gcc main_cellular.c dm_algorithm.c mt_rand.c -o build/main_cellular.out -lm && ./build/main_cellular.out

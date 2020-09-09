@@ -7,7 +7,7 @@
 #include "dm_algorithm.h"
 #include "dm_debug.h"
 
-// #include <stdio.h> // debugging only
+#include <stdio.h> // debugging only
 
 
 
@@ -45,9 +45,12 @@ void dm_shadowcast_r(
 	void (*on_visible)(int, int, double, unsigned int),
 	bool allow_leakage,
 	int octant, int row, double start_slope, double end_slope,
-	int xx, int xy, int yx, int yy
+	int xx, int xy, int yx, int yy,
+	int *history
 )
 {
+	// FINALLY GOING TO SIT DOWN AND RESOLVE THIS ONCE AND FOR ALL WITH ITS DOUBLING UP
+
 	// If light start is less than light end, return
 	if (start_slope < end_slope)
 		return;
@@ -60,7 +63,7 @@ void dm_shadowcast_r(
 		bool blocked = false;
 
 		// Loop moves across columns (or row if octant) until the right most
-		// border is reached
+		// border is reacheda
 		for (int dx = -i, dy = -i; dx <= 0; dx++) {
 			// l_slope and r_slope store the slopes of the left and right extremities of the square we're considering:
 			double l_slope = (dx - 0.5f) / (dy + 0.5f);
@@ -83,16 +86,20 @@ void dm_shadowcast_r(
 			if (ax >= xmax || ay >= ymax)
 				continue;
 
+
 			// Todo, check to see if we are leaking through diagonal walls?
 			bool leakage_blocked = false;
 			if (!allow_leakage) {
 				leakage_blocked = dm_sc_is_leakageblocked(x, y, ax, ay, is_blocked);
 			}
 
-			// Our light beam is touching this square; light it
+			// Our light beam is touching this square; light it if it has not been tested before
+			int hindex = ay * xmax + ax;
 			int radius2 = radius * radius;
-			if ((int)(dx * dx + dy * dy) < radius2 && !leakage_blocked)
+			if ((int)(dx * dx + dy * dy) < radius2 && !leakage_blocked && history[hindex] == 0) {
+				history[hindex] = 1; // mark this as viewed
 				on_visible(ax, ay, (double)i / (double)radius, shadowcast_id);
+			}
 
 			if (blocked) {
 				// We're scanning a row of blocked squares
@@ -106,7 +113,7 @@ void dm_shadowcast_r(
 			} else if (is_blocked(ax, ay) || leakage_blocked) {
 				blocked = true;
 				next_start_slope = r_slope;
-				dm_shadowcast_r(x, y, xmax, ymax, radius, is_blocked, on_visible, allow_leakage, octant, i + 1, start_slope, l_slope, xx, xy, yx, yy);
+				dm_shadowcast_r(x, y, xmax, ymax, radius, is_blocked, on_visible, allow_leakage, octant, i + 1, start_slope, l_slope, xx, xy, yx, yy, history);
 			}
 		}
 
@@ -118,10 +125,33 @@ void dm_shadowcast_r(
 void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double, unsigned int), bool allow_leakage)
 {
 	shadowcast_id++;
-	on_visible(x, y, 0, shadowcast_id);
+	on_visible(x, y, 0, shadowcast_id); // visible the center coord
 
-	for (int i = 0; i < 8; i++) {
-		dm_shadowcast_r(x, y, xmax, ymax, radius, is_blocked, on_visible, allow_leakage, i, 1, 1.0, 0.0, shadow_multiples[0][i], shadow_multiples[1][i], shadow_multiples[2][i], shadow_multiples[3][i]);
+	// There was a bug in this algorithm that when it circled it would run is_visible on tiles twice
+	// this was because as it circled and filled out octant areas they would overlap previous octact edge by one
+	// When this happened on_visible ran on the same tile twice and i had to do some dumb
+	// checking to make it so I would not double effect lit tiles
+	// I fixed this by creating a temporary map of tiles to
+	int history[xmax * ymax];
+	for (int hy = 0; hy < ymax; hy++) {
+		for (int hx = 0; hx < xmax; hx++) {
+			int index = hy * xmax + hx;
+			history[index] = 0;
+		}
+	}
+
+	for (int octant = 0; octant < 8; octant++) { // 8 octants
+		dm_shadowcast_r(
+			x, y, xmax, ymax, radius,
+			is_blocked, on_visible, allow_leakage,
+			octant, 1, 1.0, 0.0,
+			shadow_multiples[0][octant], shadow_multiples[1][octant], shadow_multiples[2][octant], shadow_multiples[3][octant],
+			history
+		);
+		//if (i % 2 == 0)
+		//	dm_shadowcast_r(x, y, xmax, ymax, radius, is_blocked, on_visible, allow_leakage, i, 1, 1.0, 0.0, shadow_multiples[0][i], shadow_multiples[1][i], shadow_multiples[2][i], shadow_multiples[3][i]);
+		//else
+		//	dm_shadowcast_r(x, y, xmax, ymax, radius-1, is_blocked, on_visible, allow_leakage, i, 1, 1.0, 0.0, shadow_multiples[0][i], shadow_multiples[1][i], shadow_multiples[2][i], shadow_multiples[3][i]);
 	}
 }
 

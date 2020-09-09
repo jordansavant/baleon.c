@@ -1,6 +1,7 @@
 TODO:
 
 now
+- bug: firebomb does not work anymore?
 - bug: aberrations with constitution increase does not scale health as well
 - bug: trying to open locked door does not trigger notice
 - ai: bow is OP, rats dont attack at range so i can pick them off without them being concerned

@@ -3011,10 +3011,12 @@ void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, st
 		int dmg = min_damage + (max_damage - min_damage) * radius_ratio;
 
 		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
-		if (t->dm_ss_id != ss_id && radius <= blast_radius) {
+		if (t->dm_ss_id != ss_id && radius <= blast_radius) { // THIS IS CAUSING AN ISSUE BECAUSE SHADOWCASTS WITHIN SHADOWCASTS CAUSE ISSUES
+			dmlog("firebomb ss tile visible");
 			t->dm_ss_id = ss_id;
 			struct wld_mob *m = wld_map_get_mob_at(user->map, x, y);
 			if (m) {
+				dmlog("firebomb mob");
 				ai_mob_attack_mob(user, m, dmg, item);
 				wld_map_vfx_dmg(user->map, m->map_x, m->map_y);
 				wld_map_add_effect(user->map, EFFECT_FIRE, m->map_x, m->map_y, user->is_player);
