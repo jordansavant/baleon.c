@@ -162,7 +162,7 @@ void wld_setup()
 			ITEM_VOID,
 			' ',
 			WCLR_BLACK,
-			false,false,false, // weapon, armor, key
+			false,false,false,false, // weapon, armor, key, ammo
 			"",
 			"",
 			NULL,
@@ -183,7 +183,7 @@ void wld_setup()
 			ITEM_POTION_MINOR_HEAL,
 			';',
 			WCLR_YELLOW,
-			false,false,false, // weapon, armor, key
+			false,false,false,false, // weapon, armor, key, ammo
 			"a potion of minor healing",
 			"minor healing potion",
 			itm_drink_minorhealth,
@@ -206,7 +206,7 @@ void wld_setup()
 			ITEM_WEAPON_SHORTSWORD,
 			'/',
 			WCLR_YELLOW,
-			true,false,false, // weapon, armor, key
+			true,false,false,false, // weapon, armor, key, ammo
 			"a shortsword",
 			"shortsword",
 			NULL,
@@ -228,7 +228,7 @@ void wld_setup()
 			ITEM_WEAPON_SHORTBOW,
 			')',
 			WCLR_YELLOW,
-			true,false,false, // weapon, armor, key
+			true,false,false,false, // weapon, armor, key, ammo
 			"a shortbow",
 			"shortbow",
 			NULL,
@@ -250,9 +250,9 @@ void wld_setup()
 			ITEM_AMMO_ARROW,
 			'1',
 			WCLR_YELLOW,
-			false,false,false, // weapon, armor, key
+			false,false,false,true, // weapon, armor, key, ammo
 			"some arrows",
-			"arrow",
+			"arrows",
 			NULL,
 			NULL, // target
 			NULL, // can use
@@ -272,7 +272,7 @@ void wld_setup()
 			ITEM_SCROLL_FIREBOMB,
 			'=',
 			WCLR_YELLOW,
-			false,false,false, // weapon, armor, key
+			false,false,false,false, // weapon, armor, key, ammo
 			"a scroll of firebomb",
 			"scroll of firebomb",
 			NULL,
@@ -294,7 +294,7 @@ void wld_setup()
 			ITEM_ARMOR_LEATHER,
 			'M',
 			WCLR_YELLOW,
-			false,true,false, // weapon, armor, key
+			false,true,false,false, // weapon, armor, key, ammo
 			"a set of leather armor",
 			"leather armor",
 			NULL,
@@ -315,7 +315,7 @@ void wld_setup()
 		{
 			ITEM_KEY_BASIC,	'*',
 			WCLR_YELLOW,
-			false,false,true, // weapon, armor, key
+			false,false,true,false, // weapon, armor, key, ammo
 			"a small bronze key",
 			"bronze key",
 			NULL,
@@ -342,6 +342,7 @@ void wld_setup()
 		wld_itemtypes[i].is_weq = its[i].is_weq;
 		wld_itemtypes[i].is_aeq = its[i].is_aeq;
 		wld_itemtypes[i].is_key = its[i].is_key;
+		wld_itemtypes[i].is_ammo = its[i].is_ammo;
 		wld_itemtypes[i].short_desc = its[i].short_desc;
 		wld_itemtypes[i].title = its[i].title;
 		wld_itemtypes[i].fn_drink = its[i].fn_drink;
@@ -726,6 +727,7 @@ void wld_generate_items(struct wld_map *map, struct dng_cellmap* cellmap)
 					case 4:
 						wld_init_item(item, ITEM_AMMO_ARROW);
 						wld_map_new_item(map, item, c, r);
+						item->uses = dm_randii(1,3);
 						break;
 					}
 					break;
@@ -1628,8 +1630,12 @@ bool wld_mob_drink_item(struct wld_mob *mob, int itemslot)
 void wld_mob_destroy_item_in_slot(struct wld_mob* mob, int itemslot)
 {
 	struct wld_item *item = mob->inventory[itemslot];
-	if (mob->is_player)
-		wld_logf("Your %s was destroyed.", item->type->title);
+	if (mob->is_player) {
+		if (item->type->is_ammo)
+			wld_logf("Your %s are now empty.", item->type->title);
+		else
+			wld_logf("Your %s was destroyed.", item->type->title);
+	}
 
 	if (item == mob->active_item)
 		mob->active_item = NULL;
@@ -2802,11 +2808,8 @@ void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 	// use up any related ammo
 	if (item->type->ammo_type != ITEM_VOID) {
 		// get item of type and decrement uses
-		dmlog("use ammo");
 		struct wld_item *ammo = wld_mob_get_item_of_type(user, item->type->ammo_type);
 		if (ammo != NULL && ammo->type->has_uses) { //should not be null, can_use should check for it
-			dmlog("found ammo that has uses");
-			ammo->uses--;
 			wld_mob_resolve_item_uses(user, ammo);
 		}
 	}

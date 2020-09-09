@@ -455,7 +455,6 @@ void g_title()
 	int menu_item_count = n_choices;
 
 	// allocate menu items
-	dmlog("make menu");
 	title_items = (ITEM **)malloc((n_choices + 1) * sizeof(ITEM *));
 	for(int i = 0; i < n_choices; i++) {
 		title_items[i] = new_item(choices[i].label, "");
@@ -479,7 +478,6 @@ void g_title()
 
 	post_menu(title_menu);
 	wrefresh(title_menu_win);
-	dmlog("post menu");
 
 	// loop and listen
 	while (!g_title_done) {
@@ -1037,18 +1035,20 @@ void ui_update_inventorypanel(struct wld_map *map)
 			if (item != NULL) {
 				desc = item->type->title;
 				sprite = item->type->sprite;
+				if (item->type->is_ammo)
+					ui_printf(inventorypanel, INV_LENGTH, row, 1, "%c: - %s x%d", key, desc, item->uses);
+				else
+					ui_printf(inventorypanel, INV_LENGTH, row, 1, "%c: - %s", key, desc);
 			} else {
 				desc = "--";
 				sprite = '-';
+				ui_printf(inventorypanel, INV_LENGTH, row, 1, "%c: - %s", key, desc);
 			}
-			ui_printf(inventorypanel, INV_LENGTH, row, 1, "%c: - %s", key, desc);
 			ui_printchar(inventorypanel, row, 4, sprite); // stick sprite over '-'
 			row++;
 		}
 		ui_print(inventorypanel, INV_LENGTH, row + 1, 1, "x: close");
 
-
-		//ui_box_color(inventorypanel, TCOLOR_YELLOW);
 		ui_box(inventorypanel);
 		wrefresh(inventorypanel);
 	}

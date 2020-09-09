@@ -250,7 +250,7 @@ struct wld_itemtype {
 	enum WLD_ITEMTYPE type;
 	unsigned long sprite;
 	int fg_color;
-	bool is_weq, is_aeq, is_key;
+	bool is_weq, is_aeq, is_key, is_ammo;
 	char *short_desc;
 	char *title;
 	void (*fn_drink)(struct wld_item*, struct wld_mob*);
