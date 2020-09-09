@@ -84,7 +84,7 @@ int main(void)
 		cast[index]++;
 		print_cast(cast, width, height);
 	}
-	dm_shadowcast(5, 5, width, height, 5, sc_isblocked, sc_onvisible, false); // no leakage allowed
+	dm_shadowcast(5, 5, width, height, 7, sc_isblocked, sc_onvisible, false); // no leakage allowed
 
 	print_cast(cast, width, height);
 }

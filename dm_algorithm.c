@@ -49,6 +49,7 @@ void dm_shadowcast_r(
 	int *history
 )
 {
+	int radius2 = radius * radius;
 	// FINALLY GOING TO SIT DOWN AND RESOLVE THIS ONCE AND FOR ALL WITH ITS DOUBLING UP
 
 	// If light start is less than light end, return
@@ -94,11 +95,19 @@ void dm_shadowcast_r(
 			}
 
 			// Our light beam is touching this square; light it if it has not been tested before
-			int hindex = ay * xmax + ax;
-			int radius2 = radius * radius;
-			if ((int)(dx * dx + dy * dy) < radius2 && !leakage_blocked && history[hindex] == 0) {
-				history[hindex] = 1; // mark this as viewed
-				on_visible(ax, ay, (double)i / (double)radius, shadowcast_id);
+			// Convert our coordinate to our radius temp map which is just the radius squared
+			if ((int)(dx * dx + dy * dy) < radius2 && !leakage_blocked) {// && history[hindex] == 0) {
+				int dimensions = radius * 2 - 1; // a 3x3 is 3 on left, 2 on right, center coord is not counted twice
+				int hx = ax - x + (dimensions)/2;
+				int hy = ay - y + (dimensions)/2;
+				int hindex = hy * (dimensions) + hx;
+				//int size = dimensions*dimensions; // add 1 for our center coord
+				//printf("x=%d,y=%d,r=%d  ax=%d,ay=%d  hx=%d,hy=%d,hindex=%d,h=%d\n", x,y,radius, ax,ay, hx,hy,hindex,history[hindex]);
+
+				if (history[hindex] == 0) {
+					history[hindex] = 1; // mark this as viewed
+					on_visible(ax, ay, (double)i / (double)radius, shadowcast_id);
+				}
 			}
 
 			if (blocked) {
@@ -132,13 +141,12 @@ void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (
 	// When this happened on_visible ran on the same tile twice and i had to do some dumb
 	// checking to make it so I would not double effect lit tiles
 	// I fixed this by creating a temporary map of tiles to
-	int history[xmax * ymax];
-	for (int hy = 0; hy < ymax; hy++) {
-		for (int hx = 0; hx < xmax; hx++) {
-			int index = hy * xmax + hx;
-			history[index] = 0;
-		}
-	}
+	int dimensions = radius * 2 - 1;
+	int size = dimensions*dimensions; // add 1 for our center coord
+	int history[size];
+	printf("hsize=%d\n", size);
+	for (int i=0; i < size; i++)
+		history[i] = 0;
 
 	for (int octant = 0; octant < 8; octant++) { // 8 octants
 		dm_shadowcast_r(
