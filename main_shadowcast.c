@@ -78,7 +78,7 @@ int main(void)
 		int index = get_index(x, y, width);
 		return map[index] == 1;
 	}
-	void sc_onvisible(int x, int y, double radius, unsigned int ss_id)
+	void sc_onvisible(int x, int y, double radius)
 	{
 		int index = get_index(x, y, width);
 		cast[index]++;

@@ -10,13 +10,13 @@ void dm_shadowcast_r(
 	int xmax, int ymax,
 	unsigned int radius,
 	bool (*is_blocked)(int, int),
-	void (*on_visible)(int, int, double, unsigned int),
+	void (*on_visible)(int, int, double),
 	bool allow_leakage,
 	int octant, int row, double start_slope, double end_slope,
 	int xx, int xy, int yx, int yy,
 	int *history
 );
-void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double, unsigned int), bool allow_leakage);
+void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double), bool allow_leakage);
 
 // SPIRAL
 struct dm_spiral {

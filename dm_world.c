@@ -524,7 +524,6 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 			tile->door_lock_id = -1;
 			tile->dead_mob_type = NULL;
 			tile->on_mob_enter = NULL;
-			tile->dm_ss_id = 0;
 			tile->astar_node = dm_astar_newnode();
 			tile->astar_node->owner = (void*)tile;
 			tile->astar_node->get_x = wld_tile_get_x;
@@ -1525,13 +1524,10 @@ void wld_mob_vision(struct wld_mob *mob, void (*on_see)(struct wld_mob*, int, in
 		struct wld_tile *t = wld_map_get_tile_at(map, x, y);
 		return wld_tile_is_blocked_vision(t);
 	}
-	void wld_ss_onvisible(int x, int y, double radius, unsigned int ss_id)
+	void wld_ss_onvisible(int x, int y, double radius)
 	{
 		struct wld_tile *t = wld_map_get_tile_at(map, x, y);
-		if (t->dm_ss_id != ss_id) {
-			on_see(mob, x, y, radius);
-			t->dm_ss_id = ss_id;
-		}
+		on_see(mob, x, y, radius);
 	}
 	dm_shadowcast(mob->map_x, mob->map_y, map->cols, map->rows, mob->vision + mob->vision_boost, wld_ss_isblocked, wld_ss_onvisible, false); // no leakage allowed
 }
@@ -2927,12 +2923,11 @@ void itm_target_ranged_aoe(struct wld_item *item, struct wld_mob *user, void(*in
 		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
 		return wld_tile_is_blocked_movement(t);
 	}
-	void sc_onvisible(int x, int y, double radius, unsigned int ss_id)
+	void sc_onvisible(int x, int y, double radius)
 	{
 		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
-		if (t->dm_ss_id != ss_id && radius <= blast_radius) {
+		if (radius <= blast_radius) {
 			inspect(x, y);
-			t->dm_ss_id = ss_id;
 		}
 	}
 	dm_shadowcast(final_x, final_y, user->map->cols, user->map->rows, blast_radius, sc_isblocked, sc_onvisible, false); // no leakage allowed
@@ -3005,18 +3000,15 @@ void itm_hit_ranged_aoe_firebomb(struct wld_item *item, struct wld_mob *user, st
 		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
 		return wld_tile_is_blocked_movement(t);
 	}
-	void sc_onvisible(int x, int y, double radius, unsigned int ss_id)
+	void sc_onvisible(int x, int y, double radius)
 	{
 		double radius_ratio = radius / (double)blast_radius;
 		int dmg = min_damage + (max_damage - min_damage) * radius_ratio;
 
 		struct wld_tile *t = wld_map_get_tile_at(user->map, x, y);
-		if (t->dm_ss_id != ss_id && radius <= blast_radius) { // THIS IS CAUSING AN ISSUE BECAUSE SHADOWCASTS WITHIN SHADOWCASTS CAUSE ISSUES
-			dmlog("firebomb ss tile visible");
-			t->dm_ss_id = ss_id;
+		if (radius <= blast_radius) {
 			struct wld_mob *m = wld_map_get_mob_at(user->map, x, y);
 			if (m) {
-				dmlog("firebomb mob");
 				ai_mob_attack_mob(user, m, dmg, item);
 				wld_map_vfx_dmg(user->map, m->map_x, m->map_y);
 				wld_map_add_effect(user->map, EFFECT_FIRE, m->map_x, m->map_y, user->is_player);

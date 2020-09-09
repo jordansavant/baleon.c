@@ -14,8 +14,6 @@
 ///////////////////////////
 // SHADOWCASTING START
 
-unsigned int rand_seed = 0;
-unsigned int shadowcast_id = 0;
 int shadow_multiples[4][8] = {
     {1,  0,  0, -1, -1,  0,  0,  1},
     {0,  1, -1,  0,  0, -1,  1,  0},
@@ -42,7 +40,7 @@ void dm_shadowcast_r(
 	int xmax, int ymax,
 	unsigned int radius,
 	bool (*is_blocked)(int, int),
-	void (*on_visible)(int, int, double, unsigned int),
+	void (*on_visible)(int, int, double),
 	bool allow_leakage,
 	int octant, int row, double start_slope, double end_slope,
 	int xx, int xy, int yx, int yy,
@@ -106,7 +104,7 @@ void dm_shadowcast_r(
 
 				if (history[hindex] == 0) {
 					history[hindex] = 1; // mark this as viewed
-					on_visible(ax, ay, (double)i / (double)radius, shadowcast_id);
+					on_visible(ax, ay, (double)i / (double)radius);
 				}
 			}
 
@@ -131,10 +129,9 @@ void dm_shadowcast_r(
 	}
 }
 
-void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double, unsigned int), bool allow_leakage)
+void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (*is_blocked)(int, int), void (*on_visible)(int, int, double), bool allow_leakage)
 {
-	shadowcast_id++;
-	on_visible(x, y, 0, shadowcast_id); // visible the center coord
+	on_visible(x, y, 0); // visible the center coord
 
 	// There was a bug in this algorithm that when it circled it would run is_visible on tiles twice
 	// this was because as it circled and filled out octant areas they would overlap previous octact edge by one
@@ -144,7 +141,6 @@ void dm_shadowcast(int x, int y, int xmax, int ymax, unsigned int radius, bool (
 	int dimensions = radius * 2 - 1;
 	int size = dimensions*dimensions; // add 1 for our center coord
 	int history[size];
-	printf("hsize=%d\n", size);
 	for (int i=0; i < size; i++)
 		history[i] = 0;
 
