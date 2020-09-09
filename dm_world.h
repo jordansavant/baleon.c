@@ -241,6 +241,7 @@ enum WLD_ITEMTYPE {
 	ITEM_POTION_MINOR_HEAL,
 	ITEM_WEAPON_SHORTSWORD,
 	ITEM_WEAPON_SHORTBOW,
+	ITEM_AMMO_ARROW,
 	ITEM_SCROLL_FIREBOMB,
 	ITEM_ARMOR_LEATHER,
 	ITEM_KEY_BASIC,
@@ -263,6 +264,7 @@ struct wld_itemtype {
 	bool has_uses;
 	int base_uses;
 	int min_val, max_val;
+	enum WLD_ITEMTYPE ammo_type;
 	char *drink_label;
 	char *use_label;
 	char *use_text;
@@ -444,6 +446,8 @@ struct wld_item* wld_mob_get_item_in_slot(struct wld_mob *mob, int slot);
 struct wld_item* wld_mob_get_equipped_weapon(struct wld_mob *mob);
 struct wld_item* wld_mob_get_equipped_armor(struct wld_mob *mob);
 int wld_mob_get_open_inventory_slot(struct wld_mob *mob);
+bool wld_mob_has_item_of_type(struct wld_mob *mob, enum WLD_ITEMTYPE type);
+struct wld_item* wld_mob_get_item_of_type(struct wld_mob *mob, enum WLD_ITEMTYPE type);
 bool wld_mob_has_inventory(struct wld_mob*);
 bool wld_mob_pickup_item(struct wld_mob*, struct wld_item*);
 void wld_mob_swap_item(struct wld_mob* mob, int slot_a, int slot_b);

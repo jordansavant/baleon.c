@@ -174,6 +174,7 @@ void wld_setup()
 			0,0,//range radius
 			false, 0, // uses
 			0,0,//min max dmgs
+			ITEM_VOID,
 			"",
 			"",
 			""
@@ -195,6 +196,7 @@ void wld_setup()
 			true,
 			1,
 			6,22,//min max dmgs
+			ITEM_VOID, // ammo type
 			"quaff",
 			"throw",
 			/////////////////////////////////////////////////////////
@@ -216,6 +218,7 @@ void wld_setup()
 			1,0, // range radius
 			false, 0, // uses
 			7,16,//min max dmgs
+			ITEM_VOID, // ammo type
 			"",
 			"strike",
 			/////////////////////////////////////////////////////////
@@ -237,10 +240,33 @@ void wld_setup()
 			10,0, // range radius
 			false, 0, // uses
 			5,13,//min max dmgs
+			ITEM_AMMO_ARROW, // ammo type
 			"",
 			"shoot",
 			/////////////////////////////////////////////////////////
 			"Its string has been worn but the wood is strong, this small bow could fell small creatures."
+		},
+		{
+			ITEM_AMMO_ARROW,
+			'1',
+			WCLR_YELLOW,
+			false,false,false, // weapon, armor, key
+			"some arrows",
+			"arrow",
+			NULL,
+			NULL, // target
+			NULL, // can use
+			NULL, // chance of hit
+			NULL, // use
+			NULL, // hit
+			0,0, // range radius
+			true, 1, // uses
+			5,13,//min max dmgs
+			ITEM_VOID, // ammo type
+			"",
+			"shoot",
+			/////////////////////////////////////////////////////////
+			"The shafts are straight and the fletching secure but the wood appears aged and brittle. It may be good for one shot."
 		},
 		{
 			ITEM_SCROLL_FIREBOMB,
@@ -258,6 +284,7 @@ void wld_setup()
 			9,3, // base range, radius
 			true,1,//uses
 			2,8,//min max dmgs (lower because of fire effect)
+			ITEM_VOID, // ammo type
 			"", // consume
 			"cast", // use
 			/////////////////////////////////////////////////////////
@@ -279,14 +306,14 @@ void wld_setup()
 			0,0, // range radius
 			false,0, // uses
 			0,0,//min max dmgs
+			ITEM_VOID, // ammo type
 			"",
 			"",
 			/////////////////////////////////////////////////////////
 			"Humble but sturdy this set of leather armor is a rogue's favorite friend."
 		},
 		{
-			ITEM_KEY_BASIC,
-			'*',
+			ITEM_KEY_BASIC,	'*',
 			WCLR_YELLOW,
 			false,false,true, // weapon, armor, key
 			"a small bronze key",
@@ -300,6 +327,7 @@ void wld_setup()
 			1,0, // range, radius
 			true,1, // uses (key uses increment on failure)
 			0,0,//min max dmgs
+			ITEM_VOID, // ammo type
 			"",
 			"use",
 			/////////////////////////////////////////////////////////
@@ -328,6 +356,7 @@ void wld_setup()
 		wld_itemtypes[i].base_uses = its[i].base_uses;
 		wld_itemtypes[i].min_val = its[i].min_val;
 		wld_itemtypes[i].max_val = its[i].max_val;
+		wld_itemtypes[i].ammo_type = its[i].ammo_type;
 		wld_itemtypes[i].drink_label = its[i].drink_label;
 		wld_itemtypes[i].use_label = its[i].use_label;
 		wld_itemtypes[i].use_text = its[i].use_text;
@@ -677,7 +706,7 @@ void wld_generate_items(struct wld_map *map, struct dng_cellmap* cellmap)
 				switch (cell->item_style) {
 				default:
 				case DNG_ITEM_LOOT:
-					switch (dm_randii(0, 4)) {
+					switch (dm_randii(0, 5)) {
 					case 0:
 						wld_init_item(item, ITEM_WEAPON_SHORTSWORD);
 						wld_map_new_item(map, item, c, r);
@@ -692,6 +721,10 @@ void wld_generate_items(struct wld_map *map, struct dng_cellmap* cellmap)
 						break;
 					case 3:
 						wld_init_item(item, ITEM_ARMOR_LEATHER);
+						wld_map_new_item(map, item, c, r);
+						break;
+					case 4:
+						wld_init_item(item, ITEM_AMMO_ARROW);
 						wld_map_new_item(map, item, c, r);
 						break;
 					}
@@ -1540,6 +1573,20 @@ bool wld_mob_has_inventory(struct wld_mob *mob)
 	if (slot != -1)
 		return true;
 	return false;
+}
+bool wld_mob_has_item_of_type(struct wld_mob *mob, enum WLD_ITEMTYPE type)
+{
+	for (int i=0; i<INVENTORY_SIZE; i++)
+		if (mob->inventory[i] != NULL && mob->inventory[i]->type->type == type)
+			return true;
+	return false;
+}
+struct wld_item* wld_mob_get_item_of_type(struct wld_mob *mob, enum WLD_ITEMTYPE type)
+{
+	for (int i=0; i<INVENTORY_SIZE; i++)
+		if (mob->inventory[i] != NULL && mob->inventory[i]->type->type == type)
+			return mob->inventory[i];
+	return NULL;
 }
 bool wld_mob_pickup_item(struct wld_mob *m, struct wld_item *i)
 {
@@ -2688,8 +2735,18 @@ bool itm_can_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct 
 	// I would say we CAN use the item at any range despite its limit
 	// given that we will allow them to target any tile that is visible without regard for
 	// blocked obstacles or mobs in between
-	return true; // we can shoot it anywhere, even into the darkness
-	//return cursor_tile->is_visible;
+
+	// If this item requires ammo of a certain type, the user must have it
+	if (item->type->ammo_type != ITEM_VOID) {
+		if (wld_mob_has_item_of_type(user, item->type->ammo_type)) {
+			return true; // we can shoot it anywhere, even into the darkness
+			//return cursor_tile->is_visible;
+		} else {
+			wld_logf("No %s for %s.", wld_itemtypes[item->type->ammo_type].title, item->type->title);
+			return false;
+		}
+	}
+	return true;
 }
 
 double itm_coh_ranged(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)
@@ -2741,6 +2798,18 @@ void itm_use_ranged_los(struct wld_item *item, struct wld_mob *user, struct wld_
 
 	if (!hit_target)
 		ai_mob_whiff(user, item);
+
+	// use up any related ammo
+	if (item->type->ammo_type != ITEM_VOID) {
+		// get item of type and decrement uses
+		dmlog("use ammo");
+		struct wld_item *ammo = wld_mob_get_item_of_type(user, item->type->ammo_type);
+		if (ammo != NULL && ammo->type->has_uses) { //should not be null, can_use should check for it
+			dmlog("found ammo that has uses");
+			ammo->uses--;
+			wld_mob_resolve_item_uses(user, ammo);
+		}
+	}
 }
 
 void itm_hit_ranged_los_bowstyle(struct wld_item *item, struct wld_mob *user, struct wld_tile* tile)

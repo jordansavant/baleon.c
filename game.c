@@ -1105,7 +1105,7 @@ void ui_update_usepanel(struct wld_map *map)
 				// intro item
 				int linepos = 2;
 				ui_box_title(usepanel, USE_LENGTH, "USE ITEM");
-				ui_printf(usepanel, USE_LENGTH, linepos++, 0, "You prepare to use %s.", use_item->type->short_desc);
+				ui_printf(usepanel, USE_LENGTH, linepos++, 0, "You take out %s.", use_item->type->short_desc);
 				void on_line(char *line) {
 					dmlog(line);
 					ui_print(usepanel, USE_LENGTH, linepos++, 0, line);
@@ -1487,8 +1487,6 @@ void ai_player_input(struct wld_mob* player)
 						} else {
 							trigger_world = ai_player_trigger_target(player);
 						}
-						if (!trigger_world)
-							ui_log("Incapable of such attempt.");
 						listen = false;
 						break;
 					// exiting target mode
