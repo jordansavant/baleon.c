@@ -42,6 +42,10 @@ int dm_randii(int a, int b);
 bool dm_chance(int in, int outof);
 
 // MATH
+int dm_maxi(int a, int b);
+double dm_maxf(double a, double b);
+int dm_mini(int a, int b);
+double dm_minf(double a, double b);
 int dm_disti(int x1, int y1, int x2, int y2);
 double dm_distf(double x1, double y1, double x2, double y2);
 void dm_direction(double x1, double y1, double x2, double y2, double *xref, double *yref);

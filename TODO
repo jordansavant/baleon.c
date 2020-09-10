@@ -1,6 +1,7 @@
 TODO:
 
 now
+- more tuts
 - bug: aberrations with constitution increase does not scale health as well
 - bug: jackals (other mobs?) can flee through closed doors
 - qol: cursor follows mob if they move and remain in vision

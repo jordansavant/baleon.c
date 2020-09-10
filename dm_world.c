@@ -39,7 +39,10 @@ char* wld_tutorials[] = {
 	"\n"
 	"q: up-left    w: up     e: up-right\n"
 	"a: left                 d: right\n"
-	"z: down-left  s: down   x: down-right\n",
+	"z: down-left  s: down   x: down-right\n"
+	"\n"
+	"Moving over items picks them up, over doors attempts to open them, "
+	"into enemies attempts to attack them.",
 
 	// ghost
 	"TUTORIAL: Ghost Control\n\n"
@@ -48,7 +51,7 @@ char* wld_tutorials[] = {
 	"\n"
 	"7: up-left    8: up     9: up-right\n"
 	"4: left                 6: right\n"
-	"1: down-left  2: down   3: down-right\n",
+	"1: down-left  2: down   3: down-right",
 
 	// commands
 	"TUTORIAL: Commands\n\n"
@@ -57,7 +60,26 @@ char* wld_tutorials[] = {
 	"\n"
 	"i: inventory   g: get item\n"
 	"p: rest        y: aim equipped weapon\n"
-	"escape: menu\n",
+	"escape: menu",
+
+	// inventory
+	"TUTORIAL: Inventory\n\n"
+	"You can open your inventory with \"i\"\n"
+	"\n"
+	"Your inventory holds items you find. Items are automaticallly picked up when you walk over them or by pressing \"g\". "
+	"Opening an item in the inventory provides options for use. "
+	"Some items can be quaffed (drank), some cast, some worn as armor, some worn as weapons, some thrown. "
+	"Some items have a limited number of uses, such as scrolls or ammunition.",
+
+	// combat
+	"TUTORIAL: Combat\n\n"
+	"With no equipped weapons you are capable of only unarmed melee attacks. "
+	"You can equip one weapon at a time in your inventory. Once equipped you can "
+	"weild it for combat with \"y\".\n"
+	"\n"
+	"Melee weapons can automatically attack adjacent enemies you move into. Ranged "
+	"weapons must be wielded to use. While weilding, your weapon's targetable area is shown. "
+	"For ranged weapons your ghost will act as your direction and point of attack.",
 };
 
 
@@ -145,7 +167,7 @@ void wld_setup()
 		{ TILE_SUMMONCIRCLE_SF_INERT, '.', WCLR_BLACK, WCLR_WHITE, '.', WCLR_BLACK, WCLR_BLUE,  false, true, "a strange stone floor",	"Strange Stone Floor" },
 		{ TILE_SUMMONCIRCLE_ACTIVE, '0', WCLR_BLACK, WCLR_CYAN, '0', WCLR_BLACK, WCLR_BLUE,  false, true, "a runic summon center",	"Summon Circle"	},
 		{ TILE_SUMMONCIRCLE_NODE, '+', WCLR_BLACK, WCLR_CYAN, '+', WCLR_BLACK, WCLR_BLUE,  false, true, "a runic summon node",		"Summon Node" },
-		{ TILE_TUTORIAL_STONE, '=', WCLR_BLACK, WCLR_CYAN, '=', WCLR_BLACK, WCLR_BLUE,  false, true, "a guide stone",			"Guide Stone" },
+		{ TILE_TUTORIAL_STONE, '=', WCLR_BLACK, WCLR_CYAN, '=', WCLR_BLACK, WCLR_BLUE,  false, true, "a guidestone",			"Guidestone" },
 	};
 	wld_tiletypes = (struct wld_tiletype*)malloc(ARRAY_SIZE(tts) * sizeof(struct wld_tiletype));
 	for (int i=0; i<ARRAY_SIZE(tts); i++) {
@@ -536,6 +558,7 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 	map->tiles = (struct wld_tile*)malloc(map->length * sizeof(struct wld_tile));
 	map->tiles_length = map->length;
 
+	int tutorial_id = 0;
 	for (int r = 0; r < cellmap->height; r++) { // rows
 		for (int c=0; c < cellmap->width; c++){ // cols
 			// get cell from map
@@ -593,7 +616,7 @@ void wld_generate_tiles(struct wld_map *map, struct dng_cellmap* cellmap)
 			} else if (cell->is_tutorial) {
 				tile->type = &wld_tiletypes[TILE_TUTORIAL_STONE];
 				tile->on_mob_enter = wld_tile_on_mob_enter_tutorial;
-				tile->tutorial_id = cell->tutorial_id;
+				tile->tutorial_id = tutorial_id++;
 			} else {
 				if (cell->tile_style == DNG_TILE_STYLE_GRASS) {
 					tile->type = &wld_tiletypes[TILE_GRASS];
@@ -1332,6 +1355,7 @@ void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, stru
 
 void wld_tile_on_mob_enter_tutorial(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob)
 {
+	wld_log("You read from a guidestone.");
 	int id = tile->tutorial_id % ARRAY_SIZE(wld_tutorials);
 	map->on_interrupt(map, wld_tutorials[id]);
 }

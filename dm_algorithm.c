@@ -378,6 +378,32 @@ bool dm_chance(int in, int outof)
 ///////////////////////////
 // MATH START
 
+int dm_maxi(int a, int b)
+{
+	if (a > b)
+		return a;
+	return b;
+}
+double dm_maxf(double a, double b)
+{
+	if (a > b)
+		return a;
+	return b;
+}
+
+int dm_min(int a, int b)
+{
+	if (a < b)
+		return a;
+	return b;
+}
+double dm_minf(double a, double b)
+{
+	if (a < b)
+		return a;
+	return b;
+}
+
 int dm_disti(int x1, int y1, int x2, int y2)
 {
 	double x = (double)(x1 - x2);

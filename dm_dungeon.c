@@ -93,7 +93,6 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->tile_style = 0;
 
 	cell->is_tutorial = false;
-	cell->tutorial_id = 0;
 }
 
 int dng_cell_get_x(struct dm_astarnode *astar_node)
@@ -1311,15 +1310,15 @@ void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 		int tutorial_id = 0;
 		//int room_size = (cellmap->entrance_room->width * cellmap->entrance_room->height);
 		bool inspect(struct dng_cell* cell) {
-			if (!cell->is_entrance_transition && !cell->is_exit_transition && cell->room != NULL && dm_chance(1, 5) && tutorial_id <= tutorial_count) {
+			if (!cell->is_entrance_transition && !cell->is_exit_transition && cell->room != NULL && dm_chance(1, 5) && tutorial_id++ < tutorial_count) {
 				cell->is_tutorial = true;
-				cell->tutorial_id = tutorial_id++;
 			}
 			return false;
 		}
 		//printf("%d,%d %dx%d\n", cellmap->entrance_room->x, cellmap->entrance_room->y, cellmap->entrance_room->width, cellmap->entrance_room->height);
 		//dng_cellmap_inspect_room_cells(cellmap, cellmap->entrance_room, inspect);
-		dng_cellmap_inspect_spiral_cells(cellmap, inspect);
+		//dng_cellmap_inspect_spiral_cells(cellmap, inspect);
+		dng_cellmap_inspect_room_cells_spiral(cellmap, cellmap->entrance_room, inspect);
 
 		return;
 	}
@@ -1750,6 +1749,29 @@ void dm_cellmap_inspect_room_perimeter(struct dng_cellmap *cellmap, struct dng_r
 void dng_cellmap_inspect_room_cells(struct dng_cellmap *cellmap, struct dng_room *room, bool(*inspect)(struct dng_cell*))
 {
 	dng_cellmap_inspect_cells_in_dimension(cellmap, room->x, room->y, room->width, room->height, inspect);
+}
+
+void dng_cellmap_inspect_room_cells_spiral(struct dng_cellmap *cellmap, struct dng_room *room, bool(*inspect)(struct dng_cell*))
+{
+	int center_x = room->x + room->width / 2;
+	int center_y = room->y + room->height / 2;
+	int layers = dm_maxi(room->width, room->height);
+	struct dm_spiral sp = dm_spiral(layers);
+	do {
+		// break out if inspector is done
+		int current_x = center_x + sp.x;
+		int current_y = center_y + sp.y;
+		if (!dng_cellmap_is_in_bounds(cellmap, current_x, current_y))
+			return;
+		struct dng_cell *current = dng_cellmap_get_cell_at_position(cellmap, current_x, current_y);
+		if (current && inspect(current))
+			return;
+	} while(dm_spiralnext(&sp));
+}
+
+bool dng_cellmap_is_in_bounds(struct dng_cellmap *cellmap, int x, int y)
+{
+	return x >= 0 && x < cellmap->width && y >= 0 && y < cellmap->height;
 }
 
 bool dng_cellmap_can_house_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h)

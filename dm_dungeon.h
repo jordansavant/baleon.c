@@ -132,7 +132,6 @@ struct dng_cell {
 	int tile_style;
 
 	bool is_tutorial;
-	int tutorial_id;
 };
 
 struct tunnel_dir {
@@ -254,6 +253,8 @@ void dng_cellmap_inspect_spiral_cells(struct dng_cellmap *cellmap, bool (*inspec
 void dng_cellmap_inspect_cells_in_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h, bool (*inspect)(struct dng_cell*));
 void dm_cellmap_inspect_room_perimeter(struct dng_cellmap *cellmap, struct dng_room *room, bool (*inspect)(struct dng_cell*));
 void dng_cellmap_inspect_room_cells(struct dng_cellmap *cellmap, struct dng_room *room, bool(*inspect)(struct dng_cell*));
+void dng_cellmap_inspect_room_cells_spiral(struct dng_cellmap *cellmap, struct dng_room *room, bool(*inspect)(struct dng_cell*));
+bool dng_cellmap_is_in_bounds(struct dng_cellmap *cellmap, int x, int y);
 bool dng_cellmap_can_house_dimension(struct dng_cellmap *cellmap, int x, int y, int w, int h);
 struct dng_cell* dng_cellmap_get_cell_at_position(struct dng_cellmap *cellmap, int x, int y);
 struct dng_cell* dng_cellmap_get_cell_at_position_nullable(struct dng_cellmap *cellmap, int x, int y);
