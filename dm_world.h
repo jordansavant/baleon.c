@@ -20,6 +20,7 @@
 #define XP_MOB_FACTOR 25
 #define XP_LEVEL_FACTOR 1.5
 
+// tutorials
 enum WLD_COLOR_INDEX {
 	WCLR_BLACK,   // 0
 	WCLR_GREEN,   // 1
@@ -106,6 +107,7 @@ enum WLD_TILETYPE {
 	TILE_SUMMONCIRCLE_SF_INERT,
 	TILE_SUMMONCIRCLE_ACTIVE,
 	TILE_SUMMONCIRCLE_NODE,
+	TILE_TUTORIAL_STONE,
 };
 struct wld_tiletype {
 	enum WLD_TILETYPE type;
@@ -136,6 +138,7 @@ struct wld_tile {
 	// on_enter, on_leave events
 	void(*on_mob_enter)(struct wld_map*, struct wld_tile*, struct wld_mob*); // TODO left off here
 	struct dm_astarnode *astar_node;
+	int tutorial_id;
 };
 
 
@@ -353,6 +356,7 @@ struct wld_world {
 };
 
 // WORLD INITALIZATION
+char* wld_get_tut_1();
 void wld_setup();
 void wld_teardown();
 struct wld_world* wld_new_world(int seed, int count);
@@ -415,6 +419,7 @@ int wld_tile_get_y(struct dm_astarnode *astar_node);
 // TILE EVENTS
 void wld_tile_on_mob_enter_entrance(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
 void wld_tile_on_mob_enter_exit(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
+void wld_tile_on_mob_enter_tutorial(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
 void wld_tile_on_mob_enter_summoncircle(struct wld_map* map, struct wld_tile* tile, struct wld_mob* mob);
 bool wld_tile_is_blocked_vision(struct wld_tile* tile);
 bool wld_tile_is_blocked_movement(struct wld_tile* tile);

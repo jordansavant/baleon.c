@@ -59,6 +59,8 @@ int main(void)
 						printf("U ");
 					else if (cell->is_entrance_transition)
 						printf("E ");
+					else if (cell->is_tutorial)
+						printf("* ");
 					else if (cell->is_entrance)
 						printf("e ");
 					else if (cell->is_exit_transition)

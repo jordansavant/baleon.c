@@ -131,6 +131,8 @@ struct dng_cell {
 
 	int tile_style;
 
+	bool is_tutorial;
+	int tutorial_id;
 };
 
 struct tunnel_dir {

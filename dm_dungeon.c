@@ -91,6 +91,9 @@ void dng_cell_init(struct dng_cell *cell)
 	cell->temp_wall = false;
 
 	cell->tile_style = 0;
+
+	cell->is_tutorial = false;
+	cell->tutorial_id = 0;
 }
 
 int dng_cell_get_x(struct dm_astarnode *astar_node)
@@ -1302,6 +1305,22 @@ void dng_cellmap_machinate(struct dng_cellmap* cellmap)
 	if (cellmap->id == 0) {
 		// randomly place tutorial tombstones?
 		// randomly place tutorial scrolls?
+
+		// get center tile for entrance room room
+		int tutorial_count = 5;
+		int tutorial_id = 0;
+		//int room_size = (cellmap->entrance_room->width * cellmap->entrance_room->height);
+		bool inspect(struct dng_cell* cell) {
+			if (!cell->is_entrance_transition && !cell->is_exit_transition && cell->room != NULL && dm_chance(1, 5) && tutorial_id <= tutorial_count) {
+				cell->is_tutorial = true;
+				cell->tutorial_id = tutorial_id++;
+			}
+			return false;
+		}
+		//printf("%d,%d %dx%d\n", cellmap->entrance_room->x, cellmap->entrance_room->y, cellmap->entrance_room->width, cellmap->entrance_room->height);
+		//dng_cellmap_inspect_room_cells(cellmap, cellmap->entrance_room, inspect);
+		dng_cellmap_inspect_spiral_cells(cellmap, inspect);
+
 		return;
 	}
 

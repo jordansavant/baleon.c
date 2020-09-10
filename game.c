@@ -207,7 +207,7 @@ void g_newgame()
 					"A flash of pain overtakes you and you hear, \"The light, warm and nurturing, turned against us. Then He came. "
 					"Then the darkness to which He drove us beneath. We failed. We are at our end.\"\n\n"
 					"\"Ascend.\"");
-			map_on_interrupt(current_map, "Move Keys: A W S D");
+			map_on_interrupt(current_map, wld_get_tut_1());
 			ui_log("You awake in darkness, then a light appears...");
 			play_state = PS_PLAY;
 			break;
