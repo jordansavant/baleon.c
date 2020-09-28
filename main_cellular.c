@@ -3,13 +3,17 @@
 
 int main(void)
 {
+    char *red = "\033[0;31m";
+    char *green = "\033[0;32m";
+    char *blue = "\033[0;34m";
+    char *def = "\033[0m";
 	int seed = 123;
 	do {
 		printf("SEED %d\n", seed);
 		dm_seed(seed);
 		seed++;
-		int width = 24;
-		int height = 24;
+		int width = 53;
+		int height = 32;
 		int map[width * height];
 		void on_solid(int x, int y) {
 			map[y * width + x] = 1;
@@ -23,9 +27,9 @@ int main(void)
 			for (int c=0; c < width; c++) {
 				int index = r * width + c;
 				if (map[index] == 0)
-					printf("  ");
+					printf("%so %s", green, def);
 				else
-					printf("# ");
+					printf(". ");
 			}
 			printf("\n");
 		}
